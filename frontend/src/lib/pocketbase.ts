@@ -273,9 +273,22 @@ export const apiHelpers = {
         'Content-Type': 'application/json',
       };
       
-      // 添加认证头
-      if (pb.authStore.token) {
-        headers['Authorization'] = `Bearer ${pb.authStore.token}`;
+      // 添加认证头 - 优先使用localStorage中的token
+      let token = pb.authStore.token;
+      if (!token) {
+        try {
+          const storedAuth = localStorage.getItem('pocketbase_auth');
+          if (storedAuth) {
+            const authData = JSON.parse(storedAuth);
+            token = authData.token;
+          }
+        } catch (error) {
+          console.warn('Failed to read token from localStorage:', error);
+        }
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
       const response = await fetch(url, {
@@ -310,9 +323,22 @@ export const apiHelpers = {
         'Content-Type': 'application/json',
       };
       
-      // 添加认证头
-      if (pb.authStore.token) {
-        headers['Authorization'] = `Bearer ${pb.authStore.token}`;
+      // 添加认证头 - 优先使用localStorage中的token
+      let token = pb.authStore.token;
+      if (!token) {
+        try {
+          const storedAuth = localStorage.getItem('pocketbase_auth');
+          if (storedAuth) {
+            const authData = JSON.parse(storedAuth);
+            token = authData.token;
+          }
+        } catch (error) {
+          console.warn('Failed to read token from localStorage:', error);
+        }
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
       const response = await fetch('/api/products', {
@@ -333,13 +359,26 @@ export const apiHelpers = {
         'Content-Type': 'application/json',
       };
       
-      // 添加认证头
-      if (pb.authStore.token) {
-        headers['Authorization'] = `Bearer ${pb.authStore.token}`;
+      // 添加认证头 - 优先使用localStorage中的token
+      let token = pb.authStore.token;
+      if (!token) {
+        try {
+          const storedAuth = localStorage.getItem('pocketbase_auth');
+          if (storedAuth) {
+            const authData = JSON.parse(storedAuth);
+            token = authData.token;
+          }
+        } catch (error) {
+          console.warn('Failed to read token from localStorage:', error);
+        }
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
       const response = await fetch(`/api/products/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers,
         body: JSON.stringify(data),
       });
@@ -356,9 +395,22 @@ export const apiHelpers = {
         'Content-Type': 'application/json',
       };
       
-      // 添加认证头
-      if (pb.authStore.token) {
-        headers['Authorization'] = `Bearer ${pb.authStore.token}`;
+      // 添加认证头 - 优先使用localStorage中的token
+      let token = pb.authStore.token;
+      if (!token) {
+        try {
+          const storedAuth = localStorage.getItem('pocketbase_auth');
+          if (storedAuth) {
+            const authData = JSON.parse(storedAuth);
+            token = authData.token;
+          }
+        } catch (error) {
+          console.warn('Failed to read token from localStorage:', error);
+        }
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
       const response = await fetch(`/api/products/${id}`, {

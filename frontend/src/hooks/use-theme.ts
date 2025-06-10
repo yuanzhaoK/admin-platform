@@ -26,9 +26,13 @@ export function useThemeLogic() {
 
   useEffect(() => {
     // 从localStorage获取保存的主题设置
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
-      setThemeState(savedTheme);
+    try {
+      const savedTheme = localStorage.getItem('theme') as Theme | null;
+      if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+        setThemeState(savedTheme);
+      }
+    } catch (error) {
+      console.warn('Failed to read theme from localStorage:', error);
     }
   }, []);
 
@@ -66,7 +70,11 @@ export function useThemeLogic() {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+    try {
+      localStorage.setItem('theme', newTheme);
+    } catch (error) {
+      console.warn('Failed to save theme to localStorage:', error);
+    }
   };
 
   return {
