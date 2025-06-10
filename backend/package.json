@@ -1,0 +1,34 @@
+{
+  "name": "@tanka/admin-platform-backend",
+  "version": "1.0.0",
+  "description": "PocketBase backend for admin platform",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node proxy-server.js",
+    "start": "node proxy-server.js",
+    "server": "node server.js",
+    "setup": "node setup.js",
+    "download-pb": "node download-pocketbase.js",
+    "dev:direct": "node server.js",
+    "clean": "rm -rf pb_data/data.db pb_data/logs.db",
+    "reset": "npm run clean && npm run server"
+  },
+  "keywords": [
+    "pocketbase",
+    "backend",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "cross-spawn": "^7.0.3",
+    "express": "^4.21.2",
+    "fs-extra": "^11.1.1",
+    "http-proxy-middleware": "^3.0.5",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

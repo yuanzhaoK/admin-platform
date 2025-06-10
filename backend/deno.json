@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "name": "@tanka/admin-platform-backend",
+  "description": "Deno backend for admin platform with PocketBase",
+  "tasks": {
+    "dev": "deno run --allow-all proxy-server.ts",
+    "start": "deno run --allow-all proxy-server.ts",
+    "server": "deno run --allow-all server.ts",
+    "setup": "deno run --allow-all setup.ts",
+    "download-pb": "deno run --allow-all download-pocketbase.ts",
+    "clean": "deno run --allow-write --allow-read clean.ts",
+    "reset": "deno task clean && deno task server"
+  },
+  "imports": {
+    "@std/http": "https://deno.land/std@0.208.0/http/mod.ts",
+    "@std/path": "https://deno.land/std@0.208.0/path/mod.ts",
+    "@std/fs": "https://deno.land/std@0.208.0/fs/mod.ts",
+    "@std/process": "https://deno.land/std@0.208.0/process/mod.ts",
+    "@std/async": "https://deno.land/std@0.208.0/async/mod.ts",
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window", "dom"],
+    "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": true,
+    "proseWrap": "preserve",
+    "include": ["src/", "*.ts", "*.js"],
+    "exclude": ["pb_data/", "bin/", "node_modules/"]
+  },
+  "lint": {
+    "include": ["src/", "*.ts", "*.js"],
+    "exclude": ["pb_data/", "bin/", "node_modules/"],
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["no-unused-vars"]
+    }
+  }
+} 
