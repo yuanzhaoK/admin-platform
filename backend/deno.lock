@@ -138,7 +138,7 @@
         "npm:express@^4.21.2",
         "npm:fs-extra@^11.1.1",
         "npm:http-proxy-middleware@^3.0.5",
-        "npm:node-fetch@^3.3.2",
+        "npm:node-fetch@^2.7.0",
         "npm:nodemon@^3.0.1"
       ]
     }
