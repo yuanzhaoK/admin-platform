@@ -1,60 +1,85 @@
 # 管理平台设置指南
 
+## 项目架构
+
+本项目采用现代化的全栈架构，包含以下组件：
+
+- **前端**: Next.js + React + TypeScript + Tailwind CSS
+- **后端**: Deno + TypeScript + PocketBase
+- **数据库**: PocketBase (内置SQLite)
+- **数据管理**: 完整的导入导出脚本系统
+
 ## 快速启动
 
-1. **启动后端代理服务器**
-   ```bash
-   cd packages/admin-platform/backend
-   npm run dev
-   ```
-   
-   这会启动：
-   - PocketBase 服务器 (内部端口 8090)
-   - Express 代理服务器 (端口 8091，解决 CORS 问题)
+### 1. 启动后端服务
 
-2. **启动前端开发服务器**
-   ```bash
-   cd packages/admin-platform/frontend  
-   npm run dev
-   ```
+```bash
+cd backend
 
-3. **配置 PocketBase 数据库**
-   
-   访问 PocketBase 管理界面：http://localhost:8091/_/
-   
-   ### 创建管理员账户
-   首次访问时会提示创建管理员账户，请设置：
-   - 邮箱：admin@example.com
-   - 密码：admin123
-   
-   ### 创建 users 集合
-   1. 在管理界面中，点击 "Collections" → "New collection"
-   2. 选择 "Auth collection"
-   3. 命名为 "users"
-   4. 添加以下字段：
-      - `name` (Text, 可选)
-      - `role` (Select, 可选, 选项: admin, user)
-   5. 设置规则：
-      - List rule: `@request.auth.id != ""`
-      - View rule: `@request.auth.id != ""`
-      - Create rule: 留空
-      - Update rule: `@request.auth.id = id`
-      - Delete rule: `@request.auth.id = id`
+# 首次运行需要下载PocketBase
+deno run --allow-all download-pocketbase.ts
 
-   ### 创建 products 集合
-   1. 点击 "New collection" → "Base collection"
-   2. 命名为 "products"
-   3. 添加以下字段：
-      - `name` (Text, 必填)
-      - `description` (Text, 可选)
-      - `status` (Select, 必填, 选项: active, inactive)
-      - `config` (JSON, 可选)
-   4. 设置规则：
-      - List rule: `@request.auth.id != ""`
-      - View rule: `@request.auth.id != ""`
-      - Create rule: `@request.auth.role = "admin"`
-      - Update rule: `@request.auth.role = "admin"`
-      - Delete rule: `@request.auth.role = "admin"`
+# 启动代理服务器 (包含PocketBase)
+deno run --allow-all proxy-server.ts
+```
+
+这会启动：
+- PocketBase 服务器 (内部端口 8090)
+- Deno 代理服务器 (端口 8091，解决 CORS 问题)
+
+### 2. 启动前端开发服务器
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+前端将在 http://localhost:3000 启动
+
+### 3. 配置 PocketBase 数据库
+   
+访问 PocketBase 管理界面：http://localhost:8090/_/
+
+#### 创建管理员账户
+首次访问时会提示创建管理员账户，推荐设置：
+- 邮箱：admin@admin.com
+- 密码：1234567890
+
+> **注意**: 这些凭据将用于系统登录和数据管理脚本
+   
+#### 创建 products 集合
+
+**推荐方式**: 使用自动化脚本创建
+
+```bash
+cd backend
+deno run --allow-all create-collections.js
+```
+
+**手动方式**:
+1. 在管理界面中，点击 "Collections" → "New collection"
+2. 选择 "Base collection"，命名为 "products"
+3. 添加以下字段：
+   - `name` (Text, 必填)
+   - `description` (Text, 可选)
+   - `price` (Number, 可选)
+   - `category` (Text, 可选)
+   - `status` (Select, 必填, 选项: active, inactive, draft)
+   - `tags` (JSON, 可选)
+   - `sku` (Text, 可选)
+   - `stock` (Number, 可选)
+   - `weight` (Number, 可选)
+   - `dimensions` (JSON, 可选)
+   - `images` (JSON, 可选)
+   - `meta_data` (JSON, 可选)
+
+4. **重要**: 清空所有API规则以避免权限问题
+   - List rule: 留空
+   - View rule: 留空  
+   - Create rule: 留空
+   - Update rule: 留空
+   - Delete rule: 留空
 
    ### 创建测试用户
    1. 在 users 集合中，点击 "New record"
