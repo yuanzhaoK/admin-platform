@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Product, apiHelpers } from '@/lib/pocketbase';
+import { Product } from '@/lib/pocketbase';
+import { graphqlProductService } from '@/lib/graphql/product';
 import { 
   Trash2, 
   Download, 
@@ -57,12 +58,12 @@ export function ProductBatchActions({
 
     setIsLoading(true);
     try {
-      const result = await apiHelpers.batchUpdateProductStatus(selectedProducts, status);
-      if (result.success) {
+      const result = await graphqlProductService.batchUpdateProductStatus(selectedProducts, status);
+      if (result.success && result.data?.success) {
         onClearSelection();
         onRefresh();
       } else {
-        alert(result.error || '批量更新失败');
+        alert(result.error || result.data?.message || '批量更新失败');
       }
     } catch (error) {
       console.error('批量更新失败:', error);
@@ -77,13 +78,13 @@ export function ProductBatchActions({
 
     setIsLoading(true);
     try {
-      const result = await apiHelpers.batchDeleteProducts(selectedProducts);
-      if (result.success) {
+      const result = await graphqlProductService.batchDeleteProducts(selectedProducts);
+      if (result.success && result.data?.success) {
         onClearSelection();
         onRefresh();
         setShowDeleteDialog(false);
       } else {
-        alert(result.error || '批量删除失败');
+        alert(result.error || result.data?.message || '批量删除失败');
       }
     } catch (error) {
       console.error('批量删除失败:', error);
@@ -93,21 +94,20 @@ export function ProductBatchActions({
     }
   };
 
-  const handleExport = async (format: 'json' | 'csv') => {
+  const handleExport = async (format: 'JSON' | 'CSV') => {
     setIsLoading(true);
     try {
-      const blob = await apiHelpers.exportProducts(format);
-      if (blob) {
-        const url = URL.createObjectURL(blob);
+      const result = await graphqlProductService.exportProducts(format);
+      if (result.success && result.data?.success && result.data.downloadUrl) {
+        // 创建下载链接
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `products.${format}`;
+        a.href = result.data.downloadUrl;
+        a.download = result.data.filename || `products.${format.toLowerCase()}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
       } else {
-        alert('导出失败');
+        alert(result.error || result.data?.message || '导出失败');
       }
     } catch (error) {
       console.error('导出失败:', error);
@@ -134,11 +134,11 @@ export function ProductBatchActions({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport('json')}>
+              <DropdownMenuItem onClick={() => handleExport('JSON')}>
                 <FileText className="mr-2 h-4 w-4" />
                 导出为 JSON
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('csv')}>
+              <DropdownMenuItem onClick={() => handleExport('CSV')}>
                 <FileX className="mr-2 h-4 w-4" />
                 导出为 CSV
               </DropdownMenuItem>
@@ -219,11 +219,11 @@ export function ProductBatchActions({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport('json')}>
+              <DropdownMenuItem onClick={() => handleExport('JSON')}>
                 <FileText className="mr-2 h-4 w-4" />
                 导出为 JSON
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('csv')}>
+              <DropdownMenuItem onClick={() => handleExport('CSV')}>
                 <FileX className="mr-2 h-4 w-4" />
                 导出为 CSV
               </DropdownMenuItem>

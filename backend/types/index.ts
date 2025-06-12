@@ -183,6 +183,11 @@ export interface ProductQuery {
   search?: string;
   sortBy?: 'name' | 'price' | 'created' | 'updated';
   sortOrder?: 'asc' | 'desc';
+  priceMin?: number;
+  priceMax?: number;
+  stockMin?: number;
+  stockMax?: number;
+  tags?: string[];
 }
 
 export interface OrderQuery {

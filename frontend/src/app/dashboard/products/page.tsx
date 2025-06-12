@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { apiHelpers, Product, ProductQuery, ProductStats } from '@/lib/pocketbase';
+import { Product, ProductQuery, ProductStats } from '@/lib/pocketbase';
+import { graphqlProductService } from '@/lib/graphql/product';
 import { Plus, Package, TrendingUp, ShoppingCart, AlertCircle } from 'lucide-react';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { ProductTable } from '@/components/products/ProductTable';
@@ -39,7 +40,21 @@ export default function ProductsPage() {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await apiHelpers.getProducts(query);
+      // 首先测试GraphQL连接
+      console.log('Testing GraphQL connection before fetching products...');
+      const connectionTest = await graphqlProductService.testConnection();
+      console.log('Connection test result:', connectionTest);
+      
+      if (!connectionTest.success) {
+        console.error('GraphQL connection failed:', connectionTest.error);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('GraphQL connection successful, fetching products...');
+      const result = await graphqlProductService.getProducts(query);
+      console.log('Products fetch result:', result);
+      
       if (result.success && result.data) {
         setProducts(result.data);
         if (result.pagination) {
@@ -58,7 +73,7 @@ export default function ProductsPage() {
   // 获取产品统计
   const fetchStats = useCallback(async () => {
     try {
-      const result = await apiHelpers.getProductStats();
+      const result = await graphqlProductService.getProductStats();
       if (result.success && result.data) {
         setStats(result.data);
         // 提取分类列表
@@ -124,7 +139,7 @@ export default function ProductsPage() {
     if (!confirm(`确定要删除产品"${product.name}"吗？`)) return;
     
     try {
-      const result = await apiHelpers.deleteProduct(product.id);
+      const result = await graphqlProductService.deleteProduct(product.id);
       if (result.success) {
         await fetchProducts();
         await fetchStats();
@@ -142,7 +157,7 @@ export default function ProductsPage() {
   const handleStatusToggle = async (product: Product) => {
     try {
       const newStatus = product.status === 'active' ? 'inactive' : 'active';
-      const result = await apiHelpers.updateProduct(product.id, { status: newStatus });
+      const result = await graphqlProductService.updateProduct(product.id, { status: newStatus });
       if (result.success) {
         await fetchProducts();
         await fetchStats();

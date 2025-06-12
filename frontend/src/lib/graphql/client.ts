@@ -1,5 +1,6 @@
-import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
+import { onError } from '@apollo/client/link/error';
 
 // GraphQL 服务器端点
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:8082/graphql';
@@ -7,6 +8,22 @@ const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhos
 // HTTP 链接
 const httpLink = createHttpLink({
   uri: GRAPHQL_ENDPOINT,
+});
+
+// 错误处理链接
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  if (graphQLErrors) {
+    graphQLErrors.forEach(({ message, locations, path }) => {
+      console.error(
+        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+      );
+    });
+  }
+
+  if (networkError) {
+    console.error(`[Network error]: ${networkError}`);
+    console.error('Network error details:', networkError);
+  }
 });
 
 // 认证链接 - 添加认证头
@@ -28,7 +45,7 @@ const authLink = setContext((_, { headers }) => {
 
 // 创建 Apollo Client 实例
 export const apolloClient = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link: from([errorLink, authLink, httpLink]),
   cache: new InMemoryCache({
     typePolicies: {
       Query: {
@@ -41,7 +58,7 @@ export const apolloClient = new ApolloClient({
             },
           },
           products: {
-            keyArgs: ['query', ['status', 'category', 'search', 'sortBy', 'sortOrder']],
+            keyArgs: ['query', ['status', 'category', 'search', 'sortBy', 'sortOrder', 'priceMin', 'priceMax', 'stockMin', 'stockMax', 'tags']],
             merge(existing, incoming) {
               return incoming;
             },
@@ -64,8 +81,13 @@ export const apolloClient = new ApolloClient({
   defaultOptions: {
     watchQuery: {
       errorPolicy: 'all',
+      notifyOnNetworkStatusChange: true,
     },
     query: {
+      errorPolicy: 'all',
+      notifyOnNetworkStatusChange: true,
+    },
+    mutate: {
       errorPolicy: 'all',
     },
   },
