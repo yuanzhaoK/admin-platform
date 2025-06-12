@@ -383,7 +383,7 @@ export default function CrudDemoPage() {
                     </p>
                     {product.price && (
                       <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">
-                        ¥{product.price.toFixed(2)}
+                        ¥{(product.price || 0).toFixed(2)}
                       </p>
                     )}
                     {product.tags && product.tags.length > 0 && (

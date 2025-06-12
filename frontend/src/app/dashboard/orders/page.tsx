@@ -259,7 +259,7 @@ export default function OrdersPage() {
                       </span>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                      {new Date().toLocaleString('zh-CN')} • ¥{order.total_amount.toFixed(2)}
+                      {new Date().toLocaleString('zh-CN')} • ¥{(order.total_amount || 0).toFixed(2)}
                     </p>
                   </div>
                   <Link href={`/dashboard/orders/detail/${order.id}`}>

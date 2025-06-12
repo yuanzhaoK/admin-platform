@@ -272,7 +272,7 @@ export default function RefundsPage() {
                     </TableCell>
                     <TableCell>{getUserDisplay(refund)}</TableCell>
                     <TableCell className="font-medium">
-                      ¥{refund.refund_amount.toFixed(2)}
+                      ¥{(refund.refund_amount || 0).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">

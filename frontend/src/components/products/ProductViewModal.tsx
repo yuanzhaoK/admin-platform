@@ -22,7 +22,7 @@ export function ProductViewModal({ product, open, onOpenChange }: ProductViewMod
 
   const formatPrice = (price?: number) => {
     if (price === undefined || price === null) return '-';
-    return `¥${price.toFixed(2)}`;
+    return `¥${(price || 0).toFixed(2)}`;
   };
 
   const formatStatus = (status: Product['status']) => {

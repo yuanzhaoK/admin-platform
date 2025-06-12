@@ -266,7 +266,7 @@ export default function OrderDetailPage() {
                     订单金额
                   </Label>
                   <p className="text-lg font-bold text-green-600 mt-1">
-                    ¥{order.total_amount.toFixed(2)}
+                    ¥{(order.total_amount || 0).toFixed(2)}
                   </p>
                 </div>
                 <div>
@@ -304,11 +304,11 @@ export default function OrderDetailPage() {
                     <div className="flex-1">
                       <h4 className="font-medium">{item.product_name}</h4>
                       <p className="text-sm text-slate-600 dark:text-slate-400">
-                        单价: ¥{item.price.toFixed(2)} × {item.quantity}
+                        单价: ¥{(item.price || 0).toFixed(2)} × {item.quantity || 0}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">¥{item.total.toFixed(2)}</p>
+                      <p className="font-medium">¥{(item.total || (item.price || 0) * (item.quantity || 0)).toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
@@ -331,13 +331,13 @@ export default function OrderDetailPage() {
                     <Label className="text-sm font-medium text-slate-600 dark:text-slate-400">
                       物流公司
                     </Label>
-                    <p className="text-sm mt-1">{order.logistics_info.company}</p>
+                    <p className="text-sm mt-1">{order.logistics_info?.company || '未填写'}</p>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-600 dark:text-slate-400">
                       运单号
                     </Label>
-                    <p className="font-mono text-sm mt-1">{order.logistics_info.tracking_number}</p>
+                    <p className="font-mono text-sm mt-1">{order.logistics_info?.tracking_number || '未填写'}</p>
                   </div>
                 </div>
                 
@@ -512,13 +512,13 @@ export default function OrderDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
-                <p><strong>{order.shipping_address.name}</strong></p>
-                <p>{order.shipping_address.phone}</p>
+                <p><strong>{order.shipping_address?.name || '未填写'}</strong></p>
+                <p>{order.shipping_address?.phone || '未填写'}</p>
                 <p>
-                  {order.shipping_address.province} {order.shipping_address.city} {order.shipping_address.district}
+                  {order.shipping_address?.province || ''} {order.shipping_address?.city || ''} {order.shipping_address?.district || ''}
                 </p>
-                <p>{order.shipping_address.address}</p>
-                {order.shipping_address.postal_code && (
+                <p>{order.shipping_address?.address || '未填写'}</p>
+                {order.shipping_address?.postal_code && (
                   <p>邮编: {order.shipping_address.postal_code}</p>
                 )}
               </div>

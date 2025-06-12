@@ -306,7 +306,7 @@ export default function OrderListPage() {
                     </TableCell>
                     <TableCell>{getUserDisplay(order)}</TableCell>
                     <TableCell className="font-medium">
-                      ¥{order.total_amount.toFixed(2)}
+                      ¥{(order.total_amount || 0).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       {paymentMethodMap[order.payment_method as keyof typeof paymentMethodMap]}
