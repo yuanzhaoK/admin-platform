@@ -37,7 +37,7 @@ async function main() {
       console.log('');
       console.log('   Suggested admin credentials:');
       console.log('   📧 Email: admin@example.com');
-      console.log('   🔑 Password: admin123456');
+      console.log('   🔑 Password: admin123');
     } else {
       console.log('📁 No database found - this is perfect for first setup!');
       console.log('');
@@ -48,7 +48,7 @@ async function main() {
       console.log('');
       console.log('   Suggested admin credentials:');
       console.log('   📧 Email: admin@example.com');
-      console.log('   🔑 Password: admin123456');
+      console.log('   🔑 Password: admin123');
     }
 
     console.log('\n🔗 Useful URLs:');

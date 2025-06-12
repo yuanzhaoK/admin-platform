@@ -9,7 +9,11 @@
     "setup": "deno run --allow-all setup.ts",
     "download-pb": "deno run --allow-all download-pocketbase.ts",
     "clean": "deno run --allow-write --allow-read clean.ts",
-    "reset": "deno task clean && deno task server"
+    "reset": "deno task clean && deno task server",
+    "create-admin": "deno run --allow-all create-admin.ts",
+    "create-orders": "deno run --allow-all create-order-collections.ts",
+    "create-test-data": "deno run --allow-all create-test-data.ts",
+    "fix-orders": "deno run --allow-all fix-orders-data.ts"
   },
   "imports": {
     "@std/http": "https://deno.land/std@0.208.0/http/mod.ts",

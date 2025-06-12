@@ -1,34 +1,28 @@
 {
-  "name": "@tanka/admin-platform-backend",
+  "name": "pocketbase-collection-creator",
   "version": "1.0.0",
-  "description": "PocketBase backend for admin platform",
-  "main": "server.js",
+  "description": "PocketBase 集合创建标准化框架",
+  "type": "module",
   "scripts": {
-    "dev": "node proxy-server.js",
-    "start": "node proxy-server.js",
-    "server": "node server.js",
-    "setup": "node setup.js",
-    "download-pb": "node download-pocketbase.js",
-    "dev:direct": "node server.js",
-    "clean": "rm -rf pb_data/data.db pb_data/logs.db",
-    "reset": "npm run clean && npm run server"
+    "create:products": "tsx create-collection-cli.ts products",
+    "create:articles": "tsx create-collection-cli.ts articles",
+    "create:comments": "tsx create-collection-cli.ts comments",
+    "create:user-settings": "tsx create-collection-cli.ts user_settings",
+    "create:all": "tsx create-collection-cli.ts all",
+    "example": "tsx create-collections-example.ts",
+    "help": "tsx create-collection-cli.ts --help"
   },
   "keywords": [
     "pocketbase",
-    "backend",
-    "sqlite"
+    "collection",
+    "automation",
+    "typescript"
   ],
-  "author": "",
+  "author": "Admin Platform Team",
   "license": "MIT",
   "dependencies": {
-    "cors": "^2.8.5",
-    "cross-spawn": "^7.0.3",
-    "express": "^4.21.2",
-    "fs-extra": "^11.1.1",
-    "http-proxy-middleware": "^3.0.5",
-    "node-fetch": "^2.7.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
   }
 }
