@@ -122,7 +122,7 @@ export function LoginForm() {
           
           <div className="mt-6 text-center">
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              默认管理员账户: admin@example.com / admin123
+              默认管理员账户: ahukpyu@outlook.com / kpyu1512..@
             </p>
           </div>
         </CardContent>

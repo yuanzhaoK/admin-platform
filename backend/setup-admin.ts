@@ -27,11 +27,11 @@ async function main() {
       console.log('   1. Stop all servers (Ctrl+C)');
       console.log('   2. rm -rf pb_data/');
       console.log('   3. Start server: deno run --allow-net --allow-read --allow-run proxy-server.ts');
-      console.log('   4. Visit: http://127.0.0.1:8091/_/');
+      console.log('   4. Visit: http://127.0.0.1:8090/_/');
       console.log('   5. Create admin account in the web interface');
       console.log('');
       console.log('   Option 2 - Use existing database:');
-      console.log('   1. Visit: http://127.0.0.1:8091/_/');
+      console.log('   1. Visit: http://127.0.0.1:8090/_/');
       console.log('   2. If admin already exists, login with existing credentials');
       console.log('   3. If no admin exists, you will see the setup page');
       console.log('');

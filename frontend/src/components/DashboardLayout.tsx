@@ -25,7 +25,8 @@ import {
   Search,
   Zap,
   Languages,
-  Globe
+  Globe,
+  ShoppingCart
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -46,6 +47,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
     { name: t('nav.products'), href: '/dashboard/products', icon: Package },
+    { name: '订单管理', href: '/dashboard/orders', icon: ShoppingCart },
     { name: 'CRUD 演示', href: '/dashboard/crud-demo', icon: Zap },
     { name: t('nav.users'), href: '/dashboard/users', icon: Users },
     { name: t('nav.functions'), href: '/dashboard/functions', icon: Zap },

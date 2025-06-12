@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const POCKETBASE_URL = 'http://127.0.0.1:8091';
+const POCKETBASE_URL = 'http://127.0.0.1:8090';
 
 export async function GET(
   request: NextRequest,

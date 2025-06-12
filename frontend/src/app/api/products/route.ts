@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DENO_PROXY_URL = 'http://127.0.0.1:8091';
+const DENO_PROXY_URL = 'http://127.0.0.1:8090';
 
 export async function GET(request: NextRequest) {
   return proxyRequest(request, 'GET');

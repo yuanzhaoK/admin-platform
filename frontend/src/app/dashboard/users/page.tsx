@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,27 +50,27 @@ import {
   Mail,
   Calendar,
 } from 'lucide-react';
-import { pb } from '@/lib/pocketbase';
 import { useToast } from '@/hooks/use-toast';
-
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-  avatar?: string;
-  role: 'admin' | 'user';
-  verified: boolean;
-  created: string;
-  updated: string;
-}
+import { GET_USERS, type User, type GetUsersData } from '@/lib/graphql/queries/users';
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const { toast } = useToast();
+
+  // GraphQL 查询
+  const { data, loading, error, refetch } = useQuery<GetUsersData>(GET_USERS, {
+    errorPolicy: 'all',
+    onError: (error) => {
+      console.error('GraphQL 用户查询错误:', error);
+      toast({
+        title: '获取用户列表失败',
+        description: error.message || '请稍后重试',
+        variant: 'destructive',
+      });
+    }
+  });
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -79,70 +80,30 @@ export default function UsersPage() {
     password: '',
   });
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const records = await pb.collection('users').getFullList({
-        sort: '-created',
-      });
-      setUsers(records.map(record => ({
-        id: record.id,
-        email: record.email,
-        name: record.name,
-        avatar: record.avatar,
-        role: record.role || 'user',
-        verified: record.verified || false,
-        created: record.created,
-        updated: record.updated
-      })));
-    } catch (error) {
-      console.error('获取用户列表失败:', error);
-      toast({
-        title: '获取用户列表失败',
-        description: '请稍后重试',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const users = data?.users || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (editingUser) {
-        // 更新用户
-        await pb.collection('users').update(editingUser.id, {
-          email: formData.email,
-          name: formData.name,
-          role: formData.role,
-        });
+        // TODO: 实现 GraphQL 更新用户 mutation
         toast({
-          title: '用户更新成功',
-          description: '用户信息已成功更新',
+          title: '功能开发中',
+          description: '用户更新功能正在开发中',
+          variant: 'default',
         });
       } else {
-        // 创建新用户
-        await pb.collection('users').create({
-          email: formData.email,
-          name: formData.name,
-          role: formData.role,
-          password: formData.password,
-          passwordConfirm: formData.password,
-        });
+        // TODO: 实现 GraphQL 创建用户 mutation
         toast({
-          title: '用户创建成功',
-          description: '新用户已成功创建',
+          title: '功能开发中',
+          description: '用户创建功能正在开发中',
+          variant: 'default',
         });
       }
       setIsDialogOpen(false);
       setEditingUser(null);
       setFormData({ email: '', name: '', role: 'user', password: '' });
-      fetchUsers();
+      refetch();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : '请稍后重试';
       toast({
@@ -158,7 +119,7 @@ export default function UsersPage() {
     setFormData({
       email: user.email,
       name: user.name || '',
-      role: user.role,
+      role: user.role || 'user',
       password: '',
     });
     setIsDialogOpen(true);
@@ -167,12 +128,13 @@ export default function UsersPage() {
   const handleDelete = async (user: User) => {
     if (confirm(`确定要删除用户 ${user.email} 吗？`)) {
       try {
-        await pb.collection('users').delete(user.id);
+        // TODO: 实现 GraphQL 删除用户 mutation
         toast({
-          title: '用户删除成功',
-          description: '用户已成功删除',
+          title: '功能开发中',
+          description: '用户删除功能正在开发中',
+          variant: 'default',
         });
-        fetchUsers();
+        refetch();
       } catch {
         toast({
           title: '删除用户失败',
@@ -196,6 +158,35 @@ export default function UsersPage() {
     });
   };
 
+  // 显示错误信息
+  if (error && !data) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+              用户管理
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">
+              管理系统中的所有用户账户
+            </p>
+          </div>
+        </div>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
+            加载用户数据失败
+          </h3>
+          <p className="text-red-600 dark:text-red-300 mb-4">
+            {error.message}
+          </p>
+          <Button onClick={() => refetch()} variant="outline">
+            重试
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
@@ -205,7 +196,7 @@ export default function UsersPage() {
             用户管理
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            管理系统中的所有用户账户
+            管理系统中的所有用户账户 (GraphQL)
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -242,7 +233,6 @@ export default function UsersPage() {
                 <Label htmlFor="name">姓名</Label>
                 <Input
                   id="name"
-                  type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
@@ -251,9 +241,7 @@ export default function UsersPage() {
                 <Label htmlFor="role">角色</Label>
                 <Select
                   value={formData.role}
-                  onValueChange={(value: 'admin' | 'user') => 
-                    setFormData({ ...formData, role: value })
-                  }
+                  onValueChange={(value: 'admin' | 'user') => setFormData({ ...formData, role: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -273,7 +261,6 @@ export default function UsersPage() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required={!editingUser}
-                    minLength={8}
                   />
                 </div>
               )}
@@ -290,7 +277,7 @@ export default function UsersPage() {
       {/* 搜索栏 */}
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
           <Input
             placeholder="搜索用户..."
             value={searchTerm}
@@ -300,7 +287,7 @@ export default function UsersPage() {
         </div>
         <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
           <Users className="h-4 w-4" />
-          <span>总计 {users.length} 个用户</span>
+          <span>共 {users.length} 个用户</span>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 管理平台开发环境启动脚本
-# 支持 Deno 和 Node.js 两种后端实现
+# 使用 Deno + PocketBase + GraphQL 架构
 
 set -e
 
@@ -18,11 +18,10 @@ echo -e "${CYAN}🚀 管理平台 - 开发环境启动器${NC}"
 echo -e "${CYAN}======================================${NC}"
 
 # 检查参数
-BACKEND_TYPE=${1:-"deno"} # 默认使用 Deno
-FRONTEND_ONLY=${2:-"false"}
+FRONTEND_ONLY=${1:-"false"}
 
 echo -e "${BLUE}📋 配置信息:${NC}"
-echo -e "   后端类型: ${BACKEND_TYPE}"
+echo -e "   架构: Deno + PocketBase + GraphQL"
 echo -e "   仅启动前端: ${FRONTEND_ONLY}"
 echo
 
@@ -49,7 +48,7 @@ check_node() {
 }
 
 # 启动 Deno 后端
-start_deno_backend() {
+start_backend() {
     echo -e "${PURPLE}🦕 启动 Deno 后端服务器...${NC}"
     cd backend
     
@@ -59,31 +58,11 @@ start_deno_backend() {
         deno task download-pb
     fi
     
-    echo -e "${GREEN}🌟 启动代理服务器 (端口 8091)${NC}"
-    deno task dev &
-    BACKEND_PID=$!
-    cd ..
-}
-
-# 启动 Node.js 后端
-start_node_backend() {
-    echo -e "${PURPLE}📦 启动 Node.js 后端服务器...${NC}"
-    cd backend
-    
-    # 检查依赖
-    if [ ! -d "node_modules" ]; then
-        echo -e "${YELLOW}📦 安装 Node.js 依赖...${NC}"
-        npm install
-    fi
-    
-    # 检查是否需要下载 PocketBase
-    if [ ! -f "bin/pocketbase" ]; then
-        echo -e "${YELLOW}📥 PocketBase 未找到，正在下载...${NC}"
-        npm run download-pb
-    fi
-    
-    echo -e "${GREEN}🌟 启动代理服务器 (端口 8091)${NC}"
-    npm run dev &
+    echo -e "${GREEN}🌟 启动统一服务器 (PocketBase: 8090, GraphQL: 8082)${NC}"
+    echo -e "${BLUE}📊 PocketBase 管理界面: http://localhost:8090/_/${NC}"
+    echo -e "${BLUE}🔍 GraphQL 查询界面: http://localhost:8082/graphql${NC}"
+    echo -e "${BLUE}❤️  健康检查: http://localhost:8082/health${NC}"
+    deno task server &
     BACKEND_PID=$!
     cd ..
 }
@@ -128,31 +107,14 @@ trap cleanup SIGINT SIGTERM
 
 # 主逻辑
 main() {
-    # 检查后端类型并启动
+    # 启动后端
     if [ "$FRONTEND_ONLY" != "true" ]; then
-        case $BACKEND_TYPE in
-            "deno")
-                if check_deno; then
-                    start_deno_backend
-                else
-                    echo -e "${RED}❌ 无法启动 Deno 后端${NC}"
-                    exit 1
-                fi
-                ;;
-            "node")
-                if check_node; then
-                    start_node_backend
-                else
-                    echo -e "${RED}❌ 无法启动 Node.js 后端${NC}"
-                    exit 1
-                fi
-                ;;
-            *)
-                echo -e "${RED}❌ 不支持的后端类型: $BACKEND_TYPE${NC}"
-                echo -e "${YELLOW}💡 支持的类型: deno, node${NC}"
-                exit 1
-                ;;
-        esac
+        if check_deno; then
+            start_backend
+        else
+            echo -e "${RED}❌ 无法启动 Deno 后端${NC}"
+            exit 1
+        fi
         
         # 等待后端启动
         echo -e "${YELLOW}⏳ 等待后端服务器启动...${NC}"
@@ -173,13 +135,16 @@ main() {
     echo -e "${CYAN}======================================${NC}"
     
     if [ "$FRONTEND_ONLY" != "true" ]; then
-        echo -e "${BLUE}📊 后端管理界面:${NC} http://localhost:8091/_/"
-        echo -e "${BLUE}🌐 API 端点:${NC}      http://localhost:8091/api/"
-        echo -e "${BLUE}🔧 后端类型:${NC}      $BACKEND_TYPE"
+        echo -e "${BLUE}📊 PocketBase 管理界面:${NC} http://localhost:8090/_/"
+        echo -e "${BLUE}🌐 PocketBase API:${NC}       http://localhost:8090/api/"
+        echo -e "${BLUE}🔍 GraphQL 查询界面:${NC}     http://localhost:8082/graphql"
+        echo -e "${BLUE}🚀 GraphQL API:${NC}          http://localhost:8082/graphql"
+        echo -e "${BLUE}❤️  健康检查:${NC}            http://localhost:8082/health"
+        echo -e "${BLUE}🔧 架构:${NC}                 Deno + PocketBase + GraphQL"
     fi
     
-    echo -e "${BLUE}💻 前端应用:${NC}      http://localhost:3000"
-    echo -e "${BLUE}👤 测试账户:${NC}      admin@example.com / admin123"
+    echo -e "${BLUE}💻 前端应用:${NC}             http://localhost:3000"
+    echo -e "${BLUE}👤 测试账户:${NC}             ahukpyu@outlook.com / kpyu1512..@"
     echo
     echo -e "${YELLOW}💡 按 Ctrl+C 停止所有服务器${NC}"
     
@@ -192,22 +157,26 @@ show_help() {
     echo -e "${CYAN}管理平台开发环境启动器${NC}"
     echo
     echo -e "${YELLOW}用法:${NC}"
-    echo -e "  $0 [backend_type] [frontend_only]"
+    echo -e "  $0 [frontend_only]"
     echo
     echo -e "${YELLOW}参数:${NC}"
-    echo -e "  backend_type    后端类型 (deno|node，默认: deno)"
     echo -e "  frontend_only   是否仅启动前端 (true|false，默认: false)"
     echo
     echo -e "${YELLOW}示例:${NC}"
-    echo -e "  $0                    # 使用 Deno 后端 + 前端"
-    echo -e "  $0 node               # 使用 Node.js 后端 + 前端"
-    echo -e "  $0 deno false         # 使用 Deno 后端 + 前端"
-    echo -e "  $0 deno true          # 仅启动前端"
+    echo -e "  $0                    # 启动完整开发环境 (后端 + 前端)"
+    echo -e "  $0 false              # 启动完整开发环境 (后端 + 前端)"
+    echo -e "  $0 true               # 仅启动前端"
     echo
     echo -e "${YELLOW}环境要求:${NC}"
-    echo -e "  - Deno 1.37+ (用于 Deno 后端)"
-    echo -e "  - Node.js 18+ (用于 Node.js 后端和前端)"
+    echo -e "  - Deno 1.37+ (用于后端服务)"
+    echo -e "  - Node.js 18+ (用于前端开发)"
     echo -e "  - unzip 命令 (用于解压 PocketBase)"
+    echo
+    echo -e "${YELLOW}服务架构:${NC}"
+    echo -e "  - PocketBase 数据库服务 (端口 8090)"
+    echo -e "  - GraphQL API 服务 (端口 8082)"
+    echo -e "  - Next.js 前端服务 (端口 3000)"
+    echo -e "  - 统一启动，GraphQL 作为 PocketBase 的包装层"
 }
 
 # 检查是否请求帮助

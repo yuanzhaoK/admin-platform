@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeScript } from "@/components/ThemeScript";
 import { I18nProvider } from "@/components/I18nProvider";
+import { GraphQLProvider } from "@/components/providers/GraphQLProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,13 +36,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ThemeProvider>
-          <I18nProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </I18nProvider>
-        </ThemeProvider>
+        <GraphQLProvider>
+          <ThemeProvider>
+            <I18nProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </I18nProvider>
+          </ThemeProvider>
+        </GraphQLProvider>
       </body>
     </html>
   );

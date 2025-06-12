@@ -1,11 +1,12 @@
 {
   "version": "1.0.0",
   "name": "@tanka/admin-platform-backend",
-  "description": "Deno backend for admin platform with PocketBase",
+  "description": "Deno backend for admin platform with PocketBase and GraphQL",
   "tasks": {
     "dev": "deno run --allow-all proxy-server.ts",
     "start": "deno run --allow-all proxy-server.ts",
     "server": "deno run --allow-all server.ts",
+    "graphql": "GRAPHQL_PORT=8082 POCKETBASE_URL=http://localhost:8090 deno run --allow-all server.ts",
     "setup": "deno run --allow-all setup.ts",
     "download-pb": "deno run --allow-all download-pocketbase.ts",
     "clean": "deno run --allow-write --allow-read clean.ts",
@@ -21,7 +22,9 @@
     "@std/fs": "https://deno.land/std@0.208.0/fs/mod.ts",
     "@std/process": "https://deno.land/std@0.208.0/process/mod.ts",
     "@std/async": "https://deno.land/std@0.208.0/async/mod.ts",
-    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
+    "graphql": "https://deno.land/x/graphql_deno@v15.0.0/mod.ts",
+    "pocketbase": "npm:pocketbase@^0.19.0"
   },
   "compilerOptions": {
     "allowJs": true,
