@@ -1,20 +1,44 @@
 export const productTypeDefs = `
-  # 产品类型 - 完全匹配 PocketBase 产品结构
+  # 增强的产品类型
   type Product {
     id: String!
     name: String!
+    subtitle: String
     description: String
     price: Float
-    category: String
+    market_price: Float
+    cost_price: Float
+    category_id: String
+    category: ProductCategory
+    brand_id: String
+    brand: Brand
+    product_type_id: String
+    product_type: ProductType
     status: ProductStatus!
     tags: [String!]
     config: JSON
     sku: String
     stock: Int
+    unit: String
     weight: Float
     dimensions: ProductDimensions
     images: [String!]
     meta_data: JSON
+    sort_order: Int
+    is_featured: Boolean
+    is_new: Boolean
+    is_hot: Boolean
+    points: Int
+    growth_value: Int
+    points_purchase_limit: Int
+    preview_enabled: Boolean
+    is_published: Boolean
+    is_recommended: Boolean
+    service_guarantee: [String!]
+    sales_count: Int
+    view_count: Int
+    review_status: ReviewStatus!
+    attributes: JSON
     created: String!
     updated: String!
   }
@@ -31,6 +55,12 @@ export const productTypeDefs = `
     draft
   }
 
+  enum ReviewStatus {
+    pending
+    approved
+    rejected
+  }
+
   type ProductsResponse {
     items: [Product!]!
     pagination: PaginationInfo!
@@ -45,6 +75,10 @@ export const productTypeDefs = `
     categories: JSON!
     avgPrice: Float
     totalStock: Int
+    lowStock: Int!
+    outOfStock: Int!
+    brands: JSON!
+    productTypes: JSON!
   }
 
   # 批量操作结果
@@ -56,12 +90,7 @@ export const productTypeDefs = `
     errors: [String!]
   }
 
-  # 产品分类
-  type ProductCategory {
-    name: String!
-    count: Int!
-    description: String
-  }
+
 
   # 库存操作结果
   type StockOperationResult {
@@ -85,45 +114,85 @@ export const productTypeDefs = `
     page: Int
     perPage: Int
     status: ProductStatus
-    category: String
+    category_id: String
+    brand_id: String
+    product_type_id: String
     search: String
-    sortBy: String
-    sortOrder: SortOrder
     priceMin: Float
     priceMax: Float
     stockMin: Int
     stockMax: Int
     tags: [String!]
+    is_featured: Boolean
+    is_new: Boolean
+    is_hot: Boolean
+    is_published: Boolean
+    review_status: ReviewStatus
+    sortBy: String
+    sortOrder: SortOrder
   }
 
   input ProductInput {
     name: String!
+    subtitle: String
     description: String
     price: Float
-    category: String
+    market_price: Float
+    cost_price: Float
+    category_id: String
+    brand_id: String
+    product_type_id: String
     status: ProductStatus!
     tags: [String!]
     sku: String
     stock: Int
+    unit: String
     weight: Float
     images: [String!]
-    dimensions: ProductDimensionsInput
-    meta_data: JSON
+    sort_order: Int
+    is_featured: Boolean
+    is_new: Boolean
+    is_hot: Boolean
+    points: Int
+    growth_value: Int
+    points_purchase_limit: Int
+    preview_enabled: Boolean
+    is_published: Boolean
+    is_recommended: Boolean
+    service_guarantee: [String!]
+    attributes: JSON
   }
 
   input ProductUpdateInput {
     name: String
+    subtitle: String
     description: String
     price: Float
-    category: String
+    market_price: Float
+    cost_price: Float
+    category_id: String
+    brand_id: String
+    product_type_id: String
     status: ProductStatus
     tags: [String!]
     sku: String
     stock: Int
+    unit: String
     weight: Float
     images: [String!]
-    dimensions: ProductDimensionsInput
-    meta_data: JSON
+    sort_order: Int
+    is_featured: Boolean
+    is_new: Boolean
+    is_hot: Boolean
+    points: Int
+    growth_value: Int
+    points_purchase_limit: Int
+    preview_enabled: Boolean
+    is_published: Boolean
+    is_recommended: Boolean
+    service_guarantee: [String!]
+    attributes: JSON
+    review_status: ReviewStatus
   }
 
   input ProductDimensionsInput {
@@ -196,8 +265,7 @@ export const productTypeDefs = `
     product(id: String!): Product
     productStats: ProductStats!
     
-    # 分类管理
-    productCategories: [ProductCategory!]!
+    # 按分类查询产品
     productsByCategory(category: String!): [Product!]!
     
     # 库存查询
@@ -227,10 +295,7 @@ export const productTypeDefs = `
     updateProductStock(input: StockUpdateInput!): StockOperationResult!
     batchUpdateStock(inputs: [StockUpdateInput!]!): [StockOperationResult!]!
     
-    # 分类管理
-    createProductCategory(input: CategoryInput!): ProductCategory!
-    updateProductCategory(name: String!, input: CategoryInput!): ProductCategory!
-    deleteProductCategory(name: String!): Boolean!
+
     
     # 导出功能
     exportProducts(input: ExportInput!): ExportResult!

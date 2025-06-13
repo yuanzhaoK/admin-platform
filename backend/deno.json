@@ -2,6 +2,7 @@
   "version": "1.0.0",
   "name": "@tanka/admin-platform-backend",
   "description": "Deno backend for admin platform with PocketBase and GraphQL",
+  "exports": "./server.ts",
   "tasks": {
     "dev": "deno run --allow-all proxy-server.ts",
     "start": "deno run --allow-all proxy-server.ts",
@@ -27,11 +28,8 @@
     "pocketbase": "npm:pocketbase@^0.19.0"
   },
   "compilerOptions": {
-    "allowJs": true,
     "lib": ["deno.window", "dom"],
-    "strict": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "strict": true
   },
   "fmt": {
     "useTabs": false,

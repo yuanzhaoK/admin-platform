@@ -15,4 +15,16 @@ export const commonTypeDefs = `
     asc
     desc
   }
+
+  # 查询根类型
+  type Query {
+    # 健康检查
+    health: String!
+  }
+
+  # 变更根类型
+  type Mutation {
+    # 占位符
+    _empty: String
+  }
 `; 

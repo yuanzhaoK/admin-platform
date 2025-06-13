@@ -1,77 +1,5 @@
 import { gql } from '@apollo/client';
 
-// 认证相关的查询和变更
-export const LOGIN_MUTATION = gql`
-  mutation Login($input: LoginInput!) {
-    login(input: $input) {
-      token
-      record {
-        id
-        email
-        name
-        avatar
-        role
-        created
-        updated
-        collectionId
-        collectionName
-        emailVisibility
-        verified
-      }
-    }
-  }
-`;
-
-export const LOGOUT_MUTATION = gql`
-  mutation Logout {
-    logout
-  }
-`;
-
-// 用户查询
-export const GET_USERS = gql`
-  query GetUsers {
-    users {
-      id
-      email
-      name
-      avatar
-      role
-      created
-      updated
-      collectionId
-      collectionName
-      emailVisibility
-      verified
-    }
-  }
-`;
-
-export const GET_USER = gql`
-  query GetUser($id: String!) {
-    user(id: $id) {
-      id
-      email
-      name
-      avatar
-      role
-      created
-      updated
-      collectionId
-      collectionName
-      emailVisibility
-      verified
-    }
-  }
-`;
-
-// 健康检查
-export const HEALTH_CHECK = gql`
-  query HealthCheck {
-    health
-  }
-`;
-
 // ==================== 产品管理 GraphQL 查询和变更 ====================
 
 // 产品查询
@@ -81,15 +9,42 @@ export const GET_PRODUCTS = gql`
       items {
         id
         name
+        subtitle
         description
         price
-        category
-        status
-        tags
+        market_price
+        cost_price
         sku
         stock
+        unit
         weight
         images
+        status
+        review_status
+        is_featured
+        is_new
+        is_hot
+        is_published
+        is_recommended
+        tags
+        sales_count
+        view_count
+        sort_order
+        points
+        growth_value
+        service_guarantee
+        category {
+          id
+          name
+        }
+        brand {
+          id
+          name
+        }
+        product_type {
+          id
+          name
+        }
         created
         updated
       }
@@ -108,22 +63,54 @@ export const GET_PRODUCT = gql`
     product(id: $id) {
       id
       name
+      subtitle
       description
       price
-      category
-      status
-      tags
-      config
+      market_price
+      cost_price
+      category_id
+      brand_id
+      product_type_id
       sku
       stock
+      unit
       weight
-      dimensions {
-        length
-        width
-        height
-      }
       images
-      meta_data
+      status
+      review_status
+      is_featured
+      is_new
+      is_hot
+      is_published
+      is_recommended
+      tags
+      sales_count
+      view_count
+      sort_order
+      points
+      growth_value
+      points_purchase_limit
+      preview_enabled
+      service_guarantee
+      attributes
+      category {
+        id
+        name
+      }
+      brand {
+        id
+        name
+      }
+      product_type {
+        id
+        name
+        attributes {
+          name
+          type
+          required
+          options
+        }
+      }
       created
       updated
     }
@@ -140,34 +127,10 @@ export const GET_PRODUCT_STATS = gql`
       categories
       avgPrice
       totalStock
-    }
-  }
-`;
-
-// 分类管理查询
-export const GET_PRODUCT_CATEGORIES = gql`
-  query GetProductCategories {
-    productCategories {
-      name
-      count
-      description
-    }
-  }
-`;
-
-export const GET_PRODUCTS_BY_CATEGORY = gql`
-  query GetProductsByCategory($category: String!) {
-    productsByCategory(category: $category) {
-      id
-      name
-      description
-      price
-      status
-      sku
-      stock
-      images
-      created
-      updated
+      lowStock
+      outOfStock
+      brands
+      productTypes
     }
   }
 `;
@@ -230,17 +193,8 @@ export const CREATE_PRODUCT = gql`
     createProduct(input: $input) {
       id
       name
-      description
-      price
-      category
       status
-      tags
-      sku
-      stock
-      weight
-      images
       created
-      updated
     }
   }
 `;
@@ -250,16 +204,7 @@ export const UPDATE_PRODUCT = gql`
     updateProduct(id: $id, input: $input) {
       id
       name
-      description
-      price
-      category
       status
-      tags
-      sku
-      stock
-      weight
-      images
-      created
       updated
     }
   }
@@ -293,26 +238,14 @@ export const DUPLICATE_PRODUCT = gql`
 
 // 批量操作
 export const BATCH_UPDATE_PRODUCT_STATUS = gql`
-  mutation BatchUpdateProductStatus($input: BatchStatusUpdateInput!) {
-    batchUpdateProductStatus(input: $input) {
-      success
-      message
-      successCount
-      failureCount
-      errors
-    }
+  mutation BatchUpdateProductStatus($ids: [String!]!, $status: ProductStatus!) {
+    batchUpdateProductStatus(ids: $ids, status: $status)
   }
 `;
 
 export const BATCH_DELETE_PRODUCTS = gql`
-  mutation BatchDeleteProducts($input: BatchDeleteInput!) {
-    batchDeleteProducts(input: $input) {
-      success
-      message
-      successCount
-      failureCount
-      errors
-    }
+  mutation BatchDeleteProducts($ids: [String!]!) {
+    batchDeleteProducts(ids: $ids)
   }
 `;
 
@@ -358,33 +291,6 @@ export const BATCH_UPDATE_STOCK = gql`
       previousStock
       newStock
     }
-  }
-`;
-
-// 分类管理
-export const CREATE_PRODUCT_CATEGORY = gql`
-  mutation CreateProductCategory($input: CategoryInput!) {
-    createProductCategory(input: $input) {
-      name
-      count
-      description
-    }
-  }
-`;
-
-export const UPDATE_PRODUCT_CATEGORY = gql`
-  mutation UpdateProductCategory($name: String!, $input: CategoryInput!) {
-    updateProductCategory(name: $name, input: $input) {
-      name
-      count
-      description
-    }
-  }
-`;
-
-export const DELETE_PRODUCT_CATEGORY = gql`
-  mutation DeleteProductCategory($name: String!) {
-    deleteProductCategory(name: $name)
   }
 `;
 

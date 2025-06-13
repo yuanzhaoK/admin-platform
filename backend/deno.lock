@@ -1,5 +1,13 @@
 {
   "version": "4",
+  "specifiers": {
+    "npm:pocketbase@0.19": "0.19.0"
+  },
+  "npm": {
+    "pocketbase@0.19.0": {
+      "integrity": "sha512-bUVZfVdD17K8GnwbeDMZPEdREVg2YE0F8uHPDC0zer4VtwXUqoPCCeudTy3fhUE7pfuKnfpuPxeBSYsBY3AGIQ=="
+    }
+  },
   "redirects": {
     "https://esm.sh/xss?no-check": "https://esm.sh/xss@1.0.15?no-check"
   },
@@ -305,14 +313,6 @@
   "workspace": {
     "dependencies": [
       "npm:pocketbase@0.19"
-    ],
-    "packageJson": {
-      "dependencies": [
-        "npm:@types/node@20",
-        "npm:pocketbase@0.19",
-        "npm:tsx@4",
-        "npm:typescript@5"
-      ]
-    }
+    ]
   }
 }

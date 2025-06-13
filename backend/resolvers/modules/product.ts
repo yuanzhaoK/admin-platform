@@ -15,7 +15,9 @@ export const productResolvers = {
         // 构建过滤条件
         const filters: string[] = [];
         if (query?.status) filters.push(`status="${query.status}"`);
-        if (query?.category) filters.push(`category="${query.category}"`);
+        if (query?.category_id) filters.push(`category_id="${query.category_id}"`);
+        if (query?.brand_id) filters.push(`brand_id="${query.brand_id}"`);
+        if (query?.product_type_id) filters.push(`product_type_id="${query.product_type_id}"`);
         if (query?.search) {
           filters.push(`(name~"${query.search}" || description~"${query.search}" || sku~"${query.search}")`);
         }
@@ -27,6 +29,11 @@ export const productResolvers = {
           const tagFilters = query.tags.map(tag => `tags~"${tag}"`);
           filters.push(`(${tagFilters.join(' || ')})`);
         }
+        if (query?.is_featured !== undefined) filters.push(`is_featured=${query.is_featured}`);
+        if (query?.is_new !== undefined) filters.push(`is_new=${query.is_new}`);
+        if (query?.is_hot !== undefined) filters.push(`is_hot=${query.is_hot}`);
+        if (query?.is_published !== undefined) filters.push(`is_published=${query.is_published}`);
+        if (query?.review_status) filters.push(`review_status="${query.review_status}"`);
         
         const options: any = {};
         if (filters.length > 0) {
@@ -37,7 +44,12 @@ export const productResolvers = {
         if (query?.sortBy) {
           const sortOrder = query.sortOrder === 'asc' ? '' : '-';
           options.sort = `${sortOrder}${query.sortBy}`;
+        } else {
+          options.sort = '-created';
         }
+        
+        // 展开关联数据
+        options.expand = 'category_id,brand_id,product_type_id';
         
         const result = await pb.collection('products').getList<Product>(page, perPage, options);
         
@@ -60,7 +72,9 @@ export const productResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('products').getOne<Product>(id);
+        return await pb.collection('products').getOne<Product>(id, {
+          expand: 'category_id,brand_id,product_type_id'
+        });
       } catch (error) {
         console.error('Failed to fetch product:', error);
         return null;
@@ -80,7 +94,11 @@ export const productResolvers = {
           draft: 0,
           categories: {},
           avgPrice: 0,
-          totalStock: 0
+          totalStock: 0,
+          lowStock: 0,
+          outOfStock: 0,
+          brands: {},
+          productTypes: {}
         };
 
         let totalPrice = 0;
@@ -91,8 +109,18 @@ export const productResolvers = {
           stats[product.status]++;
           
           // 统计分类
-          if (product.category) {
-            stats.categories[product.category] = (stats.categories[product.category] || 0) + 1;
+          if (product.category_id) {
+            stats.categories[product.category_id] = (stats.categories[product.category_id] || 0) + 1;
+          }
+          
+          // 统计品牌
+          if (product.brand_id) {
+            stats.brands[product.brand_id] = (stats.brands[product.brand_id] || 0) + 1;
+          }
+          
+          // 统计商品类型
+          if (product.product_type_id) {
+            stats.productTypes[product.product_type_id] = (stats.productTypes[product.product_type_id] || 0) + 1;
           }
           
           // 统计价格
@@ -102,8 +130,13 @@ export const productResolvers = {
           }
           
           // 统计库存
-          if (product.stock && stats.totalStock !== undefined) {
-            stats.totalStock += product.stock;
+          if (product.stock !== undefined) {
+            stats.totalStock = (stats.totalStock || 0) + product.stock;
+            if (product.stock === 0) {
+              stats.outOfStock++;
+            } else if (product.stock <= 10) {
+              stats.lowStock++;
+            }
           }
         });
 
@@ -125,8 +158,8 @@ export const productResolvers = {
         
         const categoryMap = new Map<string, number>();
         products.forEach(product => {
-          if (product.category) {
-            categoryMap.set(product.category, (categoryMap.get(product.category) || 0) + 1);
+          if (product.category_id) {
+            categoryMap.set(product.category_id, (categoryMap.get(product.category_id) || 0) + 1);
           }
         });
 
@@ -146,7 +179,7 @@ export const productResolvers = {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         return await pb.collection('products').getFullList<Product>({
-          filter: `category="${category}"`
+          filter: `category_id="${category}"`
         });
       } catch (error) {
         console.error('Failed to fetch products by category:', error);
@@ -219,8 +252,8 @@ export const productResolvers = {
         
         // 基于分类和标签查找相关产品
         const filters: string[] = [`id!="${productId}"`];
-        if (currentProduct.category) {
-          filters.push(`category="${currentProduct.category}"`);
+        if (currentProduct.category_id) {
+          filters.push(`category_id="${currentProduct.category_id}"`);
         }
         
         const relatedProducts = await pb.collection('products').getList<Product>(1, limit, {
@@ -268,7 +301,7 @@ export const productResolvers = {
         return true;
       } catch (error) {
         console.error('Failed to delete product:', error);
-        return false;
+        throw new Error('Failed to delete product');
       }
     },
 
@@ -294,39 +327,24 @@ export const productResolvers = {
     },
 
     // 批量操作
-    batchUpdateProductStatus: async (_: any, { input }: { input: { productIds: string[]; status: string } }) => {
+    batchUpdateProductStatus: async (_: any, { ids, status }: { ids: string[]; status: string }) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         
-        let successCount = 0;
-        let failureCount = 0;
-        const errors: string[] = [];
+        const promises = ids.map(id => 
+          pb.collection('products').update(id, { status })
+        );
         
-        for (const productId of input.productIds) {
-          try {
-            await pb.collection('products').update(productId, { status: input.status });
-            successCount++;
-          } catch (error) {
-            failureCount++;
-            errors.push(`Product ${productId}: ${error}`);
-          }
-        }
-        
-        return {
-          success: failureCount === 0,
-          message: `成功更新 ${successCount} 个产品，失败 ${failureCount} 个`,
-          successCount,
-          failureCount,
-          errors
-        };
+        await Promise.all(promises);
+        return true;
       } catch (error) {
         console.error('Failed to batch update product status:', error);
         throw new Error('Failed to batch update product status');
       }
     },
 
-    batchDeleteProducts: async (_: any, { input }: { input: { productIds: string[] } }) => {
+    batchDeleteProducts: async (_: any, { ids }: { ids: string[] }) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -335,7 +353,7 @@ export const productResolvers = {
         let failureCount = 0;
         const errors: string[] = [];
         
-        for (const productId of input.productIds) {
+        for (const productId of ids) {
           try {
             await pb.collection('products').delete(productId);
             successCount++;
@@ -501,63 +519,7 @@ export const productResolvers = {
       return results;
     },
 
-    // 分类管理
-    createProductCategory: async (_: any, { input }: { input: { name: string; description?: string } }) => {
-      // 这里可以创建一个专门的分类表，或者简单返回分类信息
-      return {
-        name: input.name,
-        count: 0,
-        description: input.description
-      };
-    },
-
-    updateProductCategory: async (_: any, { name, input }: { name: string; input: { name: string; description?: string } }) => {
-      try {
-        await pocketbaseClient.ensureAuth();
-        const pb = pocketbaseClient.getClient();
-        
-        // 更新所有使用旧分类名的产品
-        if (name !== input.name) {
-          const products = await pb.collection('products').getFullList<Product>({
-            filter: `category="${name}"`
-          });
-          
-          for (const product of products) {
-            await pb.collection('products').update(product.id, { category: input.name });
-          }
-        }
-        
-        return {
-          name: input.name,
-          count: 0,
-          description: input.description
-        };
-      } catch (error) {
-        console.error('Failed to update product category:', error);
-        throw new Error('Failed to update product category');
-      }
-    },
-
-    deleteProductCategory: async (_: any, { name }: { name: string }) => {
-      try {
-        await pocketbaseClient.ensureAuth();
-        const pb = pocketbaseClient.getClient();
-        
-        // 将使用此分类的产品分类设为空
-        const products = await pb.collection('products').getFullList<Product>({
-          filter: `category="${name}"`
-        });
-        
-        for (const product of products) {
-          await pb.collection('products').update(product.id, { category: '' });
-        }
-        
-        return true;
-      } catch (error) {
-        console.error('Failed to delete product category:', error);
-        return false;
-      }
-    },
+    // 以下分类管理功能已移至 category.ts 模块
 
     // 导出功能
     exportProducts: async (_: any, { input }: { input: any }) => {

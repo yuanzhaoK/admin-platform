@@ -26,7 +26,9 @@ import {
   Zap,
   Languages,
   Globe,
-  ShoppingCart
+  ShoppingCart,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -40,13 +42,25 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['商品管理']));
   const { user, logout } = useAuth();
   const { t } = useI18n();
   const pathname = usePathname();
 
   const navigation = [
     { name: t('nav.dashboard'), href: '/dashboard', icon: LayoutDashboard },
-    { name: t('nav.products'), href: '/dashboard/products', icon: Package },
+    { 
+      name: '商品管理', 
+      href: '/dashboard/products', 
+      icon: Package,
+      children: [
+        { name: '商品列表', href: '/dashboard/products/management' },
+        { name: '添加商品', href: '/dashboard/products/management/add' },
+        { name: '商品分类', href: '/dashboard/products/categories' },
+        { name: '品牌管理', href: '/dashboard/products/brands' },
+        { name: '商品类型', href: '/dashboard/products/types' },
+      ]
+    },
     { name: '订单管理', href: '/dashboard/orders', icon: ShoppingCart },
     { name: 'CRUD 演示', href: '/dashboard/crud-demo', icon: Zap },
     { name: t('nav.users'), href: '/dashboard/users', icon: Users },
@@ -59,6 +73,25 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const handleLogout = () => {
     logout();
     window.location.href = '/';
+  };
+
+  const toggleMenu = (menuName: string) => {
+    const newExpanded = new Set(expandedMenus);
+    if (newExpanded.has(menuName)) {
+      newExpanded.delete(menuName);
+    } else {
+      newExpanded.add(menuName);
+    }
+    setExpandedMenus(newExpanded);
+  };
+
+  const isMenuExpanded = (menuName: string) => expandedMenus.has(menuName);
+
+  const isActiveMenu = (item: any) => {
+    if (item.children) {
+      return item.children.some((child: any) => pathname === child.href) || pathname === item.href;
+    }
+    return pathname === item.href;
   };
 
   return (
@@ -95,29 +128,95 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <nav className="mt-6 px-3">
           <div className="space-y-1">
             {navigation.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = isActiveMenu(item);
+              const isExpanded = isMenuExpanded(item.name);
+              
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    'group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                    isActive
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                  )}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon
+                <div key={item.name}>
+                  {/* Main menu item */}
+                  <div
                     className={cn(
-                      'mr-3 h-5 w-5 flex-shrink-0',
+                      'group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer',
                       isActive
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                     )}
-                  />
-                  {item.name}
-                </Link>
+                    onClick={() => {
+                      if (item.children) {
+                        toggleMenu(item.name);
+                      } else {
+                        setSidebarOpen(false);
+                      }
+                    }}
+                  >
+                    <item.icon
+                      className={cn(
+                        'mr-3 h-5 w-5 flex-shrink-0',
+                        isActive
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                      )}
+                    />
+                    <span className="flex-1">{item.name}</span>
+                    {item.children && (
+                      <span className="ml-auto">
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Submenu items */}
+                  {item.children && isExpanded && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {item.children.map((child: any) => {
+                        const isChildActive = pathname === child.href;
+                        return (
+                          <Link
+                            key={child.name}
+                            href={child.href}
+                            className={cn(
+                              'block px-3 py-2 text-sm rounded-lg transition-colors',
+                              isChildActive
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
+                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
+                            )}
+                            onClick={() => setSidebarOpen(false)}
+                          >
+                            {child.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Regular menu item (no children) */}
+                  {!item.children && (
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      )}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <item.icon
+                        className={cn(
+                          'mr-3 h-5 w-5 flex-shrink-0',
+                          isActive
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                        )}
+                      />
+                      {item.name}
+                    </Link>
+                  )}
+                </div>
               );
             })}
           </div>

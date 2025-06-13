@@ -17,14 +17,23 @@ export interface User {
 export interface Product {
   id: string;
   name: string;
+  subtitle?: string;
   description?: string;
   price?: number;
-  category?: string;
+  market_price?: number;
+  cost_price?: number;
+  category_id?: string;
+  category?: ProductCategory;
+  brand_id?: string;
+  brand?: Brand;
+  product_type_id?: string;
+  product_type?: ProductType;
   status: 'active' | 'inactive' | 'draft';
   tags?: string[];
-  config?: Record<string, any>;
+  config?: any;
   sku?: string;
   stock?: number;
+  unit?: string;
   weight?: number;
   dimensions?: {
     length?: number;
@@ -32,7 +41,22 @@ export interface Product {
     height?: number;
   };
   images?: string[];
-  meta_data?: Record<string, any>;
+  meta_data?: any;
+  sort_order?: number;
+  is_featured?: boolean;
+  is_new?: boolean;
+  is_hot?: boolean;
+  points?: number;
+  growth_value?: number;
+  points_purchase_limit?: number;
+  preview_enabled?: boolean;
+  is_published?: boolean;
+  is_recommended?: boolean;
+  service_guarantee?: string[];
+  sales_count?: number;
+  view_count?: number;
+  review_status: 'pending' | 'approved' | 'rejected';
+  attributes?: any;
   created: string;
   updated: string;
 }
@@ -180,6 +204,9 @@ export interface ProductQuery {
   perPage?: number;
   status?: 'active' | 'inactive' | 'draft';
   category?: string;
+  category_id?: string;
+  brand_id?: string;
+  product_type_id?: string;
   search?: string;
   sortBy?: 'name' | 'price' | 'created' | 'updated';
   sortOrder?: 'asc' | 'desc';
@@ -188,6 +215,11 @@ export interface ProductQuery {
   stockMin?: number;
   stockMax?: number;
   tags?: string[];
+  is_featured?: boolean;
+  is_new?: boolean;
+  is_hot?: boolean;
+  is_published?: boolean;
+  review_status?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface OrderQuery {
@@ -243,6 +275,10 @@ export interface ProductStats {
   categories: Record<string, number>;
   avgPrice?: number;
   totalStock?: number;
+  lowStock: number;
+  outOfStock: number;
+  brands: Record<string, number>;
+  productTypes: Record<string, number>;
 }
 
 export interface OrderStats {
@@ -261,4 +297,53 @@ export interface OrderStats {
   payment_methods: Record<string, number>;
   order_sources: Record<string, number>;
   order_types: Record<string, number>;
+}
+
+// 商品分类类型
+export interface ProductCategory {
+  id: string;
+  name: string;
+  description?: string;
+  parent_id?: string;
+  parent?: ProductCategory;
+  children?: ProductCategory[];
+  sort_order?: number;
+  status: 'active' | 'inactive';
+  image?: string;
+  icon?: string;
+  seo_title?: string;
+  seo_description?: string;
+  created: string;
+  updated: string;
+}
+
+// 品牌类型
+export interface Brand {
+  id: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  website?: string;
+  sort_order?: number;
+  status: 'active' | 'inactive';
+  created: string;
+  updated: string;
+}
+
+// 商品类型
+export interface ProductType {
+  id: string;
+  name: string;
+  description?: string;
+  attributes?: ProductTypeAttribute[];
+  status: 'active' | 'inactive';
+  created: string;
+  updated: string;
+}
+
+export interface ProductTypeAttribute {
+  name: string;
+  type: 'text' | 'number' | 'select' | 'multiselect' | 'boolean' | 'date' | 'color' | 'image';
+  required: boolean;
+  options?: string[];
 } 
