@@ -25,7 +25,6 @@ import {
   Search,
   Zap,
   Languages,
-  Globe,
   ShoppingCart,
   ChevronDown,
   ChevronRight
@@ -35,6 +34,13 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children?: Array<{ name: string; href: string }>;
+}
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -62,10 +68,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       ]
     },
     { name: '订单管理', href: '/dashboard/orders', icon: ShoppingCart },
-    { name: 'CRUD 演示', href: '/dashboard/crud-demo', icon: Zap },
     { name: t('nav.users'), href: '/dashboard/users', icon: Users },
-    { name: t('nav.functions'), href: '/dashboard/functions', icon: Zap },
-    { name: 'API Docs', href: '/dashboard/functions/api-docs', icon: Globe },
+    { name: 'CRUD 演示', href: '/dashboard/crud-demo', icon: Zap },
     { name: 'I18n Demo', href: '/dashboard/i18n-demo', icon: Languages },
     { name: t('nav.settings'), href: '/dashboard/settings', icon: Settings },
   ];
@@ -87,9 +91,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const isMenuExpanded = (menuName: string) => expandedMenus.has(menuName);
 
-  const isActiveMenu = (item: any) => {
+  const isActiveMenu = (item: NavigationItem) => {
     if (item.children) {
-      return item.children.some((child: any) => pathname === child.href) || pathname === item.href;
+      return item.children.some((child) => pathname === child.href) || pathname === item.href;
     }
     return pathname === item.href;
   };
@@ -133,68 +137,63 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               
               return (
                 <div key={item.name}>
-                  {/* Main menu item */}
-                  <div
-                    className={cn(
-                      'group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer',
-                      isActive
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                    )}
-                    onClick={() => {
-                      if (item.children) {
-                        toggleMenu(item.name);
-                      } else {
-                        setSidebarOpen(false);
-                      }
-                    }}
-                  >
-                    <item.icon
-                      className={cn(
-                        'mr-3 h-5 w-5 flex-shrink-0',
-                        isActive
-                          ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
-                      )}
-                    />
-                    <span className="flex-1">{item.name}</span>
-                    {item.children && (
-                      <span className="ml-auto">
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
+                  {/* Menu item with children */}
+                  {item.children ? (
+                    <>
+                      {/* Main menu item (clickable to expand/collapse) */}
+                      <div
+                        className={cn(
+                          'group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer',
+                          isActive
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                         )}
-                      </span>
-                    )}
-                  </div>
+                        onClick={() => toggleMenu(item.name)}
+                      >
+                        <item.icon
+                          className={cn(
+                            'mr-3 h-5 w-5 flex-shrink-0',
+                            isActive
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                          )}
+                        />
+                        <span className="flex-1">{item.name}</span>
+                        <span className="ml-auto">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </span>
+                      </div>
 
-                  {/* Submenu items */}
-                  {item.children && isExpanded && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {item.children.map((child: any) => {
-                        const isChildActive = pathname === child.href;
-                        return (
-                          <Link
-                            key={child.name}
-                            href={child.href}
-                            className={cn(
-                              'block px-3 py-2 text-sm rounded-lg transition-colors',
-                              isChildActive
-                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
-                            )}
-                            onClick={() => setSidebarOpen(false)}
-                          >
-                            {child.name}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Regular menu item (no children) */}
-                  {!item.children && (
+                      {/* Submenu items */}
+                      {isExpanded && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {item.children.map((child) => {
+                            const isChildActive = pathname === child.href;
+                            return (
+                              <Link
+                                key={child.name}
+                                href={child.href}
+                                className={cn(
+                                  'block px-3 py-2 text-sm rounded-lg transition-colors',
+                                  isChildActive
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
+                                )}
+                                onClick={() => setSidebarOpen(false)}
+                              >
+                                {child.name}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    /* Regular menu item (no children) - Link to the page */
                     <Link
                       href={item.href}
                       className={cn(
