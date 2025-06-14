@@ -4,7 +4,7 @@ import { ensureDir, exists } from '@std/fs';
 import { config } from './config/server.ts';
 
 // PocketBase 版本配置
-const POCKETBASE_VERSION = '0.22.0';
+const POCKETBASE_VERSION = '0.28.3';
 const DOWNLOAD_BASE_URL = 'https://github.com/pocketbase/pocketbase/releases/download';
 
 interface DownloadOptions {
