@@ -116,20 +116,24 @@ export default function ProductCategoriesPage() {
   const { data: categoriesData, loading, error, refetch } = useQuery(GET_PRODUCT_CATEGORIES, {
     variables: {
       query: {
-        search: search || undefined
+        search: search || null
       }
-    }
+    },
+    errorPolicy: 'all',
+    fetchPolicy: 'no-cache'
   })
 
-  const { data: categoryTreeData } = useQuery(GET_PRODUCT_CATEGORY_TREE)
+  const { data: categoryTreeData } = useQuery(GET_PRODUCT_CATEGORY_TREE, {
+    fetchPolicy: 'no-cache'
+  })
+
+  const categories = categoriesData?.productCategories?.items || []
+  const categoryTree = categoryTreeData?.productCategoryTree || []
 
   // GraphQL 变更
   const [createCategory, { loading: creating }] = useMutation(CREATE_PRODUCT_CATEGORY)
   const [updateCategory, { loading: updating }] = useMutation(UPDATE_PRODUCT_CATEGORY)
   const [deleteCategory] = useMutation(DELETE_PRODUCT_CATEGORY)
-
-  const categories = categoriesData?.productCategories?.items || []
-  const categoryTree = categoryTreeData?.productCategoryTree || []
 
   // 表单处理
   const updateFormData = (field: keyof CategoryFormData, value: string | number) => {
@@ -446,12 +450,12 @@ export default function ProductCategoriesPage() {
               
               <div className="space-y-2">
                 <Label htmlFor="parent_id">父分类</Label>
-                <Select value={formData.parent_id} onValueChange={(value) => updateFormData('parent_id', value)}>
+                <Select value={formData.parent_id || "none"} onValueChange={(value) => updateFormData('parent_id', value === "none" ? "" : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="选择父分类" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">无（顶级分类）</SelectItem>
+                    <SelectItem value="none">无（顶级分类）</SelectItem>
                     {categories.map((category) => (
                       <SelectItem 
                         key={category.id} 

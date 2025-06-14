@@ -68,19 +68,11 @@ export const GET_PRODUCT_CATEGORY_TREE = gql`
       description
       sort_order
       status
-      children {
-        id
-        name
-        description
-        sort_order
-        status
-        children {
-          id
-          name
-          sort_order
-          status
-        }
-      }
+      image
+      icon
+      parent_id
+      created
+      updated
     }
   }
 `;

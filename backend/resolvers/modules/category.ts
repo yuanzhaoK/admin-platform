@@ -9,34 +9,35 @@ export const categoryResolvers = {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         
-        const page = query?.page || 1;
-        const perPage = query?.perPage || 20;
-        
-        // 构建过滤条件
-        const filters: string[] = [];
-        if (query?.status) filters.push(`status="${query.status}"`);
-        if (query?.parent_id) filters.push(`parent_id="${query.parent_id}"`);
-        if (query?.search) {
-          filters.push(`(name~"${query.search}" || description~"${query.search}")`);
-        }
-        
-        const options: any = {};
-        if (filters.length > 0) {
-          options.filter = filters.join(' && ');
-        }
-        
-        // 排序
-        if (query?.sortBy) {
-          const sortOrder = query.sortOrder === 'asc' ? '' : '-';
-          options.sort = `${sortOrder}${query.sortBy}`;
-        } else {
-          options.sort = 'sort_order,name';
-        }
-        
-        // 展开关联数据
-        options.expand = 'parent';
-        
-        const result = await pb.collection('product_categories').getList<ProductCategory>(page, perPage, options);
+        // 使用请求队列来避免并发冲突
+        const result = await pocketbaseClient.queueRequest(async () => {
+          // 确保page和perPage有默认值，不能为null
+          const page = Math.max(1, query?.page || 1);
+          const perPage = Math.max(1, Math.min(100, query?.perPage || 20));
+          
+          // 构建过滤条件
+          const filters: string[] = [];
+          if (query?.status) filters.push(`status="${query.status}"`);
+          if (query?.parent_id) filters.push(`parent_id="${query.parent_id}"`);
+          if (query?.search) {
+            filters.push(`(name~"${query.search}" || description~"${query.search}")`);
+          }
+          
+          const options: any = {};
+          if (filters.length > 0) {
+            options.filter = filters.join(' && ');
+          }
+          
+          // 排序
+          if (query?.sortBy) {
+            const sortOrder = query.sortOrder === 'asc' ? '' : '-';
+            options.sort = `${sortOrder}${query.sortBy}`;
+          } else {
+            options.sort = 'sort_order,name';
+          }
+          
+          return await pb.collection('product_categories').getList<ProductCategory>(page, perPage, options);
+        });
         
         // 确保所有分类都有必需的字段
         const processedItems = result.items.map(item => ({
@@ -45,13 +46,14 @@ export const categoryResolvers = {
           updated: item.updated || new Date().toISOString()
         }));
         
+        // 确保分页信息不为null
         return {
           items: processedItems,
           pagination: {
-            page: result.page,
-            perPage: result.perPage,
-            totalPages: result.totalPages,
-            totalItems: result.totalItems
+            page: result.page || (query?.page || 1),
+            perPage: result.perPage || (query?.perPage || 20),
+            totalPages: result.totalPages || 1,
+            totalItems: result.totalItems || 0
           }
         };
       } catch (error) {
@@ -64,9 +66,7 @@ export const categoryResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        const category = await pb.collection('product_categories').getOne<ProductCategory>(id, {
-          expand: 'parent'
-        });
+        const category = await pb.collection('product_categories').getOne<ProductCategory>(id);
         
         // 确保分类有必需的字段
         return {
@@ -86,9 +86,11 @@ export const categoryResolvers = {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         
-        // 获取所有分类
-        const categories = await pb.collection('product_categories').getFullList<ProductCategory>({
-          sort: 'sort_order,name'
+        // 使用请求队列来避免并发冲突  
+        const categories = await pocketbaseClient.queueRequest(async () => {
+          return await pb.collection('product_categories').getFullList<ProductCategory>({
+            sort: 'sort_order,name'
+          });
         });
         
         // 确保所有分类都有必需的字段
@@ -221,22 +223,30 @@ export const categoryResolvers = {
     },
     
     children: async (parent: ProductCategory) => {
+      // 如果父分类已经包含children数据，直接返回
+      if (parent.children && Array.isArray(parent.children)) {
+        return parent.children;
+      }
+      
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        const categories = await pb.collection('product_categories').getFullList<ProductCategory>({
+        
+        // 使用更简单的查询，减少并发压力
+        const categories = await pb.collection('product_categories').getList<ProductCategory>(1, 50, {
           filter: `parent_id="${parent.id}"`,
           sort: 'sort_order,name'
         });
         
         // 确保所有子分类都有必需的字段
-        return categories.map(item => ({
+        return categories.items.map(item => ({
           ...item,
           created: item.created || new Date().toISOString(),
           updated: item.updated || new Date().toISOString()
         }));
       } catch (error) {
         console.error('Failed to fetch child categories:', error);
+        // 返回空数组而不是抛出错误，避免整个查询失败
         return [];
       }
     },
