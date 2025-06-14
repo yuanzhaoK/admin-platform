@@ -1,0 +1,103 @@
+{
+  "id": "pbc_product_types",
+  "listRule": "",
+  "viewRule": "",
+  "createRule": "",
+  "updateRule": "",
+  "deleteRule": "",
+  "name": "product_types",
+  "type": "base",
+  "fields": [
+    {
+      "autogeneratePattern": "[a-z0-9]{15}",
+      "hidden": false,
+      "id": "text3208210256",
+      "max": 15,
+      "min": 15,
+      "name": "id",
+      "pattern": "^[a-z0-9]+$",
+      "presentable": false,
+      "primaryKey": true,
+      "required": true,
+      "system": true,
+      "type": "text"
+    },
+    {
+      "autogeneratePattern": "",
+      "hidden": false,
+      "id": "text_name_001",
+      "max": 100,
+      "min": 1,
+      "name": "name",
+      "pattern": "",
+      "presentable": true,
+      "primaryKey": false,
+      "required": true,
+      "system": false,
+      "type": "text",
+      "unique": true
+    },
+    {
+      "autogeneratePattern": "",
+      "hidden": false,
+      "id": "text_desc_002",
+      "max": 500,
+      "min": 0,
+      "name": "description",
+      "pattern": "",
+      "presentable": false,
+      "primaryKey": false,
+      "required": false,
+      "system": false,
+      "type": "text"
+    },
+    {
+      "hidden": false,
+      "id": "json_attrs_003",
+      "maxSize": 50000,
+      "name": "attributes",
+      "presentable": false,
+      "required": false,
+      "system": false,
+      "type": "json"
+    },
+    {
+      "hidden": false,
+      "id": "select_status_004",
+      "maxSelect": 1,
+      "name": "status",
+      "presentable": false,
+      "required": true,
+      "system": false,
+      "type": "select",
+      "values": [
+        "active",
+        "inactive"
+      ]
+    },
+    {
+      "hidden": false,
+      "id": "autodate2990389176",
+      "name": "created",
+      "onCreate": true,
+      "onUpdate": false,
+      "presentable": false,
+      "system": true,
+      "type": "autodate"
+    },
+    {
+      "hidden": false,
+      "id": "autodate3332085495",
+      "name": "updated",
+      "onCreate": true,
+      "onUpdate": true,
+      "presentable": false,
+      "system": true,
+      "type": "autodate"
+    }
+  ],
+  "indexes": [
+    "CREATE UNIQUE INDEX `idx_name_product_types` ON `product_types` (`name`)"
+  ],
+  "system": false
+} 

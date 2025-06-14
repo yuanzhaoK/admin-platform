@@ -442,10 +442,166 @@ export const userSettingsBlueprint: CollectionBlueprint = {
   },
 };
 
+// 商品类型集合蓝图
+export const productTypesBlueprint: CollectionBlueprint = {
+  collection: {
+    name: 'product_types',
+    type: 'base',
+    listRule: '',
+    viewRule: '',
+    createRule: '',
+    updateRule: '',
+    deleteRule: '',
+    fields: [
+      {
+        name: 'name',
+        type: 'text',
+        required: true,
+        unique: true,
+        options: {
+          max: 100,
+          min: 1,
+        },
+      },
+      {
+        name: 'description',
+        type: 'text',
+        required: false,
+        options: {
+          max: 500,
+        },
+      },
+      {
+        name: 'attributes',
+        type: 'json',
+        required: false,
+        options: {
+          jsonMaxSize: 50000,
+        },
+      },
+      {
+        name: 'status',
+        type: 'select',
+        required: true,
+        options: {
+          maxSelect: 1,
+          values: ['active', 'inactive'],
+        },
+      },
+    ],
+  },
+  testData: {
+    count: 8,
+    generator: (index: number) => {
+      const types = [
+        {
+          name: '电子设备',
+          desc: '手机、平板、电脑等电子设备',
+          attrs: [
+            { name: '尺寸', type: 'text', required: true },
+            { name: '颜色', type: 'select', required: true, options: ['黑色', '白色', '金色', '银色'] },
+            { name: '存储容量', type: 'select', required: false, options: ['64GB', '128GB', '256GB', '512GB'] },
+            { name: '屏幕尺寸', type: 'number', required: false },
+            { name: '是否支持5G', type: 'boolean', required: false }
+          ]
+        },
+        {
+          name: '服装鞋帽',
+          desc: '各类服装、鞋子、帽子等',
+          attrs: [
+            { name: '尺码', type: 'select', required: true, options: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
+            { name: '颜色', type: 'select', required: true, options: ['黑色', '白色', '红色', '蓝色', '灰色', '咖啡色'] },
+            { name: '材质', type: 'text', required: false },
+            { name: '季节', type: 'select', required: false, options: ['春季', '夏季', '秋季', '冬季'] },
+            { name: '适用性别', type: 'select', required: true, options: ['男性', '女性', '中性'] }
+          ]
+        },
+        {
+          name: '图书文具',
+          desc: '各类书籍、文具用品',
+          attrs: [
+            { name: '作者', type: 'text', required: true },
+            { name: '出版社', type: 'text', required: true },
+            { name: 'ISBN', type: 'text', required: false },
+            { name: '页数', type: 'number', required: false },
+            { name: '语言', type: 'select', required: true, options: ['中文', '英文', '日文', '其他'] },
+            { name: '装帧方式', type: 'select', required: false, options: ['平装', '精装', '电子版'] }
+          ]
+        },
+        {
+          name: '家居用品',
+          desc: '家具、装饰品等家居用品',
+          attrs: [
+            { name: '材质', type: 'select', required: true, options: ['实木', '板材', '金属', '塑料', '玻璃', '陶瓷'] },
+            { name: '颜色', type: 'text', required: false },
+            { name: '尺寸', type: 'text', required: true },
+            { name: '风格', type: 'select', required: false, options: ['现代简约', '欧式', '中式', '美式', '北欧'] },
+            { name: '适用房间', type: 'multiselect', required: false, options: ['客厅', '卧室', '厨房', '书房', '卫生间'] }
+          ]
+        },
+        {
+          name: '食品饮料',
+          desc: '各类食品、饮料、调料等',
+          attrs: [
+            { name: '保质期', type: 'text', required: true },
+            { name: '净含量', type: 'text', required: true },
+            { name: '产地', type: 'text', required: false },
+            { name: '口味', type: 'select', required: false, options: ['甜味', '咸味', '酸味', '辣味', '苦味', '原味'] },
+            { name: '包装规格', type: 'text', required: false },
+            { name: '储存方式', type: 'select', required: true, options: ['常温', '冷藏', '冷冻'] }
+          ]
+        },
+        {
+          name: '美妆护肤',
+          desc: '化妆品、护肤品等',
+          attrs: [
+            { name: '品牌', type: 'text', required: true },
+            { name: '适用肤质', type: 'multiselect', required: false, options: ['干性', '油性', '混合性', '敏感性', '中性'] },
+            { name: '适用年龄', type: 'select', required: false, options: ['青少年', '青年', '中年', '老年', '全年龄'] },
+            { name: '容量规格', type: 'text', required: true },
+            { name: '功效', type: 'multiselect', required: false, options: ['保湿', '美白', '抗衰老', '防晒', '控油', '祛痘'] }
+          ]
+        },
+        {
+          name: '运动户外',
+          desc: '运动器材、户外用品等',
+          attrs: [
+            { name: '运动类型', type: 'select', required: true, options: ['跑步', '健身', '游泳', '篮球', '足球', '登山', '骑行'] },
+            { name: '适用性别', type: 'select', required: true, options: ['男性', '女性', '中性'] },
+            { name: '尺码', type: 'select', required: false, options: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
+            { name: '材质', type: 'text', required: false },
+            { name: '重量', type: 'number', required: false }
+          ]
+        },
+        {
+          name: '母婴用品',
+          desc: '婴幼儿用品、孕妇用品等',
+          attrs: [
+            { name: '适用年龄', type: 'select', required: true, options: ['0-6个月', '6-12个月', '1-2岁', '2-3岁', '3岁以上', '孕妇'] },
+            { name: '材质', type: 'text', required: true },
+            { name: '安全认证', type: 'multiselect', required: false, options: ['3C认证', 'CE认证', 'FDA认证', '有机认证'] },
+            { name: '功能特点', type: 'multiselect', required: false, options: ['防过敏', '易清洗', '可折叠', '便携式', '多功能'] },
+            { name: '颜色', type: 'select', required: false, options: ['粉色', '蓝色', '黄色', '绿色', '白色', '彩色'] }
+          ]
+        }
+      ];
+      
+      const type = types[index % types.length];
+      return {
+        name: type.name,
+        description: type.desc,
+        attributes: JSON.stringify(type.attrs),
+        status: 'active'
+      };
+    }
+  },
+};
+
 // 导出所有蓝图
 export const allBlueprints = [
   productsBlueprint,
   articlesBlueprint,
   commentsBlueprint,
   userSettingsBlueprint,
+  productTypesBlueprint,
 ]; 
