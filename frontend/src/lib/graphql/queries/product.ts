@@ -1,5 +1,209 @@
 import { gql } from '@apollo/client';
 
+// ==================== 类型定义 ====================
+
+export interface Product {
+  id: string;
+  name: string;
+  subtitle?: string;
+  description?: string;
+  price?: number;
+  market_price?: number;
+  cost_price?: number;
+  category_id?: string;
+  brand_id?: string;
+  product_type_id?: string;
+  category?: {
+    id: string;
+    name: string;
+  };
+  brand?: {
+    id: string;
+    name: string;
+  };
+  product_type?: {
+    id: string;
+    name: string;
+    attributes?: Array<{
+      name: string;
+      type: string;
+      required: boolean;
+      options?: string[];
+    }>;
+  };
+  status: 'active' | 'inactive' | 'draft';
+  review_status: 'pending' | 'approved' | 'rejected';
+  tags?: string[];
+  config?: Record<string, unknown>;
+  sku?: string;
+  stock?: number;
+  unit?: string;
+  weight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  images?: string[];
+  meta_data?: Record<string, unknown>;
+  sort_order?: number;
+  is_featured?: boolean;
+  is_new?: boolean;
+  is_hot?: boolean;
+  is_published?: boolean;
+  is_recommended?: boolean;
+  points?: number;
+  growth_value?: number;
+  points_purchase_limit?: number;
+  preview_enabled?: boolean;
+  service_guarantee?: string[];
+  sales_count?: number;
+  view_count?: number;
+  attributes?: Record<string, unknown>;
+  created: string;
+  updated: string;
+}
+
+export interface ProductQuery {
+  page?: number;
+  perPage?: number;
+  status?: 'active' | 'inactive' | 'draft';
+  category_id?: string;
+  brand_id?: string;
+  product_type_id?: string;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  priceMin?: number;
+  priceMax?: number;
+  stockMin?: number;
+  stockMax?: number;
+  tags?: string[];
+  is_featured?: boolean;
+  is_new?: boolean;
+  is_hot?: boolean;
+  is_published?: boolean;
+  review_status?: 'pending' | 'approved' | 'rejected';
+}
+
+export interface ProductStats {
+  total: number;
+  active: number;
+  inactive: number;
+  draft: number;
+  categories: Record<string, number>;
+  avgPrice?: number;
+  totalStock?: number;
+  lowStock: number;
+  outOfStock: number;
+  brands: Record<string, number>;
+  productTypes: Record<string, number>;
+}
+
+export interface ProductCategory {
+  name: string;
+  count: number;
+  description?: string;
+}
+
+export interface BatchOperationResult {
+  success: boolean;
+  message?: string;
+  successCount: number;
+  failureCount: number;
+  errors?: string[];
+}
+
+export interface StockOperationResult {
+  success: boolean;
+  message?: string;
+  product?: Product;
+  previousStock?: number;
+  newStock?: number;
+}
+
+export interface ExportResult {
+  success: boolean;
+  message?: string;
+  downloadUrl?: string;
+  filename?: string;
+}
+
+export interface ProductInput {
+  name: string;
+  subtitle?: string;
+  description?: string;
+  price?: number;
+  market_price?: number;
+  cost_price?: number;
+  category_id?: string;
+  brand_id?: string;
+  product_type_id?: string;
+  status: 'active' | 'inactive' | 'draft';
+  tags?: string[];
+  sku?: string;
+  stock?: number;
+  unit?: string;
+  weight?: number;
+  images?: string[];
+  sort_order?: number;
+  is_featured?: boolean;
+  is_new?: boolean;
+  is_hot?: boolean;
+  points?: number;
+  growth_value?: number;
+  points_purchase_limit?: number;
+  preview_enabled?: boolean;
+  is_published?: boolean;
+  is_recommended?: boolean;
+  service_guarantee?: string[];
+  attributes?: Record<string, unknown>;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  meta_data?: Record<string, unknown>;
+}
+
+export interface ProductUpdateInput {
+  name?: string;
+  subtitle?: string;
+  description?: string;
+  price?: number;
+  market_price?: number;
+  cost_price?: number;
+  category_id?: string;
+  brand_id?: string;
+  product_type_id?: string;
+  status?: 'active' | 'inactive' | 'draft';
+  tags?: string[];
+  sku?: string;
+  stock?: number;
+  unit?: string;
+  weight?: number;
+  images?: string[];
+  sort_order?: number;
+  is_featured?: boolean;
+  is_new?: boolean;
+  is_hot?: boolean;
+  points?: number;
+  growth_value?: number;
+  points_purchase_limit?: number;
+  preview_enabled?: boolean;
+  is_published?: boolean;
+  is_recommended?: boolean;
+  service_guarantee?: string[];
+  attributes?: Record<string, unknown>;
+  review_status?: 'pending' | 'approved' | 'rejected';
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
+  meta_data?: Record<string, unknown>;
+}
+
 // ==================== 产品管理 GraphQL 查询和变更 ====================
 
 // 产品查询
@@ -324,6 +528,41 @@ export const REORDER_PRODUCT_IMAGES = gql`
     reorderProductImages(productId: $productId, imageUrls: $imageUrls) {
       id
       images
+    }
+  }
+`;
+
+// 按分类查询产品（使用通用产品查询）
+export const GET_PRODUCTS_BY_CATEGORY = gql`
+  query GetProductsByCategory($categoryId: String!, $page: Int, $perPage: Int) {
+    products(query: { category_id: $categoryId, page: $page, perPage: $perPage }) {
+      items {
+        id
+        name
+        subtitle
+        description
+        price
+        market_price
+        cost_price
+        sku
+        stock
+        status
+        review_status
+        is_featured
+        is_new
+        is_hot
+        is_published
+        images
+        tags
+        created
+        updated
+      }
+      pagination {
+        page
+        perPage
+        totalPages
+        totalItems
+      }
     }
   }
 `; 

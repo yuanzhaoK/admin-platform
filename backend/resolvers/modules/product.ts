@@ -53,8 +53,14 @@ export const productResolvers = {
         
         const result = await pb.collection('products').getList<Product>(page, perPage, options);
         
+        // 确保所有产品都有必需的字段
+        const processedItems = result.items.map(item => ({
+          ...item,
+          review_status: item.review_status || 'pending' // 默认为pending状态
+        }));
+        
         return {
-          items: result.items,
+          items: processedItems,
           pagination: {
             page: result.page,
             perPage: result.perPage,
@@ -72,9 +78,15 @@ export const productResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('products').getOne<Product>(id, {
+        const product = await pb.collection('products').getOne<Product>(id, {
           expand: 'category_id,brand_id,product_type_id'
         });
+        
+        // 确保产品有必需的字段
+        return {
+          ...product,
+          review_status: product.review_status || 'pending' // 默认为pending状态
+        };
       } catch (error) {
         console.error('Failed to fetch product:', error);
         return null;
@@ -178,9 +190,15 @@ export const productResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('products').getFullList<Product>({
+        const products = await pb.collection('products').getFullList<Product>({
           filter: `category_id="${category}"`
         });
+        
+        // 确保所有产品都有必需的字段
+        return products.map(item => ({
+          ...item,
+          review_status: item.review_status || 'pending'
+        }));
       } catch (error) {
         console.error('Failed to fetch products by category:', error);
         throw new Error('Failed to fetch products by category');
@@ -192,9 +210,15 @@ export const productResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('products').getFullList<Product>({
+        const products = await pb.collection('products').getFullList<Product>({
           filter: `stock<=${threshold} && stock>0`
         });
+        
+        // 确保所有产品都有必需的字段
+        return products.map(item => ({
+          ...item,
+          review_status: item.review_status || 'pending'
+        }));
       } catch (error) {
         console.error('Failed to fetch low stock products:', error);
         throw new Error('Failed to fetch low stock products');
@@ -205,9 +229,15 @@ export const productResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('products').getFullList<Product>({
+        const products = await pb.collection('products').getFullList<Product>({
           filter: 'stock=0'
         });
+        
+        // 确保所有产品都有必需的字段
+        return products.map(item => ({
+          ...item,
+          review_status: item.review_status || 'pending'
+        }));
       } catch (error) {
         console.error('Failed to fetch out of stock products:', error);
         throw new Error('Failed to fetch out of stock products');
@@ -261,7 +291,11 @@ export const productResolvers = {
           sort: '-created'
         });
         
-        return relatedProducts.items;
+        // 确保所有产品都有必需的字段
+        return relatedProducts.items.map(item => ({
+          ...item,
+          review_status: item.review_status || 'pending'
+        }));
       } catch (error) {
         console.error('Failed to fetch related products:', error);
         return [];
@@ -275,7 +309,18 @@ export const productResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('products').create<Product>(input);
+        
+        // 确保有默认的review_status
+        const productData = {
+          ...input,
+          review_status: input.review_status || 'pending'
+        };
+        
+        const product = await pb.collection('products').create<Product>(productData);
+        return {
+          ...product,
+          review_status: product.review_status || 'pending'
+        };
       } catch (error) {
         console.error('Failed to create product:', error);
         throw new Error('Failed to create product');
@@ -286,7 +331,13 @@ export const productResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('products').update<Product>(id, input);
+        const product = await pb.collection('products').update<Product>(id, input);
+        
+        // 确保有必需的字段
+        return {
+          ...product,
+          review_status: product.review_status || 'pending'
+        };
       } catch (error) {
         console.error('Failed to update product:', error);
         throw new Error('Failed to update product');
@@ -319,7 +370,13 @@ export const productResolvers = {
           productData.sku = `${productData.sku}-copy`;
         }
         
-        return await pb.collection('products').create<Product>(productData);
+        const product = await pb.collection('products').create<Product>(productData);
+        
+        // 确保有必需的字段
+        return {
+          ...product,
+          review_status: product.review_status || 'pending'
+        };
       } catch (error) {
         console.error('Failed to duplicate product:', error);
         throw new Error('Failed to duplicate product');

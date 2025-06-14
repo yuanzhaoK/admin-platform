@@ -21,7 +21,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import { 
   ArrowLeft,
   ArrowRight,
@@ -118,6 +118,7 @@ const steps = [
 ]
 
 export default function AddProductPage() {
+  const { toast } = useToast()
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState<ProductFormData>(initialFormData)

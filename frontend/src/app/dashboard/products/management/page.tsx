@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { 
   Table, 
@@ -34,13 +34,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import { 
   Edit, 
   Trash2, 
   Plus, 
   Search, 
-  Filter,
   MoreHorizontal,
   Eye,
   Package,
@@ -98,6 +97,7 @@ interface ProductsResponse {
 }
 
 export default function ProductManagementPage() {
+  const { toast } = useToast()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [filters, setFilters] = useState({
     search: '',
@@ -111,13 +111,34 @@ export default function ProductManagementPage() {
   const [page, setPage] = useState(1)
   const perPage = 20
 
+  // 清理查询参数，移除空字符串和无效值
+  const cleanFilters = (filters: any) => {
+    const cleaned: any = {}
+    
+    // 只添加非空值到清理后的对象
+    if (filters.search && filters.search.trim()) cleaned.search = filters.search.trim()
+    if (filters.status && filters.status !== '') cleaned.status = filters.status
+    if (filters.category_id && filters.category_id !== '') cleaned.category_id = filters.category_id
+    if (filters.brand_id && filters.brand_id !== '') cleaned.brand_id = filters.brand_id
+    if (filters.review_status && filters.review_status !== '') cleaned.review_status = filters.review_status
+    
+    // 处理布尔值字段 - 只有明确的true/false才添加
+    if (filters.is_featured === 'true') cleaned.is_featured = true
+    else if (filters.is_featured === 'false') cleaned.is_featured = false
+    
+    if (filters.is_published === 'true') cleaned.is_published = true
+    else if (filters.is_published === 'false') cleaned.is_published = false
+    
+    return cleaned
+  }
+
   // GraphQL queries
   const { data: productsData, loading, error, refetch } = useQuery<ProductsResponse>(GET_PRODUCTS, {
     variables: {
       query: {
         page,
         perPage,
-        ...filters
+        ...cleanFilters(filters)
       }
     }
   })
@@ -288,24 +309,24 @@ export default function ProductManagementPage() {
               />
             </div>
             
-            <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+            <Select value={filters.status || undefined} onValueChange={(value) => handleFilterChange('status', value === 'all' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="商品状态" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部状态</SelectItem>
+                <SelectItem value="all">全部状态</SelectItem>
                 <SelectItem value="active">已上架</SelectItem>
                 <SelectItem value="inactive">已下架</SelectItem>
                 <SelectItem value="draft">草稿</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select value={filters.category_id} onValueChange={(value) => handleFilterChange('category_id', value)}>
+            <Select value={filters.category_id || undefined} onValueChange={(value) => handleFilterChange('category_id', value === 'all' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="商品分类" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部分类</SelectItem>
+                <SelectItem value="all">全部分类</SelectItem>
                 {categories.map((category: any) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -314,12 +335,12 @@ export default function ProductManagementPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.brand_id} onValueChange={(value) => handleFilterChange('brand_id', value)}>
+            <Select value={filters.brand_id || undefined} onValueChange={(value) => handleFilterChange('brand_id', value === 'all' ? '' : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="品牌" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">全部品牌</SelectItem>
+                <SelectItem value="all">全部品牌</SelectItem>
                 {brands.map((brand: any) => (
                   <SelectItem key={brand.id} value={brand.id}>
                     {brand.name}
