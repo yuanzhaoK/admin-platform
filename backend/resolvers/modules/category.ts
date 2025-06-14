@@ -38,8 +38,15 @@ export const categoryResolvers = {
         
         const result = await pb.collection('product_categories').getList<ProductCategory>(page, perPage, options);
         
+        // 确保所有分类都有必需的字段
+        const processedItems = result.items.map(item => ({
+          ...item,
+          created: item.created || new Date().toISOString(),
+          updated: item.updated || new Date().toISOString()
+        }));
+        
         return {
-          items: result.items,
+          items: processedItems,
           pagination: {
             page: result.page,
             perPage: result.perPage,
@@ -57,9 +64,16 @@ export const categoryResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('product_categories').getOne<ProductCategory>(id, {
+        const category = await pb.collection('product_categories').getOne<ProductCategory>(id, {
           expand: 'parent'
         });
+        
+        // 确保分类有必需的字段
+        return {
+          ...category,
+          created: category.created || new Date().toISOString(),
+          updated: category.updated || new Date().toISOString()
+        };
       } catch (error) {
         console.error('Failed to fetch product category:', error);
         return null;
@@ -77,17 +91,24 @@ export const categoryResolvers = {
           sort: 'sort_order,name'
         });
         
+        // 确保所有分类都有必需的字段
+        const processedCategories = categories.map(item => ({
+          ...item,
+          created: item.created || new Date().toISOString(),
+          updated: item.updated || new Date().toISOString()
+        }));
+        
         // 构建树结构
         const categoryMap = new Map<string, ProductCategory>();
         const rootCategories: ProductCategory[] = [];
         
         // 第一次遍历：创建映射
-        categories.forEach(category => {
+        processedCategories.forEach(category => {
           categoryMap.set(category.id, { ...category, children: [] });
         });
         
         // 第二次遍历：构建树结构
-        categories.forEach(category => {
+        processedCategories.forEach(category => {
           const categoryWithChildren = categoryMap.get(category.id)!;
           if (category.parent_id) {
             const parent = categoryMap.get(category.parent_id);
@@ -113,7 +134,14 @@ export const categoryResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('product_categories').create<ProductCategory>(input);
+        const category = await pb.collection('product_categories').create<ProductCategory>(input);
+        
+        // 确保有必需的字段
+        return {
+          ...category,
+          created: category.created || new Date().toISOString(),
+          updated: category.updated || new Date().toISOString()
+        };
       } catch (error) {
         console.error('Failed to create product category:', error);
         throw new Error('Failed to create product category');
@@ -124,7 +152,14 @@ export const categoryResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('product_categories').update<ProductCategory>(id, input);
+        const category = await pb.collection('product_categories').update<ProductCategory>(id, input);
+        
+        // 确保有必需的字段
+        return {
+          ...category,
+          created: category.created || new Date().toISOString(),
+          updated: category.updated || new Date().toISOString()
+        };
       } catch (error) {
         console.error('Failed to update product category:', error);
         throw new Error('Failed to update product category');
@@ -171,7 +206,14 @@ export const categoryResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('product_categories').getOne<ProductCategory>(parent.parent_id);
+        const category = await pb.collection('product_categories').getOne<ProductCategory>(parent.parent_id);
+        
+        // 确保有必需的字段
+        return {
+          ...category,
+          created: category.created || new Date().toISOString(),
+          updated: category.updated || new Date().toISOString()
+        };
       } catch (error) {
         console.error('Failed to fetch parent category:', error);
         return null;
@@ -182,10 +224,17 @@ export const categoryResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('product_categories').getFullList<ProductCategory>({
+        const categories = await pb.collection('product_categories').getFullList<ProductCategory>({
           filter: `parent_id="${parent.id}"`,
           sort: 'sort_order,name'
         });
+        
+        // 确保所有子分类都有必需的字段
+        return categories.map(item => ({
+          ...item,
+          created: item.created || new Date().toISOString(),
+          updated: item.updated || new Date().toISOString()
+        }));
       } catch (error) {
         console.error('Failed to fetch child categories:', error);
         return [];

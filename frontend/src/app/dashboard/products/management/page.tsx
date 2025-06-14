@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation } from '@apollo/client'
 import { 
   Table, 
@@ -140,7 +140,11 @@ export default function ProductManagementPage() {
         perPage,
         ...cleanFilters(filters)
       }
-    }
+    },
+    // 确保当page或filters变化时重新获取数据
+    fetchPolicy: 'cache-and-network',
+    // 监听变量变化
+    notifyOnNetworkStatusChange: true
   })
 
   const { data: categoriesData } = useQuery(GET_PRODUCT_CATEGORIES)
@@ -154,6 +158,11 @@ export default function ProductManagementPage() {
   const pagination = productsData?.products?.pagination
   const categories = categoriesData?.productCategories?.items || []
   const brands = brandsData?.brands?.items || []
+
+  // 监听page和filters变化，强制重新获取数据
+  useEffect(() => {
+    refetch()
+  }, [page, filters, refetch])
 
   // Handle filters
   const handleFilterChange = (key: string, value: string) => {
@@ -485,7 +494,7 @@ export default function ProductManagementPage() {
                   </TableCell>
                   <TableCell>
                     <Package className="w-4 h-4 inline mr-1" />
-                    {product.sort_order || 0}
+                    {(product as any).sort_order || 0}
                   </TableCell>
                   <TableCell>
                     <div>

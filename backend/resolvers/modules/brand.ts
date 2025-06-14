@@ -33,8 +33,15 @@ export const brandResolvers = {
         
         const result = await pb.collection('brands').getList(page, perPage, options);
         
+        // 确保所有品牌都有必需的字段
+        const processedItems = result.items.map(item => ({
+          ...item,
+          created: item.created || new Date().toISOString(),
+          updated: item.updated || new Date().toISOString()
+        }));
+        
         return {
-          items: result.items,
+          items: processedItems,
           pagination: {
             page: result.page,
             perPage: result.perPage,
@@ -52,7 +59,14 @@ export const brandResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('brands').getOne(id);
+        const brand = await pb.collection('brands').getOne(id);
+        
+        // 确保品牌有必需的字段
+        return {
+          ...brand,
+          created: brand.created || new Date().toISOString(),
+          updated: brand.updated || new Date().toISOString()
+        };
       } catch (error) {
         console.error('Failed to fetch brand:', error);
         return null;
@@ -65,7 +79,14 @@ export const brandResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('brands').create(input);
+        const brand = await pb.collection('brands').create(input);
+        
+        // 确保有必需的字段
+        return {
+          ...brand,
+          created: brand.created || new Date().toISOString(),
+          updated: brand.updated || new Date().toISOString()
+        };
       } catch (error) {
         console.error('Failed to create brand:', error);
         throw new Error('Failed to create brand');
@@ -76,7 +97,14 @@ export const brandResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('brands').update(id, input);
+        const brand = await pb.collection('brands').update(id, input);
+        
+        // 确保有必需的字段
+        return {
+          ...brand,
+          created: brand.created || new Date().toISOString(),
+          updated: brand.updated || new Date().toISOString()
+        };
       } catch (error) {
         console.error('Failed to update brand:', error);
         throw new Error('Failed to update brand');
