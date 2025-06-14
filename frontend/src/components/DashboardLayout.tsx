@@ -22,7 +22,6 @@ import {
   Menu,
   X,
   Bell,
-  Search,
   Zap,
   Languages,
   ShoppingCart,
@@ -34,6 +33,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
+import { GlobalSearch } from '@/components/GlobalSearch';
 
 interface NavigationItem {
   name: string;
@@ -237,15 +237,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Menu className="h-5 w-5" />
               </Button>
               
+              {/* 全局搜索组件 */}
               <div className="hidden sm:flex items-center ml-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder={t('common.search') + '...'}
-                    className="pl-10 pr-4 py-2 w-64 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-                  />
-                </div>
+                <GlobalSearch placeholder={t('common.search') + '...'} />
               </div>
             </div>
 

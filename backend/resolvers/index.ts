@@ -24,6 +24,7 @@ import { settingResolvers } from './modules/setting.ts';
 import { categoryResolvers } from './modules/category.ts';
 import { brandResolvers } from './modules/brand.ts';
 import { productTypeResolvers } from './modules/product-type.ts';
+import { globalSearchResolvers } from './modules/global-search.ts';
 
 // JSON 标量类型解析器
 const JSONScalar = {
@@ -53,6 +54,7 @@ export const resolvers = {
     ...categoryResolvers.Query,
     ...brandResolvers.Query,
     ...productTypeResolvers.Query,
+    ...globalSearchResolvers.Query,
   },
 
   // 变更resolvers
