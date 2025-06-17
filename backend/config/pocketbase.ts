@@ -4,7 +4,6 @@ import PocketBase from 'pocketbase';
 const POCKETBASE_URL = Deno.env.get('POCKETBASE_URL') || 'http://127.0.0.1:8090';
 const ADMIN_EMAIL = Deno.env.get('POCKETBASE_ADMIN_EMAIL') || 'ahukpyu@outlook.com';
 const ADMIN_PASSWORD = Deno.env.get('POCKETBASE_ADMIN_PASSWORD') || 'kpyu1512..@';
-
 // 请求队列管理器
 class RequestQueue {
   private queue: Array<() => Promise<any>> = [];

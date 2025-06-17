@@ -1,3 +1,6 @@
+// 基础类型定义
+import { baseTypeDefs } from './base-types.ts';
+
 // 管理后台 Schema 模块
 import {
   productTypeDefs,
@@ -19,6 +22,9 @@ import {
 
 // 合并所有模块的 typeDefs
 export const typeDefs = [
+  // 基础类型定义（必须放在最前面）
+  baseTypeDefs,
+  
   // 公共模块
   commonTypeDefs,
   authTypeDefs,
