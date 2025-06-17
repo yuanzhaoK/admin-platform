@@ -23,6 +23,7 @@ export const baseTypeDefs = `
     page: Int!
     perPage: Int!
     total: Int!
+    totalItems: Int!
     totalPages: Int!
     hasNext: Boolean!
     hasPrev: Boolean!

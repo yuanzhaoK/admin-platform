@@ -43,8 +43,11 @@ export const orderResolvers = {
           pagination: {
             page: result.page,
             perPage: result.perPage,
+            total: result.totalItems,
+            totalItems: result.totalItems,
             totalPages: result.totalPages,
-            totalItems: result.totalItems
+            hasNext: result.page < result.totalPages,
+            hasPrev: result.page > 1
           }
         };
       } catch (error) {

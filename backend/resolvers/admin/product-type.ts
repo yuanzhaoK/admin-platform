@@ -49,8 +49,11 @@ export const productTypeResolvers = {
           pagination: {
             page: result.page || (query?.page || 1),
             perPage: result.perPage || (query?.perPage || 20),
+            total: result.totalItems || 0,
+            totalItems: result.totalItems || 0,
             totalPages: result.totalPages || 1,
-            totalItems: result.totalItems || 0
+            hasNext: (result.page || 1) < (result.totalPages || 1),
+            hasPrev: (result.page || 1) > 1
           }
         };
       } catch (error) {
