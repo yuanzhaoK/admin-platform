@@ -1,0 +1,833 @@
+[
+  {
+    "id": "home_banners",
+    "name": "home_banners",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "title",
+        "name": "title",
+        "type": "text",
+        "system": false,
+        "required": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "id": "image",
+        "name": "image",
+        "type": "file",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "mimeTypes": ["image/jpeg", "image/png", "image/webp"]
+        }
+      },
+      {
+        "id": "link_type",
+        "name": "link_type",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["none", "url", "product", "category", "page"]
+        }
+      },
+      {
+        "id": "link_value",
+        "name": "link_value",
+        "type": "text",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "sort_order",
+        "name": "sort_order",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "options": {
+          "min": 0,
+          "max": null
+        }
+      },
+      {
+        "id": "is_active",
+        "name": "is_active",
+        "type": "bool",
+        "system": false,
+        "required": false,
+        "options": {}
+      },
+      {
+        "id": "start_time",
+        "name": "start_time",
+        "type": "date",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "end_time",
+        "name": "end_time",
+        "type": "date",
+        "system": false,
+        "required": false
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_home_banners_sort ON home_banners (sort_order)",
+      "CREATE INDEX idx_home_banners_active ON home_banners (is_active)"
+    ],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "options": {}
+  },
+  {
+    "id": "home_packages",
+    "name": "home_packages",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "name",
+        "name": "name",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "subtitle",
+        "name": "subtitle",
+        "type": "text",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "description",
+        "name": "description",
+        "type": "editor",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "price",
+        "name": "price",
+        "type": "number",
+        "system": false,
+        "required": true,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "id": "market_price",
+        "name": "market_price",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "id": "cover_image",
+        "name": "cover_image",
+        "type": "file",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "mimeTypes": ["image/jpeg", "image/png", "image/webp"]
+        }
+      },
+      {
+        "id": "images",
+        "name": "images",
+        "type": "file",
+        "system": false,
+        "required": false,
+        "options": {
+          "maxSelect": 10,
+          "maxSize": 5242880,
+          "mimeTypes": ["image/jpeg", "image/png", "image/webp"]
+        }
+      },
+      {
+        "id": "category",
+        "name": "category",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "style_type",
+        "name": "style_type",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["modern", "nordic", "chinese", "european", "american", "japanese"]
+        }
+      },
+      {
+        "id": "products",
+        "name": "products",
+        "type": "relation",
+        "system": false,
+        "required": false,
+        "options": {
+          "collectionId": "products",
+          "cascadeDelete": false,
+          "minSelect": null,
+          "maxSelect": null,
+          "displayFields": ["name"]
+        }
+      },
+      {
+        "id": "is_recommended",
+        "name": "is_recommended",
+        "type": "bool",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "is_featured",
+        "name": "is_featured",
+        "type": "bool",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "tags",
+        "name": "tags",
+        "type": "json",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "sort_order",
+        "name": "sort_order",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "id": "status",
+        "name": "status",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["active", "inactive", "draft"]
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_home_packages_status ON home_packages (status)",
+      "CREATE INDEX idx_home_packages_featured ON home_packages (is_featured)",
+      "CREATE INDEX idx_home_packages_sort ON home_packages (sort_order)"
+    ],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "options": {}
+  },
+  {
+    "id": "cart_items",
+    "name": "cart_items",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "user_id",
+        "name": "user_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["email"]
+        }
+      },
+      {
+        "id": "product_id",
+        "name": "product_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "products",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["name"]
+        }
+      },
+      {
+        "id": "quantity",
+        "name": "quantity",
+        "type": "number",
+        "system": false,
+        "required": true,
+        "options": {
+          "min": 1
+        }
+      },
+      {
+        "id": "selected",
+        "name": "selected",
+        "type": "bool",
+        "system": false,
+        "required": false,
+        "options": {}
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_cart_items_user_product ON cart_items (user_id, product_id)",
+      "CREATE INDEX idx_cart_items_user ON cart_items (user_id)"
+    ],
+    "listRule": "@request.auth.id = user_id",
+    "viewRule": "@request.auth.id = user_id",
+    "createRule": "@request.auth.id = user_id",
+    "updateRule": "@request.auth.id = user_id",
+    "deleteRule": "@request.auth.id = user_id",
+    "options": {}
+  },
+  {
+    "id": "favorites",
+    "name": "favorites",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "user_id",
+        "name": "user_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["email"]
+        }
+      },
+      {
+        "id": "product_id",
+        "name": "product_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "products",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["name"]
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX idx_favorites_user_product ON favorites (user_id, product_id)",
+      "CREATE INDEX idx_favorites_user ON favorites (user_id)"
+    ],
+    "listRule": "@request.auth.id = user_id",
+    "viewRule": "@request.auth.id = user_id",
+    "createRule": "@request.auth.id = user_id",
+    "updateRule": "@request.auth.id = user_id",
+    "deleteRule": "@request.auth.id = user_id",
+    "options": {}
+  },
+  {
+    "id": "addresses",
+    "name": "addresses",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "user_id",
+        "name": "user_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["email"]
+        }
+      },
+      {
+        "id": "name",
+        "name": "name",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "phone",
+        "name": "phone",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "province",
+        "name": "province",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "city",
+        "name": "city",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "district",
+        "name": "district",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "address",
+        "name": "address",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "postal_code",
+        "name": "postal_code",
+        "type": "text",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "is_default",
+        "name": "is_default",
+        "type": "bool",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "tag",
+        "name": "tag",
+        "type": "select",
+        "system": false,
+        "required": false,
+        "options": {
+          "maxSelect": 1,
+          "values": ["home", "company", "school", "other"]
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_addresses_user ON addresses (user_id)",
+      "CREATE INDEX idx_addresses_default ON addresses (user_id, is_default)"
+    ],
+    "listRule": "@request.auth.id = user_id",
+    "viewRule": "@request.auth.id = user_id",
+    "createRule": "@request.auth.id = user_id",
+    "updateRule": "@request.auth.id = user_id",
+    "deleteRule": "@request.auth.id = user_id",
+    "options": {}
+  },
+  {
+    "id": "search_history",
+    "name": "search_history",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "user_id",
+        "name": "user_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["email"]
+        }
+      },
+      {
+        "id": "keyword",
+        "name": "keyword",
+        "type": "text",
+        "system": false,
+        "required": true
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_search_history_user ON search_history (user_id)",
+      "CREATE INDEX idx_search_history_keyword ON search_history (keyword)"
+    ],
+    "listRule": "@request.auth.id = user_id",
+    "viewRule": "@request.auth.id = user_id",
+    "createRule": "@request.auth.id = user_id",
+    "updateRule": "@request.auth.id = user_id",
+    "deleteRule": "@request.auth.id = user_id",
+    "options": {}
+  },
+  {
+    "id": "view_history",
+    "name": "view_history",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "user_id",
+        "name": "user_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["email"]
+        }
+      },
+      {
+        "id": "product_id",
+        "name": "product_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "products",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["name"]
+        }
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_view_history_user ON view_history (user_id)",
+      "CREATE INDEX idx_view_history_user_created ON view_history (user_id, created)"
+    ],
+    "listRule": "@request.auth.id = user_id",
+    "viewRule": "@request.auth.id = user_id",
+    "createRule": "@request.auth.id = user_id",
+    "updateRule": "@request.auth.id = user_id",
+    "deleteRule": "@request.auth.id = user_id",
+    "options": {}
+  },
+  {
+    "id": "coupons",
+    "name": "coupons",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "name",
+        "name": "name",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "type",
+        "name": "type",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["fixed", "percent"]
+        }
+      },
+      {
+        "id": "value",
+        "name": "value",
+        "type": "number",
+        "system": false,
+        "required": true,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "id": "min_amount",
+        "name": "min_amount",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "id": "max_discount",
+        "name": "max_discount",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "id": "description",
+        "name": "description",
+        "type": "text",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "start_time",
+        "name": "start_time",
+        "type": "date",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "end_time",
+        "name": "end_time",
+        "type": "date",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "usage_limit",
+        "name": "usage_limit",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "id": "used_count",
+        "name": "used_count",
+        "type": "number",
+        "system": false,
+        "required": false,
+        "options": {
+          "min": 0
+        }
+      },
+      {
+        "id": "status",
+        "name": "status",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["active", "inactive", "expired"]
+        }
+      },
+      {
+        "id": "applicable_categories",
+        "name": "applicable_categories",
+        "type": "json",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "applicable_products",
+        "name": "applicable_products",
+        "type": "json",
+        "system": false,
+        "required": false
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_coupons_status ON coupons (status)",
+      "CREATE INDEX idx_coupons_time ON coupons (start_time, end_time)"
+    ],
+    "listRule": null,
+    "viewRule": null,
+    "createRule": null,
+    "updateRule": null,
+    "deleteRule": null,
+    "options": {}
+  },
+  {
+    "id": "user_coupons",
+    "name": "user_coupons",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "user_id",
+        "name": "user_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["email"]
+        }
+      },
+      {
+        "id": "coupon_id",
+        "name": "coupon_id",
+        "type": "relation",
+        "system": false,
+        "required": true,
+        "options": {
+          "collectionId": "coupons",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["name"]
+        }
+      },
+      {
+        "id": "status",
+        "name": "status",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["unused", "used", "expired"]
+        }
+      },
+      {
+        "id": "used_at",
+        "name": "used_at",
+        "type": "date",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "order_id",
+        "name": "order_id",
+        "type": "text",
+        "system": false,
+        "required": false
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_user_coupons_user ON user_coupons (user_id)",
+      "CREATE INDEX idx_user_coupons_status ON user_coupons (user_id, status)"
+    ],
+    "listRule": "@request.auth.id = user_id",
+    "viewRule": "@request.auth.id = user_id",
+    "createRule": "@request.auth.id = user_id",
+    "updateRule": "@request.auth.id = user_id",
+    "deleteRule": "@request.auth.id = user_id",
+    "options": {}
+  },
+  {
+    "id": "notifications",
+    "name": "notifications",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "id": "user_id",
+        "name": "user_id",
+        "type": "relation",
+        "system": false,
+        "required": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": true,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": ["email"]
+        }
+      },
+      {
+        "id": "title",
+        "name": "title",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "content",
+        "name": "content",
+        "type": "text",
+        "system": false,
+        "required": true
+      },
+      {
+        "id": "type",
+        "name": "type",
+        "type": "select",
+        "system": false,
+        "required": true,
+        "options": {
+          "maxSelect": 1,
+          "values": ["system", "order", "promotion", "announcement"]
+        }
+      },
+      {
+        "id": "is_read",
+        "name": "is_read",
+        "type": "bool",
+        "system": false,
+        "required": false
+      },
+      {
+        "id": "link_type",
+        "name": "link_type",
+        "type": "select",
+        "system": false,
+        "required": false,
+        "options": {
+          "maxSelect": 1,
+          "values": ["none", "url", "product", "order", "page"]
+        }
+      },
+      {
+        "id": "link_value",
+        "name": "link_value",
+        "type": "text",
+        "system": false,
+        "required": false
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX idx_notifications_user ON notifications (user_id)",
+      "CREATE INDEX idx_notifications_read ON notifications (user_id, is_read)",
+      "CREATE INDEX idx_notifications_created ON notifications (created)"
+    ],
+    "listRule": "@request.auth.id = user_id || user_id = ''",
+    "viewRule": "@request.auth.id = user_id || user_id = ''",
+    "createRule": null,
+    "updateRule": "@request.auth.id = user_id",
+    "deleteRule": null,
+    "options": {}
+  }
+] 

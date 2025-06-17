@@ -15,62 +15,32 @@ import type {
   ProductType
 } from '../types/index.ts';
 import { scalars } from '../scalars/index.ts';
-import { rootResolvers } from './modules/root.ts';
-import { userResolvers } from './modules/user.ts';
-import { productResolvers } from './modules/product.ts';
-import { orderResolvers } from './modules/order.ts';
-import { refundResolvers } from './modules/refund.ts';
-import { settingResolvers } from './modules/setting.ts';
-import { categoryResolvers } from './modules/category.ts';
-import { brandResolvers } from './modules/brand.ts';
-import { productTypeResolvers } from './modules/product-type.ts';
-import { globalSearchResolvers } from './modules/global-search.ts';
 
-// JSON 标量类型解析器
-const JSONScalar = {
-  serialize: (value: any) => value,
-  parseValue: (value: any) => value,
-  parseLiteral: (ast: any) => {
-    if (ast.kind === 'StringValue') {
-      return JSON.parse(ast.value);
-    }
-    return null;
-  },
-};
+// 管理后台 Resolvers
+import { adminResolvers } from './admin/index.ts';
+
+// 移动端 Resolvers  
+import { mobileResolvers } from './mobile/index.ts';
 
 // 合并所有resolvers
 export const resolvers = {
   // 标量类型
   ...scalars,
 
-  // 查询resolvers
+  // 查询resolvers - 合并管理后台和移动端
   Query: {
-    ...rootResolvers.Query,
-    ...userResolvers.Query,
-    ...productResolvers.Query,
-    ...orderResolvers.Query,
-    ...refundResolvers.Query,
-    ...settingResolvers.Query,
-    ...categoryResolvers.Query,
-    ...brandResolvers.Query,
-    ...productTypeResolvers.Query,
-    ...globalSearchResolvers.Query,
+    ...adminResolvers.Query,
+    ...mobileResolvers.Query,
   },
 
-  // 变更resolvers
+  // 变更resolvers - 合并管理后台和移动端
   Mutation: {
-    ...userResolvers.Mutation,
-    ...productResolvers.Mutation,
-    ...orderResolvers.Mutation,
-    ...refundResolvers.Mutation,
-    ...settingResolvers.Mutation,
-    ...categoryResolvers.Mutation,
-    ...brandResolvers.Mutation,
-    ...productTypeResolvers.Mutation,
+    ...adminResolvers.Mutation,
+    ...mobileResolvers.Mutation,
   },
 
-  // 类型解析器
-  ProductCategory: categoryResolvers.ProductCategory,
+  // 类型解析器 - 从管理后台继承
+  ...(adminResolvers.ProductCategory && { ProductCategory: adminResolvers.ProductCategory }),
   
   // Product 关联字段解析器
   Product: {

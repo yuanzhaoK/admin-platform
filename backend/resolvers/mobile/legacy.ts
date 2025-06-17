@@ -1,0 +1,652 @@
+import { GraphQLError } from "https://deno.land/x/graphql_deno@v15.0.0/mod.ts";
+import { pocketbaseClient } from '../../config/pocketbase.ts';
+
+export const mobileResolvers = {
+  Query: {
+    // 首页数据
+    homeData: async (_parent: any, _args: any, context: any) => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        
+        // 获取轮播图
+        let banners = [];
+        try {
+          banners = await pb.collection('home_banners').getFullList({
+            sort: 'sort_order',
+            filter: 'is_active=true',
+          });
+        } catch (e) {
+          console.log('home_banners collection not found');
+        }
+
+        // 获取首页套装
+        let packages = [];
+        try {
+          packages = await pb.collection('home_packages').getFullList({
+            sort: '-is_featured,sort_order',
+            filter: 'status="active"',
+            expand: 'products',
+          });
+        } catch (e) {
+          console.log('home_packages collection not found');
+        }
+
+        // 获取特色产品 - 使用现有产品数据
+        let featuredProducts = [];
+        try {
+          featuredProducts = await pb.collection('products').getFullList({
+            sort: '-created',
+            perPage: 10,
+          });
+        } catch (e) {
+          console.log('Error fetching products');
+        }
+
+        // 获取分类 - 使用现有分类数据
+        let categories = [];
+        try {
+          categories = await pb.collection('product_categories').getFullList({
+            sort: 'created',
+            perPage: 8,
+          });
+        } catch (e) {
+          console.log('product_categories collection not found');
+        }
+
+        // 获取推荐产品 - 使用现有产品数据
+        let recommendations = [];
+        try {
+          recommendations = await pb.collection('products').getFullList({
+            sort: '-created',
+            perPage: 5,
+          });
+        } catch (e) {
+          // 如果推荐产品查询失败，使用特色产品
+          recommendations = featuredProducts.slice(0, 5);
+        }
+
+        return {
+          banners,
+          packages,
+          featured_products: featuredProducts,
+          categories,
+          recommendations,
+        };
+      } catch (error) {
+        console.error('Error fetching home data:', error);
+        throw new GraphQLError('获取首页数据失败');
+      }
+    },
+
+    // 分类页数据
+    categoryData: async (_parent: any, args: any, context: any) => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        const { category_id } = args;
+
+        // 获取分类列表
+        const categories = await pb.collection('product_categories').getFullList({
+          sort: 'sort_order',
+          filter: 'status="active"',
+        });
+
+        // 获取产品列表
+        let filter = 'status="active"';
+        if (category_id) {
+          filter += ` && category_id="${category_id}"`;
+        }
+
+        const products = await pb.collection('products').getList(1, 20, {
+          sort: '-created',
+          filter,
+        });
+
+        // 获取品牌列表
+        const brands = await pb.collection('brands').getFullList({
+          sort: 'name',
+          filter: 'status="active"',
+        });
+
+        // 价格区间
+        const priceRanges = [
+          { label: '0-100', min: 0, max: 100 },
+          { label: '100-500', min: 100, max: 500 },
+          { label: '500-1000', min: 500, max: 1000 },
+          { label: '1000-5000', min: 1000, max: 5000 },
+          { label: '5000+', min: 5000, max: 999999 },
+        ];
+
+        return {
+          categories,
+          products: {
+            items: products.items,
+            pagination: {
+              page: products.page,
+              perPage: products.perPage,
+              totalPages: products.totalPages,
+              totalItems: products.totalItems,
+            },
+          },
+          filters: {
+            brands,
+            price_ranges: priceRanges,
+            attributes: {},
+          },
+        };
+      } catch (error) {
+        console.error('Error fetching category data:', error);
+        throw new GraphQLError('获取分类数据失败');
+      }
+    },
+
+    // 移动端产品查询
+    mobileProducts: async (_parent: any, args: any, context: any) => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        const { query = {} } = args;
+        const { page = 1, perPage = 20, category_id, brand_id, keyword, price_min, price_max, sort_by = 'created', sort_order = 'desc' } = query;
+
+        let filter = 'status="active"';
+        
+        if (category_id) {
+          filter += ` && category_id="${category_id}"`;
+        }
+        
+        if (brand_id) {
+          filter += ` && brand_id="${brand_id}"`;
+        }
+        
+        if (keyword) {
+          filter += ` && (name~"${keyword}" || description~"${keyword}")`;
+        }
+        
+        if (price_min !== undefined) {
+          filter += ` && price>=${price_min}`;
+        }
+        
+        if (price_max !== undefined) {
+          filter += ` && price<=${price_max}`;
+        }
+
+        const sortString = sort_order === 'desc' ? `-${sort_by}` : sort_by;
+
+        const result = await pb.collection('products').getList(page, perPage, {
+          sort: sortString,
+          filter,
+          expand: 'category,brand',
+        });
+
+        return {
+          items: result.items,
+          pagination: {
+            page: result.page,
+            perPage: result.perPage,
+            totalPages: result.totalPages,
+            totalItems: result.totalItems,
+          },
+        };
+      } catch (error) {
+        console.error('Error fetching mobile products:', error);
+        throw new GraphQLError('获取产品列表失败');
+      }
+    },
+
+    // 产品详情
+    productDetail: async (_parent: any, args: any, context: any) => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        const { id } = args;
+
+        const product = await pb.collection('products').getOne(id, {
+          expand: 'category,brand,product_type',
+        });
+
+        // 增加浏览量
+        await pb.collection('products').update(id, {
+          view_count: (product.view_count || 0) + 1,
+        });
+
+        return product;
+      } catch (error) {
+        console.error('Error fetching product detail:', error);
+        throw new GraphQLError('获取产品详情失败');
+      }
+    },
+
+    // 购物车
+    cart: async (_parent: any, _args: any, context: any) => {
+      try {
+        const { user } = context;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const cartItems = await pb.collection('cart_items').getFullList({
+          sort: '-created',
+          filter: `user_id="${user.id}"`,
+          expand: 'product',
+        });
+
+        const totalItems = cartItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
+        const totalAmount = cartItems.reduce((sum: number, item: any) => sum + (item.product.price * item.quantity), 0);
+        const selectedAmount = cartItems
+          .filter((item: any) => item.selected)
+          .reduce((sum: number, item: any) => sum + (item.product.price * item.quantity), 0);
+
+        return {
+          items: cartItems,
+          total_items: totalItems,
+          total_amount: totalAmount,
+          selected_amount: selectedAmount,
+        };
+      } catch (error) {
+        console.error('Error fetching cart:', error);
+        throw new GraphQLError('获取购物车失败');
+      }
+    },
+
+    // 收藏列表
+    favorites: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { page = 1, perPage = 20 } = args;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const result = await pb.collection('favorites').getList(page, perPage, {
+          sort: '-created',
+          filter: `user_id="${user.id}"`,
+          expand: 'product',
+        });
+
+        return {
+          items: result.items,
+          pagination: {
+            page: result.page,
+            perPage: result.perPage,
+            totalPages: result.totalPages,
+            totalItems: result.totalItems,
+          },
+        };
+      } catch (error) {
+        console.error('Error fetching favorites:', error);
+        throw new GraphQLError('获取收藏列表失败');
+      }
+    },
+
+    // 是否收藏
+    isFavorite: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { product_id } = args;
+        
+        if (!user) {
+          return false;
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const favorites = await pb.collection('favorites').getFullList({
+          filter: `user_id="${user.id}" && product_id="${product_id}"`,
+        });
+
+        return favorites.length > 0;
+      } catch (error) {
+        console.error('Error checking favorite:', error);
+        return false;
+      }
+    },
+
+    // 地址列表
+    addresses: async (_parent: any, _args: any, context: any) => {
+      try {
+        const { user } = context;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const addresses = await pb.collection('addresses').getFullList({
+          sort: '-is_default,-created',
+          filter: `user_id="${user.id}"`,
+        });
+
+        return addresses;
+      } catch (error) {
+        console.error('Error fetching addresses:', error);
+        throw new GraphQLError('获取地址列表失败');
+      }
+    },
+
+    // 默认地址
+    defaultAddress: async (_parent: any, _args: any, context: any) => {
+      try {
+        const { user } = context;
+        
+        if (!user) {
+          return null;
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const addresses = await pb.collection('addresses').getFullList({
+          filter: `user_id="${user.id}" && is_default=true`,
+        });
+
+        return addresses.length > 0 ? addresses[0] : null;
+      } catch (error) {
+        console.error('Error fetching default address:', error);
+        return null;
+      }
+    },
+
+    // 移动端用户信息
+    mobileProfile: async (_parent: any, _args: any, context: any) => {
+      try {
+        const { user } = context;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const userProfile = await pb.collection('users').getOne(user.id);
+        
+        return {
+          ...userProfile,
+          points: userProfile.points || 0,
+          growth_value: userProfile.growth_value || 0,
+          level: userProfile.level || 1,
+          vip_status: userProfile.vip_status || 'normal',
+          balance: userProfile.balance || 0,
+        };
+      } catch (error) {
+        console.error('Error fetching mobile profile:', error);
+        throw new GraphQLError('获取用户信息失败');
+      }
+    },
+  },
+
+  Mutation: {
+    // 添加到购物车
+    addToCart: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { input } = args;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        // 检查是否已存在
+        const existingItems = await pb.collection('cart_items').getFullList({
+          filter: `user_id="${user.id}" && product_id="${input.product_id}"`,
+        });
+
+        if (existingItems.length > 0) {
+          // 更新数量
+          const updatedItem = await pb.collection('cart_items').update(existingItems[0].id, {
+            quantity: existingItems[0].quantity + input.quantity,
+          });
+          
+          return await pb.collection('cart_items').getOne(updatedItem.id, {
+            expand: 'product',
+          });
+        } else {
+          // 创建新项
+          const newItem = await pb.collection('cart_items').create({
+            user_id: user.id,
+            product_id: input.product_id,
+            quantity: input.quantity,
+            selected: true,
+          });
+          
+          return await pb.collection('cart_items').getOne(newItem.id, {
+            expand: 'product',
+          });
+        }
+      } catch (error) {
+        console.error('Error adding to cart:', error);
+        throw new GraphQLError('添加到购物车失败');
+      }
+    },
+
+    // 更新购物车项
+    updateCartItem: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { id, input } = args;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const updatedItem = await pb.collection('cart_items').update(id, input);
+        
+        return await pb.collection('cart_items').getOne(updatedItem.id, {
+          expand: 'product',
+        });
+      } catch (error) {
+        console.error('Error updating cart item:', error);
+        throw new GraphQLError('更新购物车失败');
+      }
+    },
+
+    // 从购物车移除
+    removeFromCart: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { id } = args;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        await pb.collection('cart_items').delete(id);
+        return true;
+      } catch (error) {
+        console.error('Error removing from cart:', error);
+        throw new GraphQLError('从购物车移除失败');
+      }
+    },
+
+    // 清空购物车
+    clearCart: async (_parent: any, _args: any, context: any) => {
+      try {
+        const { user } = context;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const cartItems = await pb.collection('cart_items').getFullList({
+          filter: `user_id="${user.id}"`,
+        });
+
+        for (const item of cartItems) {
+          await pb.collection('cart_items').delete(item.id);
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Error clearing cart:', error);
+        throw new GraphQLError('清空购物车失败');
+      }
+    },
+
+    // 添加到收藏
+    addToFavorites: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { product_id } = args;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        // 检查是否已存在
+        const existing = await pb.collection('favorites').getFullList({
+          filter: `user_id="${user.id}" && product_id="${product_id}"`,
+        });
+
+        if (existing.length > 0) {
+          throw new GraphQLError('已经收藏过了');
+        }
+
+        const favorite = await pb.collection('favorites').create({
+          user_id: user.id,
+          product_id,
+        });
+
+        return await pb.collection('favorites').getOne(favorite.id, {
+          expand: 'product',
+        });
+      } catch (error) {
+        console.error('Error adding to favorites:', error);
+        throw new GraphQLError('添加收藏失败');
+      }
+    },
+
+    // 从收藏移除
+    removeFromFavorites: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { product_id } = args;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const favorites = await pb.collection('favorites').getFullList({
+          filter: `user_id="${user.id}" && product_id="${product_id}"`,
+        });
+
+        if (favorites.length > 0) {
+          await pb.collection('favorites').delete(favorites[0].id);
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Error removing from favorites:', error);
+        throw new GraphQLError('移除收藏失败');
+      }
+    },
+
+    // 创建地址
+    createAddress: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { input } = args;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        // 如果设置为默认地址，先取消其他默认地址
+        if (input.is_default) {
+          const existingAddresses = await pb.collection('addresses').getFullList({
+            filter: `user_id="${user.id}" && is_default=true`,
+          });
+
+          for (const addr of existingAddresses) {
+            await pb.collection('addresses').update(addr.id, {
+              is_default: false,
+            });
+          }
+        }
+
+        const address = await pb.collection('addresses').create({
+          ...input,
+          user_id: user.id,
+        });
+
+        return address;
+      } catch (error) {
+        console.error('Error creating address:', error);
+        throw new GraphQLError('创建地址失败');
+      }
+    },
+
+    // 创建移动端订单
+    createMobileOrder: async (_parent: any, args: any, context: any) => {
+      try {
+        const { user } = context;
+        const { input } = args;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        // 生成订单号
+        const orderNumber = `MB${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+
+        // 计算总金额
+        const totalAmount = input.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+
+        const order = await pb.collection('orders').create({
+          order_number: orderNumber,
+          user_id: user.id,
+          total_amount: totalAmount,
+          payment_method: input.payment_method,
+          order_source: 'mobile',
+          order_type: 'normal',
+          status: 'pending_payment',
+          items: input.items,
+          shipping_address: input.shipping_address,
+          notes: input.notes,
+        });
+
+        return await pb.collection('orders').getOne(order.id, {
+          expand: 'user_id',
+        });
+      } catch (error) {
+        console.error('Error creating mobile order:', error);
+        throw new GraphQLError('创建订单失败');
+      }
+    },
+  },
+}; 
