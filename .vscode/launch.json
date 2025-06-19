@@ -1,0 +1,58 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🚀 Debug Backend Server",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": [
+        "run",
+        "--inspect-wait"
+      ],
+      "program": "server.ts",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "outputCapture": "std"
+    },
+    {
+      "name": "🌐 Debug Proxy Server",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "runtimeExecutable": "deno",
+      "runtimeArgs": [
+        "run",
+        "--inspect-wait",
+        "--allow-all"
+      ],
+      "program": "proxy-server.ts",
+      "env": {
+        "POCKETBASE_URL": "http://localhost:8090",
+        "GRAPHQL_PORT": "8082",
+        "POCKETBASE_ADMIN_EMAIL": "ahukpyu@outlook.com",
+        "POCKETBASE_ADMIN_PASSWORD": "kpyu1512..@"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "outputCapture": "std"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "helperScript",
+      "description": "选择要调试的帮助脚本",
+      "type": "pickString",
+      "options": [
+        "help/import-product-types.ts",
+        "help/create-product-types-data.ts",
+        "help/import-brands.ts",
+        "help/import-categories.ts",
+        "download-pocketbase.ts",
+        "setup-admin.ts",
+        "clean.ts"
+      ]
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 {
-  "version": "4",
+  "version": "5",
   "specifiers": {
-    "npm:pocketbase@0.19": "0.19.0"
+    "npm:pocketbase@~0.26.1": "0.26.1"
   },
   "npm": {
-    "pocketbase@0.19.0": {
-      "integrity": "sha512-bUVZfVdD17K8GnwbeDMZPEdREVg2YE0F8uHPDC0zer4VtwXUqoPCCeudTy3fhUE7pfuKnfpuPxeBSYsBY3AGIQ=="
+    "pocketbase@0.26.1": {
+      "integrity": "sha512-fjcPDpxyqTZCwqGUTPUV7vssIsNMqHxk9GxbhxYHPEf18RqX2d9cpSqbbHk7aas30jqkgptuKfG7aY/Mytjj3g=="
     }
   },
   "redirects": {
@@ -14,7 +14,17 @@
   "remote": {
     "https://deno.land/std@0.208.0/assert/assert.ts": "9a97dad6d98c238938e7540736b826440ad8c1c1e54430ca4c4e623e585607ee",
     "https://deno.land/std@0.208.0/assert/assertion_error.ts": "4d0bde9b374dfbcbe8ac23f54f567b77024fb67dbb1906a852d67fe050d42f56",
+    "https://deno.land/std@0.208.0/async/_util.ts": "7fef43ce1949b36ebd092a735c4659f3e63411eb4a3ed0c381bdc6e8f261d835",
+    "https://deno.land/std@0.208.0/async/abortable.ts": "3c812da4ab0c4fff824485899ee4daf1f81d7165d0d12b739c6ba47865df5fba",
+    "https://deno.land/std@0.208.0/async/deadline.ts": "58f72a3cc0fcb731b2cc055ba046f4b5be3349ff6bf98f2e793c3b969354aab2",
+    "https://deno.land/std@0.208.0/async/debounce.ts": "adab11d04ca38d699444ac8a9d9856b4155e8dda2afd07ce78276c01ea5a4332",
+    "https://deno.land/std@0.208.0/async/deferred.ts": "a9d1e54c29a9ce8d949cc82e1e6cd901fa3f4d80ca8a2c5c6d2981d77ae798ca",
     "https://deno.land/std@0.208.0/async/delay.ts": "a6142eb44cdd856b645086af2b811b1fcce08ec06bb7d50969e6a872ee9b8659",
+    "https://deno.land/std@0.208.0/async/mod.ts": "f04344fa21738e5ad6bea37a6bfffd57c617c2d372bb9f9dcfd118a1b622e576",
+    "https://deno.land/std@0.208.0/async/mux_async_iterator.ts": "63b4fbbc2fa3832408e9b2f815b38a10a839821a7ffa131f348d6d2e479c4e5c",
+    "https://deno.land/std@0.208.0/async/pool.ts": "47c1841cfa9c036144943d11747ddd44064f5baf8cb7ece25473ba873c6aceb0",
+    "https://deno.land/std@0.208.0/async/retry.ts": "b80e37cf1701fe1edf1bec25440e0a870a320193c5dd1990ae0cadd0fc3ab886",
+    "https://deno.land/std@0.208.0/async/tee.ts": "47e42d35f622650b02234d43803d0383a89eb4387e1b83b5a40106d18ae36757",
     "https://deno.land/std@0.208.0/cli/parse_args.ts": "9bea02050b3f302e706871ff87ecfa3ad82cc34249adbe0dcddfaac75bdb48ff",
     "https://deno.land/std@0.208.0/encoding/_util.ts": "f368920189c4fe6592ab2e93bd7ded8f3065b84f95cd3e036a4a10a75649dcba",
     "https://deno.land/std@0.208.0/encoding/base64.ts": "81c0ecff5ccb402def58ca03d8bd245bd01da15a077d3362b568e991aa10f4d9",
@@ -312,7 +322,7 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:pocketbase@0.19"
+      "npm:pocketbase@~0.26.1"
     ]
   }
 }

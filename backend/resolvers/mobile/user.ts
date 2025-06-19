@@ -27,8 +27,8 @@ export const mobileUserResolvers = {
 
         console.log('✅ Login successful:', authData.record.email);
 
-        if (!pb.authStore.isValid || !pb.authStore.token || !pb.authStore.isAuthRecord) {
-          console.error('❌ Invalid response from PocketBase:', authData);
+        if (!pb.authStore.isValid || !pb.authStore.token) {
+          console.error('❌ Invalid response from PocketBase:', authData, pb.authStore);
           throw new Error('Invalid response from authentication service');
         }
 

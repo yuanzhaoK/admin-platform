@@ -192,11 +192,24 @@ export const appTypeDefs = `
     postal_code: String
   }
   
+  input MobileLoginInput {
+    identity: String!
+    password: String!
+  }
+  
+  type MobileLoginResponse {
+    token: String!
+    record: AppUser!
+  }
+  
   # ===== 移动端查询 =====
   
   extend type Query {
     # 首页数据
     appHomeData: AppHomeData!
+    
+    # 用户信息
+    appUser: AppUser!
     
     # 购物车
     appCart: Cart!
@@ -248,6 +261,9 @@ export const appTypeDefs = `
     # 通知操作
     appMarkNotificationRead(id: String!): Boolean!
     appMarkAllNotificationsRead: Boolean!
+
+    # 用户登录
+    mobileLogin(input: LoginInput!): MobileLoginResponse!
   }
   
   # 首页数据集合

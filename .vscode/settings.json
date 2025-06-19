@@ -1,0 +1,94 @@
+{
+  "deno.enable": true,
+  "deno.lint": true,
+  "deno.unstable": false,
+  "deno.suggest.completeFunctionCalls": true,
+  "deno.suggest.names": true,
+  "deno.suggest.paths": true,
+  "deno.suggest.autoImports": true,
+  "deno.suggest.imports.autoDiscover": true,
+  "deno.suggest.imports.hosts": {
+    "https://deno.land": true,
+    "https://cdn.nest.land": true,
+    "https://crux.land": true
+  },
+  "deno.codeLens.implementations": true,
+  "deno.codeLens.references": true,
+  "deno.codeLens.referencesAllFunctions": false,
+  "deno.codeLens.test": true,
+  "deno.codeLens.testArgs": [
+    "--allow-all",
+    "--no-check"
+  ],
+  
+  // 文件关联
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.formatOnSave": true
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.formatOnSave": true
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "denoland.vscode-deno", 
+    "editor.formatOnSave": true
+  },
+  
+  // 排除不需要Deno处理的目录
+  "deno.enablePaths": [
+    "./backend"
+  ],
+  "deno.disablePaths": [
+    "./frontend",
+    "./docs",
+    "./node_modules"
+  ],
+  
+  // 调试配置
+  "debug.internalConsoleOptions": "neverOpen",
+  "debug.showBreakpointsInOverviewRuler": true,
+  "debug.showInlineBreakpointCandidates": true,
+  
+  // 终端配置
+  "terminal.integrated.env.osx": {
+    "DENO_UNSTABLE": "false"
+  },
+  "terminal.integrated.env.linux": {
+    "DENO_UNSTABLE": "false"
+  },
+  "terminal.integrated.env.windows": {
+    "DENO_UNSTABLE": "false"
+  },
+  
+  // 文件监视排除
+  "files.watcherExclude": {
+    "**/backend/pb_data/**": true,
+    "**/backend/bin/**": true,
+    "**/backend/backups/**": true,
+    "**/node_modules/**": true,
+    "**/.git/**": true
+  },
+  
+  // 搜索排除
+  "search.exclude": {
+    "**/backend/pb_data/**": true,
+    "**/backend/bin/**": true,
+    "**/backend/backups/**": true,
+    "**/node_modules/**": true,
+    "**/.git/**": true,
+    "**/deno.lock": true
+  },
+  
+  // GraphQL支持
+  "graphql-config.load.configName": "graphql",
+  "graphql-config.load.legacy": true
+} 
