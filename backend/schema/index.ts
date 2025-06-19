@@ -15,20 +15,20 @@ import {
 
 // 移动端 Schema 模块
 import {
-  authTypeDefs,
-  commonTypeDefs,
   appTypeDefs,
 } from './mobile/index.ts';
+import { commonTypeDefs, authTypeDefs } from './common/index.ts';
+
 
 // 合并所有模块的 typeDefs
 export const typeDefs = [
   // 基础类型定义（必须放在最前面）
   baseTypeDefs,
-  
+
   // 公共模块
   commonTypeDefs,
   authTypeDefs,
-  
+
   // 管理后台模块
   userTypeDefs,
   productTypeDefs,
@@ -38,7 +38,7 @@ export const typeDefs = [
   orderTypeDefs,
   refundTypeDefs,
   settingTypeDefs,
-  
+
   // 移动端模块
   appTypeDefs,
 ].join('\n'); 
