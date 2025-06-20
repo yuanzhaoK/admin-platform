@@ -37,6 +37,96 @@
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "outputCapture": "std"
+    },
+    {
+      "name": "💻 Debug Frontend (Next.js)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "outputCapture": "std",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "🔍 Attach to Frontend (Next.js)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "address": "localhost",
+      "localRoot": "${workspaceFolder}/frontend",
+      "remoteRoot": "${workspaceFolder}/frontend",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "🌟 Debug Frontend Server-Side",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "program": "${workspaceFolder}/frontend/node_modules/.bin/next",
+      "args": [
+        "dev"
+      ],
+      "env": {
+        "NODE_OPTIONS": "--inspect"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "🔥 Debug Frontend Client-Side (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMapPathOverrides": {
+        "webpack://_N_E/./*": "${webRoot}/*",
+        "webpack:///./*": "${webRoot}/*"
+      },
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "🚀 Debug Full Stack",
+      "configurations": [
+        "🚀 Debug Backend Server",
+        "🌟 Debug Frontend Server-Side",
+        "🔥 Debug Frontend Client-Side (Chrome)"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "hidden": false,
+        "group": "fullstack",
+        "order": 1
+      }
+    },
+    {
+      "name": "💻 Debug Frontend Only",
+      "configurations": [
+        "🌟 Debug Frontend Server-Side",
+        "🔥 Debug Frontend Client-Side (Chrome)"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "hidden": false,
+        "group": "frontend",
+        "order": 2
+      }
     }
   ],
   "inputs": [

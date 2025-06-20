@@ -43,7 +43,7 @@ export const userResolvers = {
 
         console.log('✅ Login successful:', authData.record.email);
 
-        if (!pb.authStore.isValid || !pb.authStore.token || !pb.authStore.isAuthRecord) {
+        if (!pb.authStore.isValid || !pb.authStore.token) {
           console.error('❌ Invalid response from PocketBase:', authData);
           throw new Error('Invalid response from authentication service');
         }
