@@ -1,99 +1,106 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { useQuery, useMutation } from '@apollo/client'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { 
+import React, { useState } from "react";
+import { useMutation, useQuery } from "@apollo/client";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { 
-  Card,
-  CardContent,
-} from '@/components/ui/card'
-import { 
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { 
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { 
-  Edit, 
-  Trash2, 
-  Plus, 
-  Search,
-  MoreHorizontal,
+} from "@/components/ui/dropdown-menu";
+import {
   Building,
-  ExternalLink
-} from 'lucide-react'
-import Image from 'next/image'
-import { 
-  GET_BRANDS,
+  Edit,
+  ExternalLink,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
+import Image from "next/image";
+import {
   CREATE_BRAND,
+  DELETE_BRAND,
+  GET_BRANDS,
   UPDATE_BRAND,
-  DELETE_BRAND
-} from '@/lib/graphql/queries'
+} from "@/lib/graphql/queries";
 
 interface Brand {
-  id: string
-  name: string
-  description?: string
-  logo?: string
-  website?: string
-  sort_order?: number
-  status: 'active' | 'inactive'
-  created: string
-  updated: string
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  logo?: string;
+  website?: string;
+  country?: string;
+  founded_year?: number;
+  is_active: boolean;
+  sort_order?: number;
+  meta_title?: string;
+  meta_description?: string;
+  products_count?: number;
+  created: string;
+  updated: string;
 }
 
 interface BrandFormData {
-  name: string
-  description: string
-  logo: string
-  website: string
-  sort_order: number
-  status: 'active' | 'inactive'
+  name: string;
+  description: string;
+  logo: string;
+  website: string;
+  country: string;
+  founded_year: number;
+  sort_order: number;
+  is_active: boolean;
 }
 
 const initialFormData: BrandFormData = {
-  name: '',
-  description: '',
-  logo: '',
-  website: '',
+  name: "",
+  description: "",
+  logo: "",
+  website: "",
+  country: "",
+  founded_year: 0,
   sort_order: 0,
-  status: 'active'
-}
+  is_active: true,
+};
 
 export default function BrandsPage() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
-  const [formData, setFormData] = useState<BrandFormData>(initialFormData)
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const perPage = 20
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [formData, setFormData] = useState<BrandFormData>(initialFormData);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const perPage = 20;
 
   // GraphQL 查询
   const { data: brandsData, loading, error, refetch } = useQuery(GET_BRANDS, {
@@ -101,47 +108,52 @@ export default function BrandsPage() {
       query: {
         page,
         perPage,
-        search: search || undefined
-      }
-    }
-  })
+        search: search || undefined,
+      },
+    },
+  });
 
   // GraphQL 变更
-  const [createBrand, { loading: creating }] = useMutation(CREATE_BRAND)
-  const [updateBrand, { loading: updating }] = useMutation(UPDATE_BRAND)
-  const [deleteBrand] = useMutation(DELETE_BRAND)
+  const [createBrand, { loading: creating }] = useMutation(CREATE_BRAND);
+  const [updateBrand, { loading: updating }] = useMutation(UPDATE_BRAND);
+  const [deleteBrand] = useMutation(DELETE_BRAND);
 
-  const brands = brandsData?.brands?.items || []
-  const pagination = brandsData?.brands?.pagination
+  const brands = brandsData?.brands?.items || [];
+  const pagination = brandsData?.brands?.pagination;
 
   // 表单处理
-  const updateFormData = (field: keyof BrandFormData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+  const updateFormData = (
+    field: keyof BrandFormData,
+    value: string | number | boolean,
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleOpenDialog = (brand?: Brand) => {
     if (brand) {
-      setEditingBrand(brand)
+      setEditingBrand(brand);
       setFormData({
         name: brand.name,
-        description: brand.description || '',
-        logo: brand.logo || '',
-        website: brand.website || '',
+        description: brand.description || "",
+        logo: brand.logo || "",
+        website: brand.website || "",
+        country: brand.country || "",
+        founded_year: brand.founded_year || 0,
         sort_order: brand.sort_order || 0,
-        status: brand.status
-      })
+        is_active: brand.is_active,
+      });
     } else {
-      setEditingBrand(null)
-      setFormData(initialFormData)
+      setEditingBrand(null);
+      setFormData(initialFormData);
     }
-    setIsDialogOpen(true)
-  }
+    setIsDialogOpen(true);
+  };
 
   const handleCloseDialog = () => {
-    setIsDialogOpen(false)
-    setEditingBrand(null)
-    setFormData(initialFormData)
-  }
+    setIsDialogOpen(false);
+    setEditingBrand(null);
+    setFormData(initialFormData);
+  };
 
   const handleSubmit = async () => {
     try {
@@ -151,53 +163,53 @@ export default function BrandsPage() {
             id: editingBrand.id,
             input: {
               ...formData,
-              sort_order: Number(formData.sort_order)
-            }
-          }
-        })
+              sort_order: Number(formData.sort_order),
+            },
+          },
+        });
       } else {
         await createBrand({
           variables: {
             input: {
               ...formData,
-              sort_order: Number(formData.sort_order)
-            }
-          }
-        })
+              sort_order: Number(formData.sort_order),
+            },
+          },
+        });
       }
-      
-      refetch()
-      handleCloseDialog()
+
+      refetch();
+      handleCloseDialog();
     } catch (error) {
-      console.error('Error saving brand:', error)
+      console.error("Error saving brand:", error);
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('确定要删除这个品牌吗？此操作不可撤销。')) {
-      return
+    if (!confirm("确定要删除这个品牌吗？此操作不可撤销。")) {
+      return;
     }
 
     try {
       await deleteBrand({
-        variables: { id }
-      })
-      refetch()
+        variables: { id },
+      });
+      refetch();
     } catch (error) {
-      console.error('Error deleting brand:', error)
+      console.error("Error deleting brand:", error);
     }
-  }
+  };
 
   const getStatusBadge = (status: string) => {
     return (
-      <Badge variant={status === 'active' ? 'default' : 'secondary'}>
-        {status === 'active' ? '启用' : '禁用'}
+      <Badge variant={status === "active" ? "default" : "secondary"}>
+        {status === "active" ? "启用" : "禁用"}
       </Badge>
-    )
-  }
+    );
+  };
 
-  if (loading) return <div>加载中...</div>
-  if (error) return <div>加载失败: {error.message}</div>
+  if (loading) return <div>加载中...</div>;
+  if (error) return <div>加载失败: {error.message}</div>;
 
   return (
     <div className="space-y-6">
@@ -249,18 +261,20 @@ export default function BrandsPage() {
                 <TableRow key={brand.id}>
                   <TableCell>
                     <div className="w-16 h-16 relative bg-gray-100 rounded-md overflow-hidden">
-                      {brand.logo ? (
-                        <Image
-                          src={brand.logo}
-                          alt={brand.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Building className="w-6 h-6 text-gray-400" />
-                        </div>
-                      )}
+                      {brand.logo
+                        ? (
+                          <Image
+                            src={brand.logo}
+                            alt={brand.name}
+                            fill
+                            className="object-cover"
+                          />
+                        )
+                        : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Building className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -274,22 +288,26 @@ export default function BrandsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {brand.website ? (
-                      <a 
-                        href={brand.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 flex items-center"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        访问官网
-                      </a>
-                    ) : (
-                      '-'
-                    )}
+                    {brand.website
+                      ? (
+                        <a
+                          href={brand.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 flex items-center"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          访问官网
+                        </a>
+                      )
+                      : (
+                        "-"
+                      )}
                   </TableCell>
                   <TableCell>{brand.sort_order || 0}</TableCell>
-                  <TableCell>{getStatusBadge(brand.status)}</TableCell>
+                  <TableCell>
+                    {getStatusBadge(brand.is_active ? "active" : "inactive")}
+                  </TableCell>
                   <TableCell>
                     {new Date(brand.created).toLocaleDateString()}
                   </TableCell>
@@ -301,11 +319,13 @@ export default function BrandsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenDialog(brand)}>
+                        <DropdownMenuItem
+                          onClick={() => handleOpenDialog(brand)}
+                        >
                           <Edit className="w-4 h-4 mr-2" />
                           编辑
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleDelete(brand.id)}
                           className="text-red-600"
                         >
@@ -326,8 +346,9 @@ export default function BrandsPage() {
       {pagination && pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600">
-            显示 {((page - 1) * perPage) + 1} 到 {Math.min(page * perPage, pagination.totalItems)} 条，
-            共 {pagination.totalItems} 条记录
+            显示 {((page - 1) * perPage) + 1} 到{" "}
+            {Math.min(page * perPage, pagination.totalItems)} 条， 共{" "}
+            {pagination.totalItems} 条记录
           </div>
           <div className="space-x-2">
             <Button
@@ -355,13 +376,13 @@ export default function BrandsPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingBrand ? '编辑品牌' : '添加品牌'}
+              {editingBrand ? "编辑品牌" : "添加品牌"}
             </DialogTitle>
             <DialogDescription>
-              {editingBrand ? '修改品牌信息' : '创建新的品牌'}
+              {editingBrand ? "修改品牌信息" : "创建新的品牌"}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -369,18 +390,18 @@ export default function BrandsPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => updateFormData('name', e.target.value)}
+                  onChange={(e) => updateFormData("name", e.target.value)}
                   placeholder="请输入品牌名称"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="website">官网地址</Label>
                 <Input
                   id="website"
                   type="url"
                   value={formData.website}
-                  onChange={(e) => updateFormData('website', e.target.value)}
+                  onChange={(e) => updateFormData("website", e.target.value)}
                   placeholder="https://example.com"
                 />
               </div>
@@ -391,14 +412,19 @@ export default function BrandsPage() {
                   id="sort_order"
                   type="number"
                   value={formData.sort_order}
-                  onChange={(e) => updateFormData('sort_order', parseInt(e.target.value) || 0)}
+                  onChange={(e) =>
+                    updateFormData("sort_order", parseInt(e.target.value) || 0)}
                   placeholder="0"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">状态</Label>
-                <Select value={formData.status} onValueChange={(value) => updateFormData('status', value as 'active' | 'inactive')}>
+                <Label htmlFor="is_active">状态</Label>
+                <Select
+                  value={formData.is_active ? "active" : "inactive"}
+                  onValueChange={(value) =>
+                    updateFormData("is_active", value === "active")}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -416,7 +442,7 @@ export default function BrandsPage() {
                 id="logo"
                 type="url"
                 value={formData.logo}
-                onChange={(e) => updateFormData('logo', e.target.value)}
+                onChange={(e) => updateFormData("logo", e.target.value)}
                 placeholder="https://example.com/logo.png"
               />
             </div>
@@ -426,26 +452,26 @@ export default function BrandsPage() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => updateFormData('description', e.target.value)}
+                onChange={(e) => updateFormData("description", e.target.value)}
                 placeholder="请输入品牌描述"
                 rows={4}
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDialog}>
               取消
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               disabled={creating || updating || !formData.name.trim()}
             >
-              {creating || updating ? '保存中...' : '保存'}
+              {creating || updating ? "保存中..." : "保存"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
-} 
+  );
+}

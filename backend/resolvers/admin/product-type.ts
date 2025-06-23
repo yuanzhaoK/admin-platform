@@ -15,7 +15,10 @@ export const productTypeResolvers = {
           
           // 构建过滤条件
           const filters: string[] = [];
-          if (query?.status) filters.push(`status="${query.status}"`);
+          if (query?.is_active !== undefined) {
+            const status = query.is_active ? 'active' : 'inactive';
+            filters.push(`status="${status}"`);
+          }
           if (query?.search) {
             filters.push(`(name~"${query.search}" || description~"${query.search}")`);
           }
@@ -36,9 +39,12 @@ export const productTypeResolvers = {
           return await pb.collection('product_types').getList(page, perPage, options);
         });
         
-        // 处理attributes字段，确保JSON解析正确
+        // 处理attributes字段和字段映射
         const processedItems = result.items.map(item => ({
           ...item,
+          // 字段映射：数据库字段 -> GraphQL字段
+          is_active: item.status === 'active',
+          slug: item.slug || item.name.toLowerCase().replace(/\s+/g, '-'),
           attributes: typeof item.attributes === 'string' ? JSON.parse(item.attributes || '[]') : (item.attributes || []),
           created: item.created || new Date().toISOString(),
           updated: item.updated || new Date().toISOString()
@@ -71,9 +77,12 @@ export const productTypeResolvers = {
           return await pb.collection('product_types').getOne(id);
         });
         
-        // 处理attributes字段
+        // 处理attributes字段和字段映射
         return {
           ...result,
+          // 字段映射：数据库字段 -> GraphQL字段
+          is_active: result.status === 'active',
+          slug: result.slug || result.name.toLowerCase().replace(/\s+/g, '-'),
           attributes: typeof result.attributes === 'string' ? JSON.parse(result.attributes || '[]') : (result.attributes || [])
         };
       } catch (error) {
@@ -89,19 +98,27 @@ export const productTypeResolvers = {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         
-        // 序列化attributes字段
+        // 字段映射和序列化attributes字段
         const processedInput = {
           ...input,
+          // 字段映射：GraphQL字段 -> 数据库字段
+          status: input.is_active ? 'active' : 'inactive',
           attributes: input.attributes ? JSON.stringify(input.attributes) : null
         };
+        
+        // 移除GraphQL专用字段
+        delete processedInput.is_active;
         
         const result = await pocketbaseClient.queueRequest(async () => {
           return await pb.collection('product_types').create(processedInput);
         });
         
-        // 处理返回的attributes字段
+        // 处理返回的attributes字段和字段映射
         return {
           ...result,
+          // 字段映射：数据库字段 -> GraphQL字段
+          is_active: result.status === 'active',
+          slug: result.slug || result.name.toLowerCase().replace(/\s+/g, '-'),
           attributes: typeof result.attributes === 'string' ? JSON.parse(result.attributes || '[]') : (result.attributes || [])
         };
       } catch (error) {
@@ -115,19 +132,27 @@ export const productTypeResolvers = {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         
-        // 序列化attributes字段
+        // 字段映射和序列化attributes字段
         const processedInput = {
           ...input,
+          // 字段映射：GraphQL字段 -> 数据库字段
+          status: input.is_active !== undefined ? (input.is_active ? 'active' : 'inactive') : undefined,
           attributes: input.attributes ? JSON.stringify(input.attributes) : null
         };
+        
+        // 移除GraphQL专用字段
+        delete processedInput.is_active;
         
         const result = await pocketbaseClient.queueRequest(async () => {
           return await pb.collection('product_types').update(id, processedInput);
         });
         
-        // 处理返回的attributes字段
+        // 处理返回的attributes字段和字段映射
         return {
           ...result,
+          // 字段映射：数据库字段 -> GraphQL字段
+          is_active: result.status === 'active',
+          slug: result.slug || result.name.toLowerCase().replace(/\s+/g, '-'),
           attributes: typeof result.attributes === 'string' ? JSON.parse(result.attributes || '[]') : (result.attributes || [])
         };
       } catch (error) {
@@ -154,7 +179,10 @@ export const productTypeResolvers = {
           await pb.collection('product_types').delete(id);
         });
         
-        return true;
+        return {
+          success: true,
+          message: 'Product type deleted successfully'
+        };
       } catch (error) {
         console.error('Failed to delete product type:', error);
         throw new Error(error instanceof Error ? error.message : 'Failed to delete product type');

@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 // 品牌查询
 export const GET_BRANDS = gql`
@@ -7,11 +7,17 @@ export const GET_BRANDS = gql`
       items {
         id
         name
+        slug
         description
         logo
         website
+        country
+        founded_year
+        is_active
         sort_order
-        status
+        meta_title
+        meta_description
+        products_count
         created
         updated
       }
@@ -26,15 +32,21 @@ export const GET_BRANDS = gql`
 `;
 
 export const GET_BRAND = gql`
-  query GetBrand($id: String!) {
+  query GetBrand($id: ID!) {
     brand(id: $id) {
       id
       name
+      slug
       description
       logo
       website
+      country
+      founded_year
+      is_active
       sort_order
-      status
+      meta_title
+      meta_description
+      products_count
       created
       updated
     }
@@ -47,25 +59,28 @@ export const CREATE_BRAND = gql`
     createBrand(input: $input) {
       id
       name
-      status
+      is_active
       created
     }
   }
 `;
 
 export const UPDATE_BRAND = gql`
-  mutation UpdateBrand($id: String!, $input: BrandUpdateInput!) {
+  mutation UpdateBrand($id: ID!, $input: BrandUpdateInput!) {
     updateBrand(id: $id, input: $input) {
       id
       name
-      status
+      is_active
       updated
     }
   }
 `;
 
 export const DELETE_BRAND = gql`
-  mutation DeleteBrand($id: String!) {
-    deleteBrand(id: $id)
+  mutation DeleteBrand($id: ID!) {
+    deleteBrand(id: $id) {
+      success
+      message
+    }
   }
-`; 
+`;

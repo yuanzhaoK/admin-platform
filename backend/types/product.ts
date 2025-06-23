@@ -108,31 +108,45 @@ export interface Product extends BaseEntity {
 export interface ProductCategory extends BaseEntity {
   /** 分类名称 */
   name: string;
+  /** 分类slug */
+  slug: string;
   /** 分类描述 */
   description?: string;
+  /** 分类图片 */
+  image?: string;
   /** 父分类ID */
   parent_id?: string;
   /** 父分类对象 */
   parent?: ProductCategory;
   /** 子分类列表 */
   children?: ProductCategory[];
+  /** 分类级别 */
+  level: number;
+  /** 分类路径 */
+  path: string;
   /** 排序顺序 */
   sort_order?: number;
-  /** 分类状态 */
-  status: Status;
-  /** 分类图片 */
-  image?: string;
-  /** 分类图标 */
-  icon?: string;
+  /** 是否激活 */
+  is_active: boolean;
   /** SEO标题 */
-  seo_title?: string;
+  meta_title?: string;
   /** SEO描述 */
-  seo_description?: string;
-  /** 分类级别 */
-  level?: number;
-  /** 分类路径 */
-  path?: string;
+  meta_description?: string;
+  /** SEO关键词 */
+  meta_keywords?: string;
   /** 产品数量 */
+  products_count?: number;
+  
+  // 数据库字段（用于映射）
+  /** @internal 数据库状态字段 */
+  status?: Status;
+  /** @internal 数据库图标字段 */
+  icon?: string;
+  /** @internal 数据库SEO标题字段 */
+  seo_title?: string;
+  /** @internal 数据库SEO描述字段 */
+  seo_description?: string;
+  /** @internal 数据库产品数量字段 */
   product_count?: number;
 }
 
@@ -143,17 +157,39 @@ export interface ProductCategory extends BaseEntity {
 export interface Brand extends BaseEntity {
   /** 品牌名称 */
   name: string;
+  /** 品牌slug */
+  slug: string;
   /** 品牌描述 */
   description?: string;
   /** 品牌LOGO */
   logo?: string;
   /** 品牌官网 */
   website?: string;
+  /** 品牌国家 */
+  country?: string;
+  /** 成立年份 */
+  founded_year?: number;
+  /** 是否激活 */
+  is_active: boolean;
   /** 排序顺序 */
   sort_order?: number;
-  /** 品牌状态 */
-  status: Status;
+  /** SEO标题 */
+  meta_title?: string;
+  /** SEO描述 */
+  meta_description?: string;
+  /** SEO关键词 */
+  meta_keywords?: string;
   /** 产品数量 */
+  products_count?: number;
+  
+  // 数据库字段（用于映射）
+  /** @internal 数据库状态字段 */
+  status?: Status;
+  /** @internal 数据库SEO标题字段 */
+  seo_title?: string;
+  /** @internal 数据库SEO描述字段 */
+  seo_description?: string;
+  /** @internal 数据库产品数量字段 */
   product_count?: number;
 }
 

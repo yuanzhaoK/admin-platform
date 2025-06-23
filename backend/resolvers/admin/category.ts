@@ -76,9 +76,16 @@ export const categoryResolvers = {
           return await pb.collection('product_categories').getList<ProductCategory>(page, perPage, options);
         });
         
-        // 确保所有分类都有必需的字段
+        // 确保所有分类都有必需的字段，并映射字段名
         const processedItems = result.items.map(item => ({
           ...item,
+          is_active: item.status === 'active', // 将status映射为is_active
+          slug: item.name?.toLowerCase().replace(/\s+/g, '-') || '', // 生成slug
+          meta_title: item.seo_title || item.name,
+          meta_description: item.seo_description || item.description,
+          level: 0, // 默认层级，需要后续计算
+          path: item.name || '', // 默认路径
+          products_count: 0, // 默认产品数量
           created: item.created || new Date().toISOString(),
           updated: item.updated || new Date().toISOString()
         }));
@@ -108,9 +115,16 @@ export const categoryResolvers = {
         const pb = pocketbaseClient.getClient();
         const category = await pb.collection('product_categories').getOne<ProductCategory>(id);
         
-        // 确保分类有必需的字段
+        // 确保分类有必需的字段，并映射字段名
         return {
           ...category,
+          is_active: category.status === 'active',
+          slug: category.name?.toLowerCase().replace(/\s+/g, '-') || '',
+          meta_title: category.seo_title || category.name,
+          meta_description: category.seo_description || category.description,
+          level: await calculateCategoryLevel(category.id, pb),
+          path: await buildCategoryPath(category.id, pb),
+          products_count: 0, // TODO: 计算实际产品数量
           created: category.created || new Date().toISOString(),
           updated: category.updated || new Date().toISOString()
         };
@@ -133,9 +147,16 @@ export const categoryResolvers = {
           });
         });
         
-        // 确保所有分类都有必需的字段
+        // 确保所有分类都有必需的字段，并映射字段名
         const processedCategories = categories.map(item => ({
           ...item,
+          is_active: item.status === 'active',
+          slug: item.name?.toLowerCase().replace(/\s+/g, '-') || '',
+          meta_title: item.seo_title || item.name,
+          meta_description: item.seo_description || item.description,
+          level: 0, // 在树构建时会计算
+          path: item.name || '',
+          products_count: 0,
           created: item.created || new Date().toISOString(),
           updated: item.updated || new Date().toISOString()
         }));
@@ -183,6 +204,13 @@ export const categoryResolvers = {
         
         return categories.map(item => ({
           ...item,
+          is_active: item.status === 'active',
+          slug: item.name?.toLowerCase().replace(/\s+/g, '-') || '',
+          meta_title: item.seo_title || item.name,
+          meta_description: item.seo_description || item.description,
+          level: 0,
+          path: item.name || '',
+          products_count: 0,
           created: item.created || new Date().toISOString(),
           updated: item.updated || new Date().toISOString()
         }));
@@ -205,6 +233,13 @@ export const categoryResolvers = {
           const category = await pb.collection('product_categories').getOne<ProductCategory>(currentId);
           path.unshift({
             ...category,
+            is_active: category.status === 'active',
+            slug: category.name?.toLowerCase().replace(/\s+/g, '-') || '',
+            meta_title: category.seo_title || category.name,
+            meta_description: category.seo_description || category.description,
+            level: 0,
+            path: category.name || '',
+            products_count: 0,
             created: category.created || new Date().toISOString(),
             updated: category.updated || new Date().toISOString()
           });
@@ -264,6 +299,13 @@ export const categoryResolvers = {
         
         return categories.items.map(item => ({
           ...item,
+          is_active: item.status === 'active',
+          slug: item.name?.toLowerCase().replace(/\s+/g, '-') || '',
+          meta_title: item.seo_title || item.name,
+          meta_description: item.seo_description || item.description,
+          level: 0,
+          path: item.name || '',
+          products_count: 0,
           created: item.created || new Date().toISOString(),
           updated: item.updated || new Date().toISOString()
         }));
@@ -279,11 +321,30 @@ export const categoryResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        const category = await pb.collection('product_categories').create<ProductCategory>(input);
         
-        // 确保有必需的字段
+        // 将GraphQL输入映射到数据库字段
+        const dbInput = {
+          ...input,
+          status: input.is_active ? 'active' : 'inactive',
+          seo_title: input.meta_title,
+          seo_description: input.meta_description
+        };
+        delete dbInput.is_active;
+        delete dbInput.meta_title;
+        delete dbInput.meta_description;
+        
+        const category = await pb.collection('product_categories').create<ProductCategory>(dbInput);
+        
+        // 确保有必需的字段，并映射字段名
         return {
           ...category,
+          is_active: category.status === 'active',
+          slug: category.name?.toLowerCase().replace(/\s+/g, '-') || '',
+          meta_title: category.seo_title || category.name,
+          meta_description: category.seo_description || category.description,
+          level: await calculateCategoryLevel(category.id, pb),
+          path: await buildCategoryPath(category.id, pb),
+          products_count: 0,
           created: category.created || new Date().toISOString(),
           updated: category.updated || new Date().toISOString()
         };
@@ -297,11 +358,30 @@ export const categoryResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        const category = await pb.collection('product_categories').update<ProductCategory>(id, input);
         
-        // 确保有必需的字段
+        // 将GraphQL输入映射到数据库字段
+        const dbInput = {
+          ...input,
+          status: input.is_active !== undefined ? (input.is_active ? 'active' : 'inactive') : undefined,
+          seo_title: input.meta_title,
+          seo_description: input.meta_description
+        };
+        delete dbInput.is_active;
+        delete dbInput.meta_title;
+        delete dbInput.meta_description;
+        
+        const category = await pb.collection('product_categories').update<ProductCategory>(id, dbInput);
+        
+        // 确保有必需的字段，并映射字段名
         return {
           ...category,
+          is_active: category.status === 'active',
+          slug: category.name?.toLowerCase().replace(/\s+/g, '-') || '',
+          meta_title: category.seo_title || category.name,
+          meta_description: category.seo_description || category.description,
+          level: await calculateCategoryLevel(category.id, pb),
+          path: await buildCategoryPath(category.id, pb),
+          products_count: 0,
           created: category.created || new Date().toISOString(),
           updated: category.updated || new Date().toISOString()
         };

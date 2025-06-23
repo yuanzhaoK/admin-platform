@@ -1,20 +1,20 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 // 分类管理查询
 export const GET_PRODUCT_CATEGORIES = gql`
-  query GetProductCategories($query: ProductCategoryQueryInput) {
-    productCategories(query: $query) {
+  query GetProductCategories($query: CategoryQueryInput) {
+    categories(query: $query) {
       items {
         id
         name
         description
         parent_id
         sort_order
-        status
+        is_active
         image
-        icon
-        seo_title
-        seo_description
+        slug
+        meta_title
+        meta_description
         parent {
           id
           name
@@ -33,18 +33,18 @@ export const GET_PRODUCT_CATEGORIES = gql`
 `;
 
 export const GET_PRODUCT_CATEGORY = gql`
-  query GetProductCategory($id: String!) {
-    productCategory(id: $id) {
+  query GetProductCategory($id: ID!) {
+    category(id: $id) {
       id
       name
       description
       parent_id
       sort_order
-      status
+      is_active
       image
-      icon
-      seo_title
-      seo_description
+      slug
+      meta_title
+      meta_description
       parent {
         id
         name
@@ -52,7 +52,7 @@ export const GET_PRODUCT_CATEGORY = gql`
       children {
         id
         name
-        status
+        is_active
       }
       created
       updated
@@ -62,46 +62,65 @@ export const GET_PRODUCT_CATEGORY = gql`
 
 export const GET_PRODUCT_CATEGORY_TREE = gql`
   query GetProductCategoryTree {
-    productCategoryTree {
-      id
-      name
-      description
-      sort_order
-      status
-      image
-      icon
-      parent_id
-      created
-      updated
+    categoryTree {
+      category {
+        id
+        name
+        description
+        sort_order
+        is_active
+        image
+        slug
+        parent_id
+        created
+        updated
+      }
+      children {
+        category {
+          id
+          name
+          description
+          sort_order
+          is_active
+          image
+          slug
+          parent_id
+          created
+          updated
+        }
+      }
     }
   }
 `;
 
 // 分类管理变更
 export const CREATE_PRODUCT_CATEGORY = gql`
-  mutation CreateProductCategory($input: ProductCategoryInput!) {
-    createProductCategory(input: $input) {
+  mutation CreateProductCategory($input: CategoryInput!) {
+    createCategory(input: $input) {
       id
       name
-      status
+      is_active
       created
     }
   }
 `;
 
 export const UPDATE_PRODUCT_CATEGORY = gql`
-  mutation UpdateProductCategory($id: String!, $input: ProductCategoryUpdateInput!) {
-    updateProductCategory(id: $id, input: $input) {
+  mutation UpdateProductCategory($id: ID!, $input: CategoryUpdateInput!) {
+    updateCategory(id: $id, input: $input) {
       id
       name
-      status
+      is_active
       updated
     }
   }
 `;
 
 export const DELETE_PRODUCT_CATEGORY = gql`
-  mutation DeleteProductCategory($id: String!) {
-    deleteProductCategory(id: $id)
+  mutation DeleteProductCategory($id: ID!) {
+    deleteCategory(id: $id) {
+      success
+      message
+    }
   }
-`; 
+`;

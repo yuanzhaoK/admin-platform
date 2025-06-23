@@ -54,6 +54,21 @@ input CategoryQueryInput {
   sortOrder: SortOrder = ASC
 }
 
+"""
+@deprecated 请使用 CategoryQueryInput 替代
+产品分类查询输入（向后兼容）
+"""
+input ProductCategoryQueryInput {
+  page: Int = 1
+  perPage: Int = 20
+  parent_id: String
+  level: Int
+  is_active: Boolean
+  search: String
+  sortBy: String = "sort_order"
+  sortOrder: SortOrder = ASC
+}
+
 input CategoryInput {
   name: String!
   slug: String
@@ -90,6 +105,12 @@ input CategoryMoveInput {
 extend type Query {
   """获取分类列表"""
   categories(query: CategoryQueryInput): CategoriesResponse!
+  
+  """
+  @deprecated 请使用 categories 替代
+  获取产品分类列表（向后兼容）
+  """
+  productCategories(query: ProductCategoryQueryInput): CategoriesResponse!
   
   """获取单个分类"""
   category(id: ID!): ProductCategory

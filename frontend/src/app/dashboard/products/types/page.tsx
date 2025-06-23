@@ -1,268 +1,314 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { useQuery, useMutation } from '@apollo/client'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { 
+import React, { useState } from "react";
+import { useMutation, useQuery } from "@apollo/client";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { 
+} from "@/components/ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { 
+} from "@/components/ui/card";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { 
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { 
-  Edit, 
-  Trash2, 
-  Plus, 
-  Search,
+} from "@/components/ui/dropdown-menu";
+import {
+  Edit,
   MoreHorizontal,
   Package,
+  Plus,
+  Search,
+  Settings,
   Tag,
-  Settings
-} from 'lucide-react'
-import { 
-  GET_PRODUCT_TYPES,
+  Trash2,
+} from "lucide-react";
+import {
   CREATE_PRODUCT_TYPE,
+  DELETE_PRODUCT_TYPE,
+  GET_PRODUCT_TYPES,
   UPDATE_PRODUCT_TYPE,
-  DELETE_PRODUCT_TYPE
-} from '@/lib/graphql/queries'
+} from "@/lib/graphql/queries";
 
 interface ProductTypeAttribute {
-  name: string
-  type: 'text' | 'number' | 'select' | 'multiselect' | 'boolean' | 'date' | 'color' | 'image'
-  required: boolean
-  options?: string[]
+  name: string;
+  type:
+    | "text"
+    | "number"
+    | "select"
+    | "multiselect"
+    | "boolean"
+    | "date"
+    | "color"
+    | "image";
+  required: boolean;
+  options?: string[];
 }
 
 interface ProductType {
-  id: string
-  name: string
-  description?: string
-  attributes?: ProductTypeAttribute[]
-  status: 'active' | 'inactive'
-  created: string
-  updated: string
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  attributes?: ProductTypeAttribute[] | Record<string, unknown>; // JSON类型，可以是任意结构
+  is_active: boolean;
+  sort_order?: number;
+  products_count?: number;
+  created: string;
+  updated: string;
 }
 
 interface TypeFormData {
-  name: string
-  description: string
-  status: 'active' | 'inactive'
-  attributes: ProductTypeAttribute[]
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  is_active: boolean;
+  sort_order: number;
+  attributes: ProductTypeAttribute[];
 }
 
 const initialFormData: TypeFormData = {
-  name: '',
-  description: '',
-  status: 'active',
-  attributes: []
-}
+  name: "",
+  description: "",
+  icon: "",
+  color: "",
+  is_active: true,
+  sort_order: 0,
+  attributes: [],
+};
 
 const initialAttribute: ProductTypeAttribute = {
-  name: '',
-  type: 'text',
+  name: "",
+  type: "text",
   required: false,
-  options: []
-}
+  options: [],
+};
 
 const attributeTypes = [
-  { value: 'text', label: '文本' },
-  { value: 'number', label: '数字' },
-  { value: 'select', label: '单选' },
-  { value: 'multiselect', label: '多选' },
-  { value: 'boolean', label: '布尔值' },
-  { value: 'date', label: '日期' },
-  { value: 'color', label: '颜色' },
-  { value: 'image', label: '图片' }
-]
+  { value: "text", label: "文本" },
+  { value: "number", label: "数字" },
+  { value: "select", label: "单选" },
+  { value: "multiselect", label: "多选" },
+  { value: "boolean", label: "布尔值" },
+  { value: "date", label: "日期" },
+  { value: "color", label: "颜色" },
+  { value: "image", label: "图片" },
+];
 
 export default function ProductTypesPage() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingType, setEditingType] = useState<ProductType | null>(null)
-  const [formData, setFormData] = useState<TypeFormData>(initialFormData)
-  const [search, setSearch] = useState('')
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingType, setEditingType] = useState<ProductType | null>(null);
+  const [formData, setFormData] = useState<TypeFormData>(initialFormData);
+  const [search, setSearch] = useState("");
 
   // GraphQL 查询
-  const { data: typesData, loading, error, refetch } = useQuery(GET_PRODUCT_TYPES, {
-    variables: {
-      query: {
-        search: search || null
-      }
+  const { data: typesData, loading, error, refetch } = useQuery(
+    GET_PRODUCT_TYPES,
+    {
+      variables: {
+        query: {
+          search: search || null,
+        },
+      },
+      errorPolicy: "all",
+      fetchPolicy: "no-cache",
     },
-    errorPolicy: 'all',
-    fetchPolicy: 'no-cache'
-  })
+  );
 
-  const types = typesData?.productTypes?.items || []
+  const types = typesData?.productTypes?.items || [];
 
   // GraphQL 变更
-  const [createType, { loading: creating }] = useMutation(CREATE_PRODUCT_TYPE)
-  const [updateType, { loading: updating }] = useMutation(UPDATE_PRODUCT_TYPE)
-  const [deleteType] = useMutation(DELETE_PRODUCT_TYPE)
+  const [createType, { loading: creating }] = useMutation(CREATE_PRODUCT_TYPE);
+  const [updateType, { loading: updating }] = useMutation(UPDATE_PRODUCT_TYPE);
+  const [deleteType] = useMutation(DELETE_PRODUCT_TYPE);
 
   // 表单处理
-  const updateFormData = (field: keyof TypeFormData, value: string | ProductTypeAttribute[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+  const updateFormData = (
+    field: keyof TypeFormData,
+    value: string | number | boolean | ProductTypeAttribute[],
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleOpenDialog = (type?: ProductType) => {
     if (type) {
-      setEditingType(type)
+      setEditingType(type);
       setFormData({
         name: type.name,
-        description: type.description || '',
-        status: type.status,
-        attributes: type.attributes || []
-      })
+        description: type.description || "",
+        icon: type.icon || "",
+        color: type.color || "",
+        is_active: type.is_active,
+        sort_order: type.sort_order || 0,
+        attributes: Array.isArray(type.attributes) ? type.attributes : [],
+      });
     } else {
-      setEditingType(null)
-      setFormData(initialFormData)
+      setEditingType(null);
+      setFormData(initialFormData);
     }
-    setIsDialogOpen(true)
-  }
+    setIsDialogOpen(true);
+  };
 
   const handleCloseDialog = () => {
-    setIsDialogOpen(false)
-    setEditingType(null)
-    setFormData(initialFormData)
-  }
+    setIsDialogOpen(false);
+    setEditingType(null);
+    setFormData(initialFormData);
+  };
 
   const handleSubmit = async () => {
     try {
       const input = {
         name: formData.name,
         description: formData.description,
-        status: formData.status,
-        attributes: formData.attributes.length > 0 ? formData.attributes : null
-      }
+        icon: formData.icon,
+        color: formData.color,
+        is_active: formData.is_active,
+        sort_order: formData.sort_order,
+        attributes: formData.attributes.length > 0 ? formData.attributes : null,
+      };
 
       if (editingType) {
         await updateType({
           variables: {
             id: editingType.id,
-            input
-          }
-        })
+            input,
+          },
+        });
       } else {
         await createType({
           variables: {
-            input
-          }
-        })
+            input,
+          },
+        });
       }
-      
-      refetch()
-      handleCloseDialog()
+
+      refetch();
+      handleCloseDialog();
     } catch (error) {
-      console.error('Error saving product type:', error)
+      console.error("Error saving product type:", error);
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
-    if (confirm('确定要删除这个商品类型吗？')) {
+    if (confirm("确定要删除这个商品类型吗？")) {
       try {
         await deleteType({
-          variables: { id }
-        })
-        refetch()
+          variables: { id },
+        });
+        refetch();
       } catch (error) {
-        console.error('Error deleting product type:', error)
-        alert('删除失败，可能有关联的商品使用了此类型')
+        console.error("Error deleting product type:", error);
+        alert("删除失败，可能有关联的商品使用了此类型");
       }
     }
-  }
+  };
 
   // 属性管理
   const addAttribute = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      attributes: [...prev.attributes, { ...initialAttribute }]
-    }))
-  }
+      attributes: [...prev.attributes, { ...initialAttribute }],
+    }));
+  };
 
-  const updateAttribute = (index: number, field: keyof ProductTypeAttribute, value: string | boolean | string[]) => {
-    setFormData(prev => ({
+  const updateAttribute = (
+    index: number,
+    field: keyof ProductTypeAttribute,
+    value: string | boolean | string[],
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      attributes: prev.attributes.map((attr, i) => 
+      attributes: prev.attributes.map((attr, i) =>
         i === index ? { ...attr, [field]: value } : attr
-      )
-    }))
-  }
+      ),
+    }));
+  };
 
   const removeAttribute = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      attributes: prev.attributes.filter((_, i) => i !== index)
-    }))
-  }
+      attributes: prev.attributes.filter((_, i) => i !== index),
+    }));
+  };
 
   const addAttributeOption = (attrIndex: number) => {
-    const newOptions = [...(formData.attributes[attrIndex].options || []), '']
-    updateAttribute(attrIndex, 'options', newOptions)
-  }
+    const newOptions = [...(formData.attributes[attrIndex].options || []), ""];
+    updateAttribute(attrIndex, "options", newOptions);
+  };
 
-  const updateAttributeOption = (attrIndex: number, optionIndex: number, value: string) => {
-    const newOptions = [...(formData.attributes[attrIndex].options || [])]
-    newOptions[optionIndex] = value
-    updateAttribute(attrIndex, 'options', newOptions)
-  }
+  const updateAttributeOption = (
+    attrIndex: number,
+    optionIndex: number,
+    value: string,
+  ) => {
+    const newOptions = [...(formData.attributes[attrIndex].options || [])];
+    newOptions[optionIndex] = value;
+    updateAttribute(attrIndex, "options", newOptions);
+  };
 
   const removeAttributeOption = (attrIndex: number, optionIndex: number) => {
-    const newOptions = (formData.attributes[attrIndex].options || []).filter((_, i) => i !== optionIndex)
-    updateAttribute(attrIndex, 'options', newOptions)
-  }
+    const newOptions = (formData.attributes[attrIndex].options || []).filter((
+      _,
+      i,
+    ) => i !== optionIndex);
+    updateAttribute(attrIndex, "options", newOptions);
+  };
 
   const getStatusBadge = (status: string) => {
-    return status === 'active' ? (
-      <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-        启用
-      </Badge>
-    ) : (
-      <Badge variant="secondary">
-        禁用
-      </Badge>
-    )
-  }
+    return status === "active"
+      ? (
+        <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+          启用
+        </Badge>
+      )
+      : (
+        <Badge variant="secondary">
+          禁用
+        </Badge>
+      );
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('zh-CN')
-  }
+    return new Date(dateString).toLocaleString("zh-CN");
+  };
 
-  if (loading) return <div className="p-6">加载中...</div>
-  if (error) return <div className="p-6 text-red-500">加载失败: {error.message}</div>
+  if (loading) return <div className="p-6">加载中...</div>;
+  if (error) {
+    return <div className="p-6 text-red-500">加载失败: {error.message}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -351,15 +397,19 @@ export default function ProductTypesPage() {
                   </TableCell>
                   <TableCell>
                     <div className="max-w-[200px] truncate text-muted-foreground">
-                      {type.description || '-'}
+                      {type.description || "-"}
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {type.attributes?.length || 0} 个属性
+                      {Array.isArray(type.attributes)
+                        ? type.attributes.length
+                        : 0} 个属性
                     </Badge>
                   </TableCell>
-                  <TableCell>{getStatusBadge(type.status)}</TableCell>
+                  <TableCell>
+                    {getStatusBadge(type.is_active ? "active" : "inactive")}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(type.created)}
                   </TableCell>
@@ -401,13 +451,13 @@ export default function ProductTypesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              {editingType ? '编辑商品类型' : '新增商品类型'}
+              {editingType ? "编辑商品类型" : "新增商品类型"}
             </DialogTitle>
             <DialogDescription>
               设置商品类型的基本信息和属性模板
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6">
             {/* 基本信息 */}
             <div className="space-y-4">
@@ -418,15 +468,16 @@ export default function ProductTypesPage() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => updateFormData('name', e.target.value)}
+                    onChange={(e) => updateFormData("name", e.target.value)}
                     placeholder="请输入类型名称"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="status">状态</Label>
+                  <Label htmlFor="is_active">状态</Label>
                   <Select
-                    value={formData.status}
-                    onValueChange={(value) => updateFormData('status', value as 'active' | 'inactive')}
+                    value={formData.is_active ? "active" : "inactive"}
+                    onValueChange={(value) =>
+                      updateFormData("is_active", value === "active")}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -443,7 +494,8 @@ export default function ProductTypesPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => updateFormData('description', e.target.value)}
+                  onChange={(e) =>
+                    updateFormData("description", e.target.value)}
                   placeholder="请输入类型描述"
                   rows={3}
                 />
@@ -465,7 +517,7 @@ export default function ProductTypesPage() {
                   添加属性
                 </Button>
               </div>
-              
+
               {formData.attributes.map((attribute, attrIndex) => (
                 <Card key={attrIndex} className="p-4">
                   <div className="space-y-4">
@@ -475,19 +527,21 @@ export default function ProductTypesPage() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeAttribute(attrIndex)}
+                        onClick={() =>
+                          removeAttribute(attrIndex)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                    
+
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Label>属性名称</Label>
                         <Input
                           value={attribute.name}
-                          onChange={(e) => updateAttribute(attrIndex, 'name', e.target.value)}
+                          onChange={(e) =>
+                            updateAttribute(attrIndex, "name", e.target.value)}
                           placeholder="属性名称"
                         />
                       </div>
@@ -495,13 +549,14 @@ export default function ProductTypesPage() {
                         <Label>属性类型</Label>
                         <Select
                           value={attribute.type}
-                          onValueChange={(value) => updateAttribute(attrIndex, 'type', value)}
+                          onValueChange={(value) =>
+                            updateAttribute(attrIndex, "type", value)}
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {attributeTypes.map(type => (
+                            {attributeTypes.map((type) => (
                               <SelectItem key={type.value} value={type.value}>
                                 {type.label}
                               </SelectItem>
@@ -514,7 +569,12 @@ export default function ProductTypesPage() {
                           type="checkbox"
                           id={`required-${attrIndex}`}
                           checked={attribute.required}
-                          onChange={(e) => updateAttribute(attrIndex, 'required', e.target.checked)}
+                          onChange={(e) =>
+                            updateAttribute(
+                              attrIndex,
+                              "required",
+                              e.target.checked,
+                            )}
                           title="设置属性是否必填"
                         />
                         <Label htmlFor={`required-${attrIndex}`}>必填</Label>
@@ -522,7 +582,8 @@ export default function ProductTypesPage() {
                     </div>
 
                     {/* 选项配置 */}
-                    {(attribute.type === 'select' || attribute.type === 'multiselect') && (
+                    {(attribute.type === "select" ||
+                      attribute.type === "multiselect") && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label>选项配置</Label>
@@ -530,23 +591,36 @@ export default function ProductTypesPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => addAttributeOption(attrIndex)}
+                            onClick={() =>
+                              addAttributeOption(attrIndex)}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                        {(attribute.options || []).map((option, optionIndex) => (
-                          <div key={optionIndex} className="flex items-center gap-2">
+                        {(attribute.options || []).map((
+                          option,
+                          optionIndex,
+                        ) => (
+                          <div
+                            key={optionIndex}
+                            className="flex items-center gap-2"
+                          >
                             <Input
                               value={option}
-                              onChange={(e) => updateAttributeOption(attrIndex, optionIndex, e.target.value)}
+                              onChange={(e) =>
+                                updateAttributeOption(
+                                  attrIndex,
+                                  optionIndex,
+                                  e.target.value,
+                                )}
                               placeholder={`选项 ${optionIndex + 1}`}
                             />
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeAttributeOption(attrIndex, optionIndex)}
+                              onClick={() =>
+                                removeAttributeOption(attrIndex, optionIndex)}
                               className="text-red-600"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -565,15 +639,17 @@ export default function ProductTypesPage() {
             <Button variant="outline" onClick={handleCloseDialog}>
               取消
             </Button>
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               disabled={creating || updating || !formData.name.trim()}
             >
-              {creating || updating ? '保存中...' : (editingType ? '更新' : '创建')}
+              {creating || updating
+                ? "保存中..."
+                : (editingType ? "更新" : "创建")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
-} 
+  );
+}

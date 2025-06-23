@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 // 商品类型查询
 export const GET_PRODUCT_TYPES = gql`
@@ -7,14 +7,14 @@ export const GET_PRODUCT_TYPES = gql`
       items {
         id
         name
+        slug
         description
-        status
-        attributes {
-          name
-          type
-          required
-          options
-        }
+        icon
+        color
+        attributes
+        is_active
+        sort_order
+        products_count
         created
         updated
       }
@@ -29,18 +29,18 @@ export const GET_PRODUCT_TYPES = gql`
 `;
 
 export const GET_PRODUCT_TYPE = gql`
-  query GetProductType($id: String!) {
+  query GetProductType($id: ID!) {
     productType(id: $id) {
       id
       name
+      slug
       description
-      status
-      attributes {
-        name
-        type
-        required
-        options
-      }
+      icon
+      color
+      attributes
+      is_active
+      sort_order
+      products_count
       created
       updated
     }
@@ -53,25 +53,28 @@ export const CREATE_PRODUCT_TYPE = gql`
     createProductType(input: $input) {
       id
       name
-      status
+      is_active
       created
     }
   }
 `;
 
 export const UPDATE_PRODUCT_TYPE = gql`
-  mutation UpdateProductType($id: String!, $input: ProductTypeUpdateInput!) {
+  mutation UpdateProductType($id: ID!, $input: ProductTypeUpdateInput!) {
     updateProductType(id: $id, input: $input) {
       id
       name
-      status
+      is_active
       updated
     }
   }
 `;
 
 export const DELETE_PRODUCT_TYPE = gql`
-  mutation DeleteProductType($id: String!) {
-    deleteProductType(id: $id)
+  mutation DeleteProductType($id: ID!) {
+    deleteProductType(id: $id) {
+      success
+      message
+    }
   }
-`; 
+`;
