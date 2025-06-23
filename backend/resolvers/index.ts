@@ -1,20 +1,8 @@
 import { pocketbaseClient } from '../config/pocketbase.ts';
-import type { 
-  Product, 
-  Order, 
-  RefundRequest, 
-  OrderSetting, 
-  User,
-  ProductQuery,
-  OrderQuery,
-  RefundQuery,
-  ProductStats,
-  OrderStats,
-  ProductCategory,
-  Brand,
-  ProductType
-} from '../types/index.ts';
 import { scalars } from '../scalars/index.ts';
+import type {
+  Product
+} from '../types/index.ts';
 
 // 管理后台 Resolvers
 import { adminResolvers } from './admin/index.ts';
@@ -26,6 +14,50 @@ import { mobileResolvers } from './mobile/index.ts';
 export const resolvers = {
   // 标量类型
   ...scalars,
+
+  // 枚举解析器
+  ProductStatus: {
+    active: 'active',
+    inactive: 'inactive',
+    draft: 'draft',
+  },
+
+  ReviewStatus: {
+    pending: 'pending',
+    approved: 'approved',
+    rejected: 'rejected',
+  },
+
+  UserRole: {
+    admin: 'admin',
+    user: 'user',
+    moderator: 'moderator',
+    guest: 'guest',
+  },
+
+  UserStatus: {
+    active: 'active',
+    inactive: 'inactive',
+    suspended: 'suspended',
+    pending: 'pending',
+  },
+
+  OrderStatus: {
+    pending_payment: 'pending_payment',
+    paid: 'paid',
+    processing: 'processing',
+    shipped: 'shipped',
+    delivered: 'delivered',
+    completed: 'completed',
+    cancelled: 'cancelled',
+    refunding: 'refunding',
+    refunded: 'refunded',
+  },
+
+  SortOrder: {
+    asc: 'asc',
+    desc: 'desc',
+  },
 
   // 查询resolvers - 合并管理后台和移动端
   Query: {
