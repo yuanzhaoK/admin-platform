@@ -55,7 +55,7 @@ export const userResolvers = {
             email: authData.record.email,
             name: authData.record.name || '',
             avatar: authData.record.avatar || '',
-            role: pb.authStore.isAdmin ? 'admin' : 'user', // 超级用户角色
+            role: pb.authStore.isSuperuser ? 'admin' : 'user', // 超级用户角色
             created: authData.record.created,
             updated: authData.record.updated,
             collectionId: authData.record.collectionId,

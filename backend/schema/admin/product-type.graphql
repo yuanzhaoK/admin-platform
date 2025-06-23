@@ -1,0 +1,99 @@
+# 产品类型管理 GraphQL Schema
+# 产品类型相关的类型定义
+
+# ===== 产品类型 =====
+type ProductType {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  icon: String
+  color: String
+  attributes: JSON
+  is_active: Boolean!
+  sort_order: Int
+  products_count: Int
+  created: Date!
+  updated: Date!
+}
+
+type ProductTypesResponse {
+  items: [ProductType!]!
+  pagination: PaginationInfo!
+}
+
+type ProductTypeStats {
+  total: Int!
+  active: Int!
+  inactive: Int!
+  with_products: Int!
+  without_products: Int!
+}
+
+# ===== 输入类型 =====
+input ProductTypeQueryInput {
+  page: Int = 1
+  perPage: Int = 20
+  is_active: Boolean
+  search: String
+  sortBy: String = "name"
+  sortOrder: SortOrder = ASC
+}
+
+input ProductTypeInput {
+  name: String!
+  slug: String
+  description: String
+  icon: String
+  color: String
+  attributes: JSON
+  is_active: Boolean = true
+  sort_order: Int = 0
+}
+
+input ProductTypeUpdateInput {
+  name: String
+  slug: String
+  description: String
+  icon: String
+  color: String
+  attributes: JSON
+  is_active: Boolean
+  sort_order: Int
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取产品类型列表"""
+  productTypes(query: ProductTypeQueryInput): ProductTypesResponse!
+  
+  """获取单个产品类型"""
+  productType(id: ID!): ProductType
+  
+  """获取活跃产品类型"""
+  activeProductTypes: [ProductType!]!
+  
+  """获取产品类型统计信息"""
+  productTypeStats: ProductTypeStats!
+  
+  """搜索产品类型"""
+  searchProductTypes(keyword: String!, limit: Int = 10): [ProductType!]!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """创建产品类型"""
+  createProductType(input: ProductTypeInput!): ProductType!
+  
+  """更新产品类型"""
+  updateProductType(id: ID!, input: ProductTypeUpdateInput!): ProductType!
+  
+  """删除产品类型"""
+  deleteProductType(id: ID!): OperationResult!
+  
+  """批量删除产品类型"""
+  batchDeleteProductTypes(ids: [ID!]!): BatchOperationResult!
+  
+  """批量更新产品类型状态"""
+  batchUpdateProductTypeStatus(ids: [ID!]!, is_active: Boolean!): BatchOperationResult!
+} 

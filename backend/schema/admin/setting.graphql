@@ -1,0 +1,268 @@
+# 系统设置 GraphQL Schema
+# 系统配置相关的类型定义
+
+# ===== 设置枚举 =====
+enum SettingType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+  ARRAY
+  EMAIL
+  URL
+  PASSWORD
+  COLOR
+  FILE
+}
+
+enum SettingCategory {
+  GENERAL
+  PAYMENT
+  SHIPPING
+  NOTIFICATION
+  EMAIL
+  SMS
+  SECURITY
+  API
+  THEME
+  SEO
+  ANALYTICS
+  BACKUP
+  MAINTENANCE
+}
+
+enum SettingScope {
+  SYSTEM
+  TENANT
+  USER
+  MODULE
+}
+
+# ===== 设置类型 =====
+type SystemSetting {
+  id: ID!
+  key: String!
+  name: String!
+  description: String
+  value: String!
+  default_value: String
+  type: SettingType!
+  category: SettingCategory!
+  scope: SettingScope!
+  is_public: Boolean!
+  is_readonly: Boolean!
+  validation_rules: JSON
+  options: JSON
+  order_index: Int!
+  group_name: String
+  icon: String
+  created: Date!
+  updated: Date!
+  updated_by: String
+}
+
+type SettingsResponse {
+  items: [SystemSetting!]!
+  pagination: PaginationInfo!
+}
+
+type SettingsGroup {
+  category: SettingCategory!
+  name: String!
+  description: String
+  icon: String
+  settings: [SystemSetting!]!
+  count: Int!
+}
+
+type SettingValidation {
+  is_valid: Boolean!
+  errors: [String!]
+  warnings: [String!]
+}
+
+# ===== 特定设置类型 =====
+type OrderSetting {
+  id: ID!
+  setting_key: String!
+  setting_name: String!
+  setting_value: String!
+  setting_type: SettingType!
+  description: String
+  category: SettingCategory!
+  created: Date!
+  updated: Date!
+}
+
+type PaymentSetting {
+  id: ID!
+  provider: String!
+  name: String!
+  config: JSON!
+  is_enabled: Boolean!
+  is_sandbox: Boolean!
+  supported_currencies: [String!]!
+  webhook_url: String
+  created: Date!
+  updated: Date!
+}
+
+type NotificationSetting {
+  id: ID!
+  type: String!
+  channel: String!
+  template: String!
+  is_enabled: Boolean!
+  config: JSON!
+  created: Date!
+  updated: Date!
+}
+
+# ===== 输入类型 =====
+input SettingQueryInput {
+  page: Int = 1
+  perPage: Int = 50
+  category: SettingCategory
+  scope: SettingScope
+  type: SettingType
+  is_public: Boolean
+  search: String
+  group_name: String
+  sortBy: String = "order_index"
+  sortOrder: SortOrder = ASC
+}
+
+input SettingInput {
+  key: String!
+  name: String!
+  description: String
+  value: String!
+  type: SettingType!
+  category: SettingCategory!
+  scope: SettingScope = SYSTEM
+  is_public: Boolean = false
+  is_readonly: Boolean = false
+  validation_rules: JSON
+  options: JSON
+  order_index: Int = 0
+  group_name: String
+  icon: String
+}
+
+input SettingUpdateInput {
+  name: String
+  description: String
+  value: String
+  is_public: Boolean
+  is_readonly: Boolean
+  validation_rules: JSON
+  options: JSON
+  order_index: Int
+  group_name: String
+  icon: String
+}
+
+input BatchSettingUpdateInput {
+  updates: [SettingBatchItem!]!
+}
+
+input SettingBatchItem {
+  key: String!
+  value: String!
+}
+
+input PaymentSettingInput {
+  provider: String!
+  name: String!
+  config: JSON!
+  is_enabled: Boolean = false
+  is_sandbox: Boolean = true
+  supported_currencies: [String!]!
+  webhook_url: String
+}
+
+input NotificationSettingInput {
+  type: String!
+  channel: String!
+  template: String!
+  is_enabled: Boolean = true
+  config: JSON!
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取系统设置列表"""
+  systemSettings(query: SettingQueryInput): SettingsResponse!
+  
+  """获取单个系统设置"""
+  systemSetting(key: String!): SystemSetting
+  
+  """按分类获取设置"""
+  settingsByCategory(category: SettingCategory!): [SystemSetting!]!
+  
+  """获取设置分组"""
+  settingsGroups: [SettingsGroup!]!
+  
+  """获取公开设置"""
+  publicSettings: [SystemSetting!]!
+  
+  """验证设置值"""
+  validateSetting(key: String!, value: String!): SettingValidation!
+  
+  """获取订单设置"""
+  orderSettings: [OrderSetting!]!
+  
+  """获取单个订单设置"""
+  orderSetting(key: String!): OrderSetting
+  
+  """获取支付设置"""
+  paymentSettings: [PaymentSetting!]!
+  
+  """获取通知设置"""
+  notificationSettings: [NotificationSetting!]!
+  
+  """搜索设置"""
+  searchSettings(keyword: String!, limit: Int = 10): [SystemSetting!]!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """创建系统设置"""
+  createSystemSetting(input: SettingInput!): SystemSetting!
+  
+  """更新系统设置"""
+  updateSystemSetting(key: String!, input: SettingUpdateInput!): SystemSetting!
+  
+  """删除系统设置"""
+  deleteSystemSetting(key: String!): OperationResult!
+  
+  """批量更新设置"""
+  batchUpdateSettings(input: BatchSettingUpdateInput!): BatchOperationResult!
+  
+  """重置设置为默认值"""
+  resetSettingToDefault(key: String!): SystemSetting!
+  
+  """更新订单设置"""
+  updateOrderSetting(id: ID!, value: String!): OrderSetting!
+  
+  """创建支付设置"""
+  createPaymentSetting(input: PaymentSettingInput!): PaymentSetting!
+  
+  """更新支付设置"""
+  updatePaymentSetting(id: ID!, input: PaymentSettingInput!): PaymentSetting!
+  
+  """创建通知设置"""
+  createNotificationSetting(input: NotificationSettingInput!): NotificationSetting!
+  
+  """更新通知设置"""
+  updateNotificationSetting(id: ID!, input: NotificationSettingInput!): NotificationSetting!
+  
+  """导入设置"""
+  importSettings(data: JSON!): BatchOperationResult!
+  
+  """导出设置"""
+  exportSettings(categories: [SettingCategory!]): JSON!
+  
+  """清除设置缓存"""
+  clearSettingsCache: OperationResult!
+} 

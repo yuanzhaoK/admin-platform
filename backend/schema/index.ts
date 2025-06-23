@@ -1,35 +1,33 @@
-// 基础类型定义
-import { baseTypeDefs } from './base-types.ts';
+/**
+ * 现代化 GraphQL Schema 入口文件
+ * 使用标准 .graphql 文件和加载器
+ */
 
-// 管理后台 Schema 模块
+// 导出新的 schema 加载器（主要接口）
+export {
+  buildGraphQLSchema, getTypeDefs, loadSchema, typeDefs, validateSchema
+} from './loader.ts';
+
+// 向后兼容：保留旧的导入
 import {
-  productTypeDefs,
-  categoryTypeDefs,
   brandTypeDefs,
-  productTypeTypeDefs,
+  categoryTypeDefs,
   orderTypeDefs,
+  productTypeDefs,
+  productTypeTypeDefs,
   refundTypeDefs,
   settingTypeDefs,
   userTypeDefs,
 } from './admin/index.ts';
+import { baseTypeDefs } from './base-types.ts';
+import { authTypeDefs, commonTypeDefs } from './common/index.ts';
+import { appTypeDefs } from './mobile/index.ts';
 
-// 移动端 Schema 模块
-import {
-  appTypeDefs,
-} from './mobile/index.ts';
-import { commonTypeDefs, authTypeDefs } from './common/index.ts';
-
-
-// 合并所有模块的 typeDefs
-export const typeDefs = [
-  // 基础类型定义（必须放在最前面）
+// 向后兼容：旧的 typeDefs 导出
+export const legacyTypeDefs = [
   baseTypeDefs,
-
-  // 公共模块
   commonTypeDefs,
   authTypeDefs,
-
-  // 管理后台模块
   userTypeDefs,
   productTypeDefs,
   categoryTypeDefs,
@@ -38,7 +36,9 @@ export const typeDefs = [
   orderTypeDefs,
   refundTypeDefs,
   settingTypeDefs,
-
-  // 移动端模块
   appTypeDefs,
-].join('\n'); 
+].join('\n');
+
+// 默认导出基础类型定义（兼容性）
+export { baseTypeDefs };
+

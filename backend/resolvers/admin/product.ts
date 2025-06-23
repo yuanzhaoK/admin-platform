@@ -164,30 +164,7 @@ export const productResolvers = {
       }
     },
 
-    // 分类管理
-    productCategories: async () => {
-      try {
-        await pocketbaseClient.ensureAuth();
-        const pb = pocketbaseClient.getClient();
-        const products = await pb.collection('products').getFullList<Product>();
-        
-        const categoryMap = new Map<string, number>();
-        products.forEach(product => {
-          if (product.category_id) {
-            categoryMap.set(product.category_id, (categoryMap.get(product.category_id) || 0) + 1);
-          }
-        });
 
-        return Array.from(categoryMap.entries()).map(([name, count]) => ({
-          name,
-          count,
-          description: null
-        }));
-      } catch (error) {
-        console.error('Failed to fetch product categories:', error);
-        throw new Error('Failed to fetch product categories');
-      }
-    },
 
     productsByCategory: async (_: any, { category }: { category: string }) => {
       try {

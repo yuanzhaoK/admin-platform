@@ -1,0 +1,249 @@
+# 认证 GraphQL Schema
+# 用户认证相关的类型定义
+
+# ===== 认证枚举 =====
+enum AuthProvider {
+  email
+  phone
+  wechat
+  alipay
+  google
+  github
+  facebook
+}
+
+enum TokenType {
+  access
+  refresh
+  verification
+  reset_password
+  invitation
+}
+
+enum SessionStatus {
+  active
+  expired
+  revoked
+  suspended
+}
+
+# ===== 认证类型 =====
+type AuthResponse {
+  token: String!
+  refresh_token: String!
+  expires_in: Int!
+  token_type: String!
+  record: User!
+  permissions: [String!]!
+  session_id: String!
+}
+
+type RefreshTokenResponse {
+  token: String!
+  refresh_token: String!
+  expires_in: Int!
+}
+
+type AuthSession {
+  id: ID!
+  user_id: String!
+  user: User
+  token_hash: String!
+  refresh_token_hash: String
+  device_info: DeviceInfo
+  ip_address: String!
+  user_agent: String
+  location: String
+  status: SessionStatus!
+  last_activity: Date!
+  expires_at: Date!
+  created: Date!
+}
+
+type DeviceInfo {
+  device_id: String
+  device_name: String
+  device_type: String
+  os: String
+  browser: String
+  app_version: String
+}
+
+type AuthAttempt {
+  id: ID!
+  identity: String!
+  provider: AuthProvider!
+  ip_address: String!
+  user_agent: String
+  success: Boolean!
+  failure_reason: String
+  created: Date!
+}
+
+type PasswordPolicy {
+  min_length: Int!
+  require_uppercase: Boolean!
+  require_lowercase: Boolean!
+  require_numbers: Boolean!
+  require_symbols: Boolean!
+  max_age_days: Int
+  history_count: Int
+}
+
+type TwoFactorAuth {
+  is_enabled: Boolean!
+  backup_codes: [String!]
+  qr_code: String
+  secret: String
+}
+
+# ===== 输入类型 =====
+input LoginInput {
+  identity: String!
+  password: String!
+  provider: AuthProvider = email
+  device_info: DeviceInfoInput
+  remember_me: Boolean = false
+  captcha_token: String
+}
+
+input DeviceInfoInput {
+  device_id: String
+  device_name: String
+  device_type: String
+  os: String
+  browser: String
+  app_version: String
+}
+
+input RegisterInput {
+  email: String!
+  password: String!
+  name: String
+  phone: String
+  invite_code: String
+  terms_accepted: Boolean!
+  newsletter_opt_in: Boolean = false
+}
+
+input ForgotPasswordInput {
+  email: String!
+  captcha_token: String
+}
+
+input ResetPasswordInput {
+  token: String!
+  new_password: String!
+  confirm_password: String!
+}
+
+input ChangePasswordInput {
+  current_password: String!
+  new_password: String!
+  confirm_password: String!
+}
+
+input VerifyEmailInput {
+  token: String!
+}
+
+input RefreshTokenInput {
+  refresh_token: String!
+}
+
+input Enable2FAInput {
+  password: String!
+}
+
+input Verify2FAInput {
+  code: String!
+  backup_code: String
+}
+
+input SocialLoginInput {
+  provider: AuthProvider!
+  access_token: String!
+  id_token: String
+  device_info: DeviceInfoInput
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取当前用户信息"""
+  me: User
+  
+  """获取用户会话列表"""
+  mySessions: [AuthSession!]!
+  
+  """获取密码策略"""
+  passwordPolicy: PasswordPolicy!
+  
+  """获取双因子认证状态"""
+  my2FAStatus: TwoFactorAuth!
+  
+  """验证令牌有效性"""
+  verifyToken(token: String!, type: TokenType!): Boolean!
+  
+  """获取登录历史"""
+  myLoginHistory(limit: Int = 10): [AuthAttempt!]!
+  
+  """检查用户名/邮箱是否可用"""
+  checkAvailability(identity: String!, type: String!): Boolean!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """用户登录"""
+  login(input: LoginInput!): AuthResponse!
+  
+  """用户注册"""
+  register(input: RegisterInput!): AuthResponse!
+  
+  """用户登出"""
+  logout: Boolean!
+  
+  """登出所有设备"""
+  logoutAll: Boolean!
+  
+  """刷新令牌"""
+  refreshToken(input: RefreshTokenInput!): RefreshTokenResponse!
+  
+  """忘记密码"""
+  forgotPassword(input: ForgotPasswordInput!): OperationResult!
+  
+  """重置密码"""
+  resetPassword(input: ResetPasswordInput!): OperationResult!
+  
+  """修改密码"""
+  changePassword(input: ChangePasswordInput!): OperationResult!
+  
+  """验证邮箱"""
+  verifyEmail(input: VerifyEmailInput!): OperationResult!
+  
+  """重新发送验证邮件"""
+  resendVerificationEmail: OperationResult!
+  
+  """启用双因子认证"""
+  enable2FA(input: Enable2FAInput!): TwoFactorAuth!
+  
+  """禁用双因子认证"""
+  disable2FA(password: String!): OperationResult!
+  
+  """验证双因子认证码"""
+  verify2FA(input: Verify2FAInput!): OperationResult!
+  
+  """生成新的备用码"""
+  generateBackupCodes(password: String!): [String!]!
+  
+  """社交登录"""
+  socialLogin(input: SocialLoginInput!): AuthResponse!
+  
+  """撤销会话"""
+  revokeSession(session_id: String!): OperationResult!
+  
+  """撤销令牌"""
+  revokeToken(token: String!): OperationResult!
+  
+  """更新设备信息"""
+  updateDeviceInfo(device_info: DeviceInfoInput!): OperationResult!
+} 

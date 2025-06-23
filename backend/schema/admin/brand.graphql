@@ -1,0 +1,125 @@
+# 品牌管理 GraphQL Schema
+# 产品品牌相关的类型定义
+
+# ===== 品牌类型 =====
+type Brand {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  logo: String
+  website: String
+  country: String
+  founded_year: Int
+  is_active: Boolean!
+  sort_order: Int
+  meta_title: String
+  meta_description: String
+  meta_keywords: String
+  products_count: Int
+  created: Date!
+  updated: Date!
+}
+
+type BrandsResponse {
+  items: [Brand!]!
+  pagination: PaginationInfo!
+}
+
+type BrandStats {
+  total: Int!
+  active: Int!
+  inactive: Int!
+  with_products: Int!
+  without_products: Int!
+  top_brands: [BrandPopularity!]!
+}
+
+type BrandPopularity {
+  brand: Brand!
+  products_count: Int!
+  sales_count: Int!
+}
+
+# ===== 输入类型 =====
+input BrandQueryInput {
+  page: Int = 1
+  perPage: Int = 20
+  is_active: Boolean
+  country: String
+  search: String
+  sortBy: String = "name"
+  sortOrder: SortOrder = ASC
+}
+
+input BrandInput {
+  name: String!
+  slug: String
+  description: String
+  logo: String
+  website: String
+  country: String
+  founded_year: Int
+  is_active: Boolean = true
+  sort_order: Int = 0
+  meta_title: String
+  meta_description: String
+  meta_keywords: String
+}
+
+input BrandUpdateInput {
+  name: String
+  slug: String
+  description: String
+  logo: String
+  website: String
+  country: String
+  founded_year: Int
+  is_active: Boolean
+  sort_order: Int
+  meta_title: String
+  meta_description: String
+  meta_keywords: String
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取品牌列表"""
+  brands(query: BrandQueryInput): BrandsResponse!
+  
+  """获取单个品牌"""
+  brand(id: ID!): Brand
+  
+  """获取活跃品牌"""
+  activeBrands: [Brand!]!
+  
+  """获取热门品牌"""
+  popularBrands(limit: Int = 10): [BrandPopularity!]!
+  
+  """获取品牌统计信息"""
+  brandStats: BrandStats!
+  
+  """搜索品牌"""
+  searchBrands(keyword: String!, limit: Int = 10): [Brand!]!
+  
+  """根据国家获取品牌"""
+  brandsByCountry(country: String!): [Brand!]!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """创建品牌"""
+  createBrand(input: BrandInput!): Brand!
+  
+  """更新品牌"""
+  updateBrand(id: ID!, input: BrandUpdateInput!): Brand!
+  
+  """删除品牌"""
+  deleteBrand(id: ID!): OperationResult!
+  
+  """批量删除品牌"""
+  batchDeleteBrands(ids: [ID!]!): BatchOperationResult!
+  
+  """批量更新品牌状态"""
+  batchUpdateBrandStatus(ids: [ID!]!, is_active: Boolean!): BatchOperationResult!
+} 

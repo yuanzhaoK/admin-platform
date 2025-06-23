@@ -1,13 +1,12 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { GraphQLHTTP } from "https://deno.land/x/gql@1.1.2/mod.ts";
-import { makeExecutableSchema } from "https://deno.land/x/graphql_tools@0.0.2/mod.ts";
-import { typeDefs } from "./schema/index.ts";
-import { resolvers } from "./resolvers/index.ts";
-import { pocketbaseClient } from "./config/pocketbase.ts";
+import { GraphQLHTTP } from 'https://deno.land/x/gql@1.1.2/mod.ts';
+import { makeExecutableSchema } from 'https://deno.land/x/graphql_tools@0.0.2/mod.ts';
+import { pocketbaseClient } from './config/pocketbase.ts';
+import { resolvers } from './resolvers/index.ts';
+import { getTypeDefs, validateSchema } from './schema/index.ts';
 
 // Deno 版本的 PocketBase 直接启动服务器
+import { ensureDir, exists } from '@std/fs';
 import { join } from '@std/path';
-import { exists, ensureDir } from '@std/fs';
 import { config } from './config/server.ts';
 
 interface PocketBaseServer {
@@ -17,22 +16,29 @@ interface PocketBaseServer {
   cleanup(): Promise<void>;
 }
 
-// 构建 GraphQL schema
-const schema = makeExecutableSchema({ 
-  typeDefs, 
-  resolvers 
+// 验证并构建 GraphQL schema
+console.log('🔍 验证 GraphQL Schema...');
+if (!validateSchema()) {
+  console.error('❌ GraphQL Schema 验证失败！');
+  Deno.exit(1);
+}
+
+const typeDefs = getTypeDefs();
+const schema = makeExecutableSchema({
+  typeDefs,
+  resolvers,
 });
 
 // CORS 配置
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 // 处理 CORS 预检请求
 function handleCORS(request: Request): Response | null {
-  if (request.method === "OPTIONS") {
+  if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
@@ -44,46 +50,46 @@ function handleCORS(request: Request): Response | null {
 // GraphQL 服务器处理函数
 async function handleGraphQL(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  
+
   // 健康检查端点
-  if (url.pathname === "/health") {
+  if (url.pathname === '/health') {
     try {
       const isHealthy = await pocketbaseClient.healthCheck();
       return new Response(
-        JSON.stringify({ 
-          status: isHealthy ? "OK" : "ERROR",
+        JSON.stringify({
+          status: isHealthy ? 'OK' : 'ERROR',
           timestamp: new Date().toISOString(),
-          pocketbase: isHealthy ? "connected" : "disconnected"
+          pocketbase: isHealthy ? 'connected' : 'disconnected',
         }),
         {
           status: isHealthy ? 200 : 503,
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             ...corsHeaders,
           },
-        }
+        },
       );
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return new Response(
-        JSON.stringify({ 
-          status: "ERROR", 
+        JSON.stringify({
+          status: 'ERROR',
           error: errorMessage,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         }),
         {
           status: 503,
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             ...corsHeaders,
           },
-        }
+        },
       );
     }
   }
 
   // GraphQL 端点
-  if (url.pathname === "/graphql") {
+  if (url.pathname === '/graphql') {
     try {
       const graphQLResponse = await GraphQLHTTP<Request>({
         schema,
@@ -106,65 +112,65 @@ async function handleGraphQL(request: Request): Promise<Response> {
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error("GraphQL error:", error);
+      console.error('GraphQL error:', error);
       return new Response(
-        JSON.stringify({ 
-          error: "Internal server error",
-          message: errorMessage 
+        JSON.stringify({
+          error: 'Internal server error',
+          message: errorMessage,
         }),
         {
           status: 500,
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             ...corsHeaders,
           },
-        }
+        },
       );
     }
   }
 
   // API 信息端点
-  if (url.pathname === "/api" || url.pathname === "/api/info") {
+  if (url.pathname === '/api' || url.pathname === '/api/info') {
     return new Response(
       JSON.stringify({
-        name: "Admin Platform GraphQL API",
-        version: "1.0.0",
-        description: "GraphQL API wrapper for PocketBase admin platform",
+        name: 'Admin Platform GraphQL API',
+        version: '1.0.0',
+        description: 'GraphQL API wrapper for PocketBase admin platform',
         endpoints: {
-          graphql: "/graphql",
-          health: "/health",
-          graphiql: "/graphql (GET request)"
+          graphql: '/graphql',
+          health: '/health',
+          graphiql: '/graphql (GET request)',
         },
         pocketbase: {
-          url: Deno.env.get("POCKETBASE_URL") || "http://localhost:8090",
-          status: "connected"
+          url: Deno.env.get('POCKETBASE_URL') || 'http://localhost:8090',
+          status: 'connected',
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }),
       {
         status: 200,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           ...corsHeaders,
         },
-      }
+      },
     );
   }
 
   // 404 处理
   return new Response(
-    JSON.stringify({ 
-      error: "Not Found",
+    JSON.stringify({
+      error: 'Not Found',
       message: `Path ${url.pathname} not found`,
-      availablePaths: ["/graphql", "/health", "/api"]
+      availablePaths: ['/graphql', '/health', '/api'],
     }),
     {
       status: 404,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         ...corsHeaders,
       },
-    }
+    },
   );
 }
 
@@ -186,10 +192,10 @@ class DenoServerManager implements PocketBaseServer {
   }
 
   async startGraphQLServer(): Promise<void> {
-    const graphqlPort = parseInt(Deno.env.get("GRAPHQL_PORT") || "8082");
-    
+    const graphqlPort = parseInt(Deno.env.get('GRAPHQL_PORT') || '8082');
+
     console.log(`🚀 Starting GraphQL Server...`);
-    console.log(`📊 PocketBase URL: ${Deno.env.get("POCKETBASE_URL") || "http://localhost:8090"}`);
+    console.log(`📊 PocketBase URL: ${Deno.env.get('POCKETBASE_URL') || 'http://localhost:8090'}`);
     console.log(`🌐 GraphQL Server: http://localhost:${graphqlPort}`);
     console.log(`🔍 GraphiQL available at: http://localhost:${graphqlPort}/graphql`);
     console.log(`❤️  Health check at: http://localhost:${graphqlPort}/health`);
@@ -197,11 +203,11 @@ class DenoServerManager implements PocketBaseServer {
     // 初始化 PocketBase 连接
     try {
       await pocketbaseClient.ensureAuth();
-      console.log("✅ PocketBase connection initialized for GraphQL");
+      console.log('✅ PocketBase connection initialized for GraphQL');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error("❌ Failed to initialize PocketBase connection:", errorMessage);
-      console.log("⚠️  GraphQL server will start but may not function properly");
+      console.error('❌ Failed to initialize PocketBase connection:', errorMessage);
+      console.log('⚠️  GraphQL server will start but may not function properly');
     }
 
     // 创建 GraphQL 服务器处理函数
@@ -215,12 +221,14 @@ class DenoServerManager implements PocketBaseServer {
 
     // 启动 GraphQL 服务器
     this.graphqlServer = new AbortController();
-    
+
     try {
-      await serve(graphqlHandler, { 
+      const server = Deno.serve({
         port: graphqlPort,
-        signal: this.graphqlServer.signal 
+        signal: this.graphqlServer.signal,
+        handler: graphqlHandler,
       });
+      await server.finished;
     } catch (error) {
       if (error instanceof Error && error.name !== 'AbortError') {
         console.error('❌ GraphQL server error:', error);
@@ -267,10 +275,10 @@ class DenoServerManager implements PocketBaseServer {
 
       // 等待 PocketBase 启动后再启动 GraphQL 服务器
       console.log('⏳ Waiting for PocketBase to start...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // 并行启动 GraphQL 服务器
-      this.startGraphQLServer().catch(error => {
+      this.startGraphQLServer().catch((error) => {
         console.error('❌ Failed to start GraphQL server:', error);
       });
 
@@ -292,7 +300,6 @@ class DenoServerManager implements PocketBaseServer {
       if (!status.success) {
         Deno.exit(status.code || 1);
       }
-
     } catch (error) {
       console.error('❌ Error starting server:', error);
       await this.cleanup();
@@ -338,4 +345,4 @@ if (import.meta.main) {
     console.error('💥 Fatal error:', error);
     Deno.exit(1);
   });
-} 
+}

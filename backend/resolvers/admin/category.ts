@@ -1,10 +1,47 @@
 import { pocketbaseClient } from '../../config/pocketbase.ts';
 import type { ProductCategory } from '../../types/index.ts';
 
+// 辅助函数：计算分类层级
+async function calculateCategoryLevel(categoryId: string, pb: any): Promise<number> {
+  let level = 0;
+  let currentId = categoryId;
+  
+  while (currentId) {
+    try {
+      const category = await pb.collection('product_categories').getOne(currentId);
+      if (!category.parent_id) break;
+      currentId = category.parent_id;
+      level++;
+    } catch {
+      break;
+    }
+  }
+  
+  return level;
+}
+
+// 辅助函数：构建分类路径
+async function buildCategoryPath(categoryId: string, pb: any): Promise<string> {
+  const pathParts: string[] = [];
+  let currentId = categoryId;
+  
+  while (currentId) {
+    try {
+      const category = await pb.collection('product_categories').getOne(currentId);
+      pathParts.unshift(category.name);
+      currentId = category.parent_id;
+    } catch {
+      break;
+    }
+  }
+  
+  return pathParts.join(' > ');
+}
+
 export const categoryResolvers = {
   Query: {
     // 分类查询
-    productCategories: async (_: any, { query }: { query?: any }) => {
+    categories: async (_: any, { query }: { query?: any }) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -65,7 +102,7 @@ export const categoryResolvers = {
       }
     },
 
-    productCategory: async (_: any, { id }: { id: string }) => {
+    category: async (_: any, { id }: { id: string }) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -84,7 +121,7 @@ export const categoryResolvers = {
     },
 
     // 分类树结构
-    productCategoryTree: async () => {
+    categoryTree: async () => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -132,10 +169,113 @@ export const categoryResolvers = {
         throw new Error('Failed to fetch category tree');
       }
     },
+
+    // 获取根分类
+    rootCategories: async () => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        
+        const categories = await pb.collection('product_categories').getFullList<ProductCategory>({
+          filter: 'parent_id=""',
+          sort: 'sort_order,name'
+        });
+        
+        return categories.map(item => ({
+          ...item,
+          created: item.created || new Date().toISOString(),
+          updated: item.updated || new Date().toISOString()
+        }));
+      } catch (error) {
+        console.error('Failed to fetch root categories:', error);
+        throw new Error('Failed to fetch root categories');
+      }
+    },
+
+    // 获取分类路径
+    categoryPath: async (_: any, { id }: { id: string }) => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        
+        const path: ProductCategory[] = [];
+        let currentId = id;
+        
+        while (currentId) {
+          const category = await pb.collection('product_categories').getOne<ProductCategory>(currentId);
+          path.unshift({
+            ...category,
+            created: category.created || new Date().toISOString(),
+            updated: category.updated || new Date().toISOString()
+          });
+          currentId = category.parent_id || '';
+        }
+        
+        return path;
+      } catch (error) {
+        console.error('Failed to fetch category path:', error);
+        return [];
+      }
+    },
+
+    // 分类统计
+    categoryStats: async () => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        
+        const categories = await pb.collection('product_categories').getFullList<ProductCategory>();
+        const products = await pb.collection('products').getFullList();
+        
+        const active = categories.filter(c => c.status === 'active').length;
+        const inactive = categories.filter(c => c.status === 'inactive').length;
+        
+        const categoriesWithProducts = new Set();
+        products.forEach(p => {
+          if (p.category_id) categoriesWithProducts.add(p.category_id);
+        });
+        
+        const maxDepth = Math.max(...categories.map(c => (c as any).level || 0), 0);
+        
+        return {
+          total: categories.length,
+          active,
+          inactive,
+          with_products: categoriesWithProducts.size,
+          without_products: categories.length - categoriesWithProducts.size,
+          max_depth: maxDepth
+        };
+      } catch (error) {
+        console.error('Failed to fetch category stats:', error);
+        throw new Error('Failed to fetch category stats');
+      }
+    },
+
+    // 搜索分类
+    searchCategories: async (_: any, { keyword, limit = 10 }: { keyword: string; limit?: number }) => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        
+        const categories = await pb.collection('product_categories').getList<ProductCategory>(1, limit, {
+          filter: `name~"${keyword}" || description~"${keyword}"`,
+          sort: 'name'
+        });
+        
+        return categories.items.map(item => ({
+          ...item,
+          created: item.created || new Date().toISOString(),
+          updated: item.updated || new Date().toISOString()
+        }));
+      } catch (error) {
+        console.error('Failed to search categories:', error);
+        return [];
+      }
+    },
   },
 
   Mutation: {
-    createProductCategory: async (_: any, { input }: { input: any }) => {
+    createCategory: async (_: any, { input }: { input: any }) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -153,7 +293,7 @@ export const categoryResolvers = {
       }
     },
 
-    updateProductCategory: async (_: any, { id, input }: { id: string; input: any }) => {
+    updateCategory: async (_: any, { id, input }: { id: string; input: any }) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -171,7 +311,7 @@ export const categoryResolvers = {
       }
     },
 
-    deleteProductCategory: async (_: any, { id }: { id: string }) => {
+    deleteCategory: async (_: any, { id }: { id: string }) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -199,6 +339,108 @@ export const categoryResolvers = {
       } catch (error) {
         console.error('Failed to delete product category:', error);
         throw new Error(error instanceof Error ? error.message : 'Failed to delete product category');
+      }
+    },
+
+    // 移动分类
+    moveCategory: async (_: any, { input }: { input: any }) => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        
+        const { category_id, new_parent_id, new_sort_order } = input;
+        
+        const updateData: any = {};
+        if (new_parent_id !== undefined) updateData.parent_id = new_parent_id;
+        if (new_sort_order !== undefined) updateData.sort_order = new_sort_order;
+        
+        const category = await pb.collection('product_categories').update<ProductCategory>(category_id, updateData);
+        
+        return {
+          ...category,
+          created: category.created || new Date().toISOString(),
+          updated: category.updated || new Date().toISOString()
+        };
+      } catch (error) {
+        console.error('Failed to move category:', error);
+        throw new Error('Failed to move category');
+      }
+    },
+
+    // 批量删除分类
+    batchDeleteCategories: async (_: any, { ids }: { ids: string[] }) => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        
+        let successCount = 0;
+        const errors: string[] = [];
+        
+        for (const id of ids) {
+          try {
+            // 检查是否有子分类或关联产品
+            const children = await pb.collection('product_categories').getFullList({
+              filter: `parent_id="${id}"`
+            });
+            
+            const products = await pb.collection('products').getFullList({
+              filter: `category_id="${id}"`
+            });
+            
+            if (children.length > 0 || products.length > 0) {
+              errors.push(`Category ${id} has subcategories or products`);
+              continue;
+            }
+            
+            await pb.collection('product_categories').delete(id);
+            successCount++;
+          } catch (error) {
+            errors.push(`Failed to delete category ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+        
+        return {
+          success: successCount > 0,
+          total: ids.length,
+          success_count: successCount,
+          error_count: errors.length,
+          errors
+        };
+      } catch (error) {
+        console.error('Failed to batch delete categories:', error);
+        throw new Error('Failed to batch delete categories');
+      }
+    },
+
+    // 重建分类层级
+    rebuildCategoryHierarchy: async () => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+        
+        // 获取所有分类
+        const categories = await pb.collection('product_categories').getFullList<ProductCategory>();
+        
+        // 重新计算层级和路径
+        const updatePromises = categories.map(async (category) => {
+          const level = await calculateCategoryLevel(category.id, pb);
+          const path = await buildCategoryPath(category.id, pb);
+          
+          return pb.collection('product_categories').update(category.id, {
+            level,
+            path
+          });
+        });
+        
+        await Promise.all(updatePromises);
+        
+        return {
+          success: true,
+          message: 'Category hierarchy rebuilt successfully'
+        };
+      } catch (error) {
+        console.error('Failed to rebuild category hierarchy:', error);
+        throw new Error('Failed to rebuild category hierarchy');
       }
     },
   },

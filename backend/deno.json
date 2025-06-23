@@ -15,7 +15,9 @@
     "create-admin": "deno run --allow-all create-admin.ts",
     "create-orders": "deno run --allow-all create-order-collections.ts",
     "create-test-data": "deno run --allow-all create-test-data.ts",
-    "fix-orders": "deno run --allow-all fix-orders-data.ts"
+    "fix-orders": "deno run --allow-all fix-orders-data.ts",
+    "validate-schema": "deno run --allow-read --allow-env scripts/validate-schema.ts",
+    "schema-check": "deno task validate-schema"
   },
   "imports": {
     "@std/http": "https://deno.land/std@0.208.0/http/mod.ts",

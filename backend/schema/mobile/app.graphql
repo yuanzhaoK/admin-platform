@@ -1,0 +1,281 @@
+# 移动端应用 GraphQL Schema
+# 移动端专用的类型定义和接口
+
+# ===== 移动端用户类型 =====
+type MobileUser {
+  id: ID!
+  username: String!
+  email: String!
+  name: String
+  avatar: String
+  phone: String
+  points: Int!
+  growth_value: Int!
+  level: Int!
+  vip_status: String!
+  balance: Float!
+  created: Date!
+  updated: Date!
+}
+
+# ===== 首页相关类型 =====
+type AppBanner {
+  id: ID!
+  title: String!
+  image: String!
+  link: String
+  sort_order: Int!
+  is_active: Boolean!
+  created: Date!
+  updated: Date!
+}
+
+type AppPackage {
+  id: ID!
+  name: String!
+  description: String
+  image: String!
+  price: Float!
+  original_price: Float
+  discount: Float
+  products: [Product!]
+  is_featured: Boolean!
+  sort_order: Int!
+  status: String!
+  created: Date!
+  updated: Date!
+}
+
+type AppHomeData {
+  banners: [AppBanner!]!
+  packages: [AppPackage!]!
+  featured_products: [Product!]!
+  categories: [ProductCategory!]!
+  recommendations: [Product!]!
+}
+
+# ===== 购物车相关类型 =====
+type CartItem {
+  id: ID!
+  user_id: String!
+  product_id: String!
+  product: Product!
+  quantity: Int!
+  selected: Boolean!
+  created: Date!
+  updated: Date!
+}
+
+type Cart {
+  items: [CartItem!]!
+  total_items: Int!
+  total_amount: Float!
+  selected_amount: Float!
+}
+
+# ===== 收藏相关类型 =====
+type Favorite {
+  id: ID!
+  user_id: String!
+  product_id: String!
+  product: Product!
+  created: Date!
+}
+
+type FavoritesResponse {
+  items: [Favorite!]!
+  pagination: PaginationInfo!
+}
+
+# ===== 地址相关类型 =====
+type Address {
+  id: ID!
+  user_id: String!
+  name: String!
+  phone: String!
+  province: String!
+  city: String!
+  district: String!
+  detail: String!
+  postal_code: String
+  is_default: Boolean!
+  created: Date!
+  updated: Date!
+}
+
+# ===== 移动端通知类型 =====
+type MobileNotification {
+  id: ID!
+  title: String!
+  content: String!
+  type: String!
+  user_id: String
+  is_read: Boolean!
+  created: Date!
+}
+
+# ===== 优惠券相关类型 =====
+type Coupon {
+  id: ID!
+  name: String!
+  code: String!
+  type: String!
+  discount_type: String!
+  discount_value: Float!
+  min_order_amount: Float
+  max_discount_amount: Float
+  start_date: Date!
+  end_date: Date!
+  usage_limit: Int
+  used_count: Int!
+  is_active: Boolean!
+  created: Date!
+  updated: Date!
+}
+
+type UserCoupon {
+  id: ID!
+  user_id: String!
+  coupon_id: String!
+  coupon: Coupon!
+  status: String!
+  used_at: Date
+  created: Date!
+  updated: Date!
+}
+
+# ===== 移动端订单类型 =====
+type MobileOrder {
+  id: ID!
+  order_number: String!
+  user_id: String!
+  total_amount: Float!
+  payment_method: String!
+  order_source: String!
+  order_type: String!
+  status: String!
+  items: JSON!
+  shipping_address: JSON!
+  notes: String
+  created: Date!
+  updated: Date!
+}
+
+# ===== 输入类型 =====
+input AddToCartInput {
+  product_id: String!
+  quantity: Int!
+}
+
+input UpdateCartItemInput {
+  quantity: Int
+  selected: Boolean
+}
+
+input CreateAddressInput {
+  name: String!
+  phone: String!
+  province: String!
+  city: String!
+  district: String!
+  detail: String!
+  postal_code: String
+  is_default: Boolean
+}
+
+input CreateMobileOrderInput {
+  items: [MobileOrderItemInput!]!
+  shipping_address: MobileAddressInput!
+  payment_method: String!
+  notes: String
+}
+
+input MobileOrderItemInput {
+  product_id: String!
+  quantity: Int!
+  price: Float!
+}
+
+input MobileAddressInput {
+  name: String!
+  phone: String!
+  province: String!
+  city: String!
+  district: String!
+  detail: String!
+  postal_code: String
+}
+
+type MobileLoginResponse {
+  token: String!
+  record: MobileUser!
+}
+
+# ===== 移动端查询扩展 =====
+extend type Query {
+  """首页数据"""
+  appHomeData: AppHomeData!
+  
+  """用户信息"""
+  appUser: MobileUser!
+  
+  """购物车"""
+  appCart: Cart!
+  
+  """收藏列表"""
+  appFavorites(page: Int = 1, perPage: Int = 20): FavoritesResponse!
+  
+  """检查是否收藏"""
+  appIsFavorite(product_id: String!): Boolean!
+  
+  """地址列表"""
+  appAddresses: [Address!]!
+  
+  """默认地址"""
+  appDefaultAddress: Address
+  
+  """用户详细信息"""
+  appProfile: MobileUser!
+  
+  """通知列表"""
+  appNotifications(page: Int = 1, perPage: Int = 20): [MobileNotification!]!
+  
+  """用户优惠券"""
+  appUserCoupons: [UserCoupon!]!
+}
+
+# ===== 移动端变更扩展 =====
+extend type Mutation {
+  """添加到购物车"""
+  appAddToCart(input: AddToCartInput!): CartItem!
+  
+  """更新购物车项"""
+  appUpdateCartItem(id: String!, input: UpdateCartItemInput!): CartItem!
+  
+  """从购物车移除"""
+  appRemoveFromCart(id: String!): Boolean!
+  
+  """清空购物车"""
+  appClearCart: Boolean!
+  
+  """添加到收藏"""
+  appAddToFavorites(product_id: String!): Favorite!
+  
+  """从收藏移除"""
+  appRemoveFromFavorites(product_id: String!): Boolean!
+  
+  """创建地址"""
+  appCreateAddress(input: CreateAddressInput!): Address!
+  
+  """创建订单"""
+  appCreateOrder(input: CreateMobileOrderInput!): MobileOrder!
+  
+  """标记通知已读"""
+  appMarkNotificationRead(id: String!): Boolean!
+  
+  """标记所有通知已读"""
+  appMarkAllNotificationsRead: Boolean!
+  
+  """移动端用户登录"""
+  mobileLogin(input: LoginInput!): MobileLoginResponse!
+} 

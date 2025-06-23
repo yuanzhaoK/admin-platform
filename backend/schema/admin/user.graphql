@@ -1,0 +1,175 @@
+# 用户管理 GraphQL Schema
+# 用户相关的类型定义
+
+# ===== 用户枚举 =====
+enum UserRole {
+  admin
+  user
+  moderator
+  guest
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+  pending
+}
+
+# ===== 用户类型 =====
+type User {
+  id: ID!
+  email: String!
+  name: String
+  avatar: String
+  role: UserRole!
+  status: UserStatus!
+  phone: String
+  points: Int!
+  growth_value: Int!
+  level: Int!
+  vip_status: String
+  balance: Float!
+  last_login: Date
+  login_count: Int!
+  created: Date!
+  updated: Date!
+  collectionId: String
+  collectionName: String
+  emailVisibility: Boolean
+  verified: Boolean!
+}
+
+type UsersResponse {
+  items: [User!]!
+  pagination: PaginationInfo!
+}
+
+type UserStats {
+  total: Int!
+  active: Int!
+  inactive: Int!
+  suspended: Int!
+  verified: Int!
+  unverified: Int!
+  admins: Int!
+  regular_users: Int!
+  new_this_month: Int!
+}
+
+type UserActivity {
+  id: ID!
+  user_id: String!
+  user: User!
+  action: String!
+  description: String!
+  ip_address: String
+  user_agent: String
+  created: Date!
+}
+
+# ===== 输入类型 =====
+input UserQueryInput {
+  page: Int = 1
+  perPage: Int = 20
+  role: UserRole
+  status: UserStatus
+  verified: Boolean
+  search: String
+  sortBy: String = "created"
+  sortOrder: SortOrder = desc
+}
+
+input UserInput {
+  email: String!
+  name: String
+  avatar: String
+  role: UserRole = user
+  status: UserStatus = active
+  phone: String
+  password: String!
+}
+
+input UserUpdateInput {
+  email: String
+  name: String
+  avatar: String
+  role: UserRole
+  status: UserStatus
+  phone: String
+  verified: Boolean
+  points: Int
+  growth_value: Int
+  balance: Float
+}
+
+input AdminChangePasswordInput {
+  user_id: ID!
+  new_password: String!
+  notify_user: Boolean = true
+}
+
+input BatchUserUpdateInput {
+  user_ids: [ID!]!
+  updates: UserUpdateInput!
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取用户列表"""
+  users(query: UserQueryInput): UsersResponse!
+  
+  """获取单个用户"""
+  user(id: ID!): User
+  
+  """根据邮箱获取用户"""
+  userByEmail(email: String!): User
+  
+  """获取用户统计信息"""
+  userStats: UserStats!
+  
+  """搜索用户"""
+  searchUsers(keyword: String!, limit: Int = 10): [User!]!
+  
+  """获取用户活动记录"""
+  userActivities(user_id: ID!, page: Int = 1, perPage: Int = 20): [UserActivity!]!
+  
+  """获取活跃用户"""
+  activeUsers(limit: Int = 10): [User!]!
+  
+  """获取新注册用户"""
+  newUsers(days: Int = 7, limit: Int = 10): [User!]!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """创建用户"""
+  createUser(input: UserInput!): User!
+  
+  """更新用户"""
+  updateUser(id: ID!, input: UserUpdateInput!): User!
+  
+  """删除用户"""
+  deleteUser(id: ID!): OperationResult!
+  
+  """批量删除用户"""
+  batchDeleteUsers(ids: [ID!]!): BatchOperationResult!
+  
+  """批量更新用户"""
+  batchUpdateUsers(input: BatchUserUpdateInput!): BatchOperationResult!
+  
+  """修改用户密码"""
+  changeUserPassword(input: AdminChangePasswordInput!): OperationResult!
+  
+  """验证用户邮箱"""
+  verifyUserEmail(id: ID!): OperationResult!
+  
+  """重置用户密码"""
+  resetUserPassword(id: ID!): OperationResult!
+  
+  """调整用户积分"""
+  adjustUserPoints(user_id: ID!, points: Int!, reason: String): User!
+  
+  """调整用户余额"""
+  adjustUserBalance(user_id: ID!, amount: Float!, reason: String): User!
+} 

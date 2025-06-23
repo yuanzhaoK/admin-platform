@@ -1,0 +1,307 @@
+# 产品管理 GraphQL Schema
+# 管理后台产品相关的类型定义
+
+# ===== 产品相关枚举 =====
+enum ProductStatus {
+  active
+  inactive
+  draft
+}
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+}
+
+# ===== 产品类型 =====
+type Product {
+  id: ID!
+  name: String!
+  subtitle: String
+  description: String
+  price: Float
+  market_price: Float
+  cost_price: Float
+  category_id: String
+  category: ProductCategory
+  brand_id: String
+  brand: Brand
+  product_type_id: String
+  product_type: ProductType
+  status: ProductStatus!
+  tags: [String!]
+  config: JSON
+  sku: String
+  stock: Int
+  unit: String
+  weight: Float
+  dimensions: ProductDimensions
+  images: [String!]
+  meta_data: JSON
+  sort_order: Int
+  is_featured: Boolean
+  is_new: Boolean
+  is_hot: Boolean
+  points: Int
+  growth_value: Int
+  points_purchase_limit: Int
+  preview_enabled: Boolean
+  is_published: Boolean
+  is_recommended: Boolean
+  service_guarantee: [String!]
+  sales_count: Int
+  view_count: Int
+  review_status: ReviewStatus!
+  attributes: JSON
+  created: Date!
+  updated: Date!
+}
+
+type ProductDimensions {
+  length: Float
+  width: Float
+  height: Float
+}
+
+type ProductsResponse {
+  items: [Product!]!
+  pagination: PaginationInfo!
+}
+
+type ProductStats {
+  total: Int!
+  active: Int!
+  inactive: Int!
+  draft: Int!
+  categories: JSON!
+  avgPrice: Float
+  totalStock: Int
+  lowStock: Int!
+  outOfStock: Int!
+  brands: JSON!
+  productTypes: JSON!
+}
+
+type StockOperationResult {
+  success: Boolean!
+  message: String
+  product: Product
+  previousStock: Int
+  newStock: Int
+}
+
+type ExportResult {
+  success: Boolean!
+  message: String
+  downloadUrl: String
+  filename: String
+}
+
+# ===== 输入类型 =====
+input ProductQueryInput {
+  page: Int = 1
+  perPage: Int = 20
+  status: ProductStatus
+  category_id: String
+  brand_id: String
+  product_type_id: String
+  search: String
+  priceMin: Float
+  priceMax: Float
+  stockMin: Int
+  stockMax: Int
+  tags: [String!]
+  is_featured: Boolean
+  is_new: Boolean
+  is_hot: Boolean
+  is_published: Boolean
+  review_status: ReviewStatus
+  sortBy: String = "created"
+  sortOrder: SortOrder = desc
+}
+
+input ProductInput {
+  name: String!
+  subtitle: String
+  description: String
+  price: Float
+  market_price: Float
+  cost_price: Float
+  category_id: String
+  brand_id: String
+  product_type_id: String
+  status: ProductStatus!
+  tags: [String!]
+  sku: String
+  stock: Int
+  unit: String
+  weight: Float
+  images: [String!]
+  sort_order: Int
+  is_featured: Boolean = false
+  is_new: Boolean = false
+  is_hot: Boolean = false
+  points: Int
+  growth_value: Int
+  points_purchase_limit: Int
+  preview_enabled: Boolean = false
+  is_published: Boolean = false
+  is_recommended: Boolean = false
+  service_guarantee: [String!]
+  attributes: JSON
+}
+
+input ProductUpdateInput {
+  name: String
+  subtitle: String
+  description: String
+  price: Float
+  market_price: Float
+  cost_price: Float
+  category_id: String
+  brand_id: String
+  product_type_id: String
+  status: ProductStatus
+  tags: [String!]
+  sku: String
+  stock: Int
+  unit: String
+  weight: Float
+  images: [String!]
+  sort_order: Int
+  is_featured: Boolean
+  is_new: Boolean
+  is_hot: Boolean
+  points: Int
+  growth_value: Int
+  points_purchase_limit: Int
+  preview_enabled: Boolean
+  is_published: Boolean
+  is_recommended: Boolean
+  service_guarantee: [String!]
+  attributes: JSON
+  review_status: ReviewStatus
+}
+
+input ProductDimensionsInput {
+  length: Float
+  width: Float
+  height: Float
+}
+
+input StockAdjustmentInput {
+  product_id: ID!
+  adjustment_type: String!
+  quantity: Int!
+  reason: String
+  notes: String
+}
+
+input BatchProductUpdateInput {
+  product_ids: [ID!]!
+  updates: ProductUpdateInput!
+}
+
+input BatchPriceUpdateInput {
+  productIds: [ID!]!
+  price: Float!
+  updateType: String!
+}
+
+input StockUpdateInput {
+  productId: ID!
+  quantity: Int!
+  operation: String!
+  reason: String
+}
+
+input ExportProductsInput {
+  productIds: [ID!]
+  filters: JSON
+  format: String!
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取产品列表"""
+  products(query: ProductQueryInput): ProductsResponse!
+  
+  """获取单个产品"""
+  product(id: ID!): Product
+  
+  """获取产品统计信息"""
+  productStats: ProductStats!
+  
+  """搜索产品"""
+  searchProducts(keyword: String!, limit: Int = 10): [Product!]!
+  
+  """获取低库存产品"""
+  lowStockProducts(threshold: Int = 10): [Product!]!
+  
+  """获取推荐产品"""
+  featuredProducts(limit: Int = 10): [Product!]!
+  
+  """根据分类获取产品"""
+  productsByCategory(category: String!): [Product!]!
+  
+  """获取相关产品"""
+  relatedProducts(productId: String!, limit: Int = 5): [Product!]!
+  
+  """获取缺货产品"""
+  outOfStockProducts: [Product!]!
+  
+  """产品搜索建议"""
+  productSearchSuggestions(query: String!): [String!]!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """创建产品"""
+  createProduct(input: ProductInput!): Product!
+  
+  """更新产品"""
+  updateProduct(id: ID!, input: ProductUpdateInput!): Product!
+  
+  """删除产品"""
+  deleteProduct(id: ID!): OperationResult!
+  
+  """批量删除产品"""
+  batchDeleteProducts(ids: [ID!]!): BatchOperationResult!
+  
+  """批量更新产品"""
+  batchUpdateProducts(input: BatchProductUpdateInput!): BatchOperationResult!
+  
+  """调整库存"""
+  adjustStock(input: StockAdjustmentInput!): StockOperationResult!
+  
+  """复制产品"""
+  duplicateProduct(id: ID!): Product!
+  
+  """批量导入产品"""
+  importProducts(file: Upload!): BatchOperationResult!
+  
+  """批量更新产品状态"""
+  batchUpdateProductStatus(ids: [ID!]!, status: ProductStatus!): OperationResult!
+  
+  """批量更新产品价格"""
+  batchUpdateProductPrices(input: BatchPriceUpdateInput!): BatchOperationResult!
+  
+  """更新产品库存"""
+  updateProductStock(input: StockUpdateInput!): StockOperationResult!
+  
+  """批量更新库存"""
+  batchUpdateStock(inputs: [StockUpdateInput!]!): [StockOperationResult!]!
+  
+  """上传产品图片"""
+  uploadProductImage(productId: ID!, imageData: String!): String!
+  
+  """删除产品图片"""
+  deleteProductImage(productId: ID!, imageUrl: String!): OperationResult!
+  
+  """重新排序产品图片"""
+  reorderProductImages(productId: ID!, imageUrls: [String!]!): OperationResult!
+  
+  """导出产品数据"""
+  exportProducts(input: ExportProductsInput!): ExportResult!
+} 

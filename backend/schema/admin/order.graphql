@@ -1,0 +1,315 @@
+# 订单管理 GraphQL Schema
+# 订单相关的类型定义
+
+# ===== 订单枚举 =====
+enum OrderStatus {
+  pending_payment
+  paid
+  processing
+  shipped
+  delivered
+  completed
+  cancelled
+  refunding
+  refunded
+}
+
+enum PaymentMethod {
+  alipay
+  wechat
+  credit_card
+  bank_transfer
+  cash_on_delivery
+  points
+  balance
+}
+
+enum OrderSource {
+  web
+  mobile
+  app
+  wechat
+  admin
+}
+
+enum OrderType {
+  normal
+  presale
+  group_buy
+  flash_sale
+  points_exchange
+}
+
+enum LogisticsStatus {
+  pending
+  picked_up
+  in_transit
+  out_for_delivery
+  delivered
+  failed
+  returned
+}
+
+# ===== 订单类型 =====
+type Order {
+  id: ID!
+  collectionId: String!
+  collectionName: String!
+  order_number: String!
+  user_id: String!
+  user: User
+  total_amount: Float!
+  payment_amount: Float!
+  discount_amount: Float!
+  shipping_fee: Float!
+  tax_amount: Float!
+  payment_method: PaymentMethod!
+  order_source: OrderSource!
+  order_type: OrderType!
+  status: OrderStatus!
+  items: [OrderItem!]!
+  shipping_address: ShippingAddress!
+  billing_address: ShippingAddress
+  logistics_info: LogisticsInfo
+  payment_info: PaymentInfo
+  coupon_info: CouponInfo
+  notes: String
+  admin_notes: String
+  paid_at: Date
+  shipped_at: Date
+  delivered_at: Date
+  cancelled_at: Date
+  refunded_at: Date
+  created: Date!
+  updated: Date!
+}
+
+type OrderItem {
+  id: ID!
+  product_id: String!
+  product: Product
+  product_name: String!
+  product_image: String
+  sku: String
+  price: Float!
+  original_price: Float!
+  discount: Float!
+  quantity: Int!
+  total: Float!
+  attributes: JSON
+  notes: String
+}
+
+type ShippingAddress {
+  name: String!
+  phone: String!
+  province: String!
+  city: String!
+  district: String!
+  address: String!
+  postal_code: String
+  country: String
+}
+
+type LogisticsInfo {
+  company: String
+  company_code: String
+  tracking_number: String
+  status: LogisticsStatus
+  estimated_delivery: Date
+  updates: [LogisticsUpdate!]
+  created: Date!
+  updated: Date!
+}
+
+type LogisticsUpdate {
+  time: Date!
+  status: LogisticsStatus!
+  description: String!
+  location: String
+  operator: String
+}
+
+type PaymentInfo {
+  transaction_id: String
+  payment_gateway: String
+  gateway_response: JSON
+  paid_amount: Float!
+  currency: String!
+  exchange_rate: Float
+  paid_at: Date
+}
+
+type CouponInfo {
+  coupon_id: String
+  coupon_code: String
+  coupon_name: String
+  discount_type: String
+  discount_value: Float!
+  min_amount: Float
+}
+
+type OrdersResponse {
+  items: [Order!]!
+  pagination: PaginationInfo!
+}
+
+type OrderStats {
+  total: Int!
+  pending_payment: Int!
+  paid: Int!
+  processing: Int!
+  shipped: Int!
+  delivered: Int!
+  completed: Int!
+  cancelled: Int!
+  refunding: Int!
+  refunded: Int!
+  total_amount: Float!
+  avg_amount: Float!
+  today_orders: Int!
+  today_amount: Float!
+  payment_methods: JSON!
+  order_sources: JSON!
+  order_types: JSON!
+  monthly_trend: JSON!
+}
+
+# ===== 输入类型 =====
+input OrderQueryInput {
+  page: Int = 1
+  perPage: Int = 20
+  status: OrderStatus
+  payment_method: PaymentMethod
+  order_source: OrderSource
+  order_type: OrderType
+  user_id: String
+  search: String
+  date_from: Date
+  date_to: Date
+  amount_min: Float
+  amount_max: Float
+  sortBy: String = "created"
+  sortOrder: SortOrder = desc
+}
+
+input OrderItemInput {
+  product_id: String!
+  product_name: String!
+  product_image: String
+  sku: String
+  price: Float!
+  quantity: Int!
+  attributes: JSON
+  notes: String
+}
+
+input ShippingAddressInput {
+  name: String!
+  phone: String!
+  province: String!
+  city: String!
+  district: String!
+  address: String!
+  postal_code: String
+  country: String = "CN"
+}
+
+input LogisticsInfoInput {
+  company: String!
+  company_code: String
+  tracking_number: String!
+  estimated_delivery: Date
+}
+
+input OrderInput {
+  user_id: String!
+  items: [OrderItemInput!]!
+  shipping_address: ShippingAddressInput!
+  billing_address: ShippingAddressInput
+  payment_method: PaymentMethod!
+  order_source: OrderSource = ADMIN
+  order_type: OrderType = NORMAL
+  shipping_fee: Float = 0
+  discount_amount: Float = 0
+  coupon_code: String
+  notes: String
+  admin_notes: String
+}
+
+input OrderUpdateInput {
+  status: OrderStatus
+  payment_method: PaymentMethod
+  shipping_address: ShippingAddressInput
+  logistics_info: LogisticsInfoInput
+  notes: String
+  admin_notes: String
+}
+
+input BatchOrderUpdateInput {
+  order_ids: [ID!]!
+  updates: OrderUpdateInput!
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取订单列表"""
+  orders(query: OrderQueryInput): OrdersResponse!
+  
+  """获取单个订单"""
+  order(id: ID!): Order
+  
+  """根据订单号获取订单"""
+  orderByNumber(order_number: String!): Order
+  
+  """获取订单统计信息"""
+  orderStats: OrderStats!
+  
+  """获取用户订单"""
+  userOrders(user_id: String!, query: OrderQueryInput): OrdersResponse!
+  
+  """搜索订单"""
+  searchOrders(keyword: String!, limit: Int = 10): [Order!]!
+  
+  """获取待处理订单"""
+  pendingOrders(limit: Int = 20): [Order!]!
+  
+  """获取今日订单"""
+  todayOrders: [Order!]!
+  
+  """订单导出数据"""
+  exportOrders(query: OrderQueryInput): [Order!]!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """创建订单"""
+  createOrder(input: OrderInput!): Order!
+  
+  """更新订单"""
+  updateOrder(id: ID!, input: OrderUpdateInput!): Order!
+  
+  """更新订单状态"""
+  updateOrderStatus(id: ID!, status: OrderStatus!, notes: String): Order!
+  
+  """更新物流信息"""
+  updateOrderLogistics(id: ID!, logistics: LogisticsInfoInput!): Order!
+  
+  """取消订单"""
+  cancelOrder(id: ID!, reason: String!): Order!
+  
+  """确认收货"""
+  confirmDelivery(id: ID!): Order!
+  
+  """批量更新订单"""
+  batchUpdateOrders(input: BatchOrderUpdateInput!): BatchOperationResult!
+  
+  """批量发货"""
+  batchShipOrders(order_ids: [ID!]!, logistics: LogisticsInfoInput!): BatchOperationResult!
+  
+  """重新计算订单金额"""
+  recalculateOrderAmount(id: ID!): Order!
+  
+  """添加订单备注"""
+  addOrderNote(id: ID!, note: String!): Order!
+} 

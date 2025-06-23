@@ -1,0 +1,74 @@
+# 基础 GraphQL Schema
+# 包含通用的标量类型、枚举和基础类型定义
+
+# ===== 标量类型 =====
+scalar JSON
+scalar Date
+scalar Upload
+
+# ===== 基础枚举 =====
+enum SortOrder {
+  asc
+  desc
+}
+
+enum Status {
+  active
+  inactive
+  draft
+  pending
+  approved
+  rejected
+}
+
+# ===== 基础类型 =====
+type PaginationInfo {
+  page: Int!
+  perPage: Int!
+  total: Int!
+  totalItems: Int!
+  totalPages: Int!
+  hasNext: Boolean!
+  hasPrev: Boolean!
+}
+
+type OperationResult {
+  success: Boolean!
+  message: String
+  code: String
+}
+
+type BatchOperationResult {
+  success: Boolean!
+  message: String
+  successCount: Int!
+  failureCount: Int!
+  errors: [String!]
+}
+
+# ===== 根查询和变更 =====
+type Query {
+  """系统健康检查"""
+  health: String!
+  
+  """获取系统信息"""
+  systemInfo: SystemInfo
+}
+
+type Mutation {
+  """占位符mutation"""
+  _: Boolean
+}
+
+type Subscription {
+  """占位符subscription"""
+  _: Boolean
+}
+
+# ===== 系统信息 =====
+type SystemInfo {
+  version: String!
+  environment: String!
+  uptime: String!
+  timestamp: String!
+} 

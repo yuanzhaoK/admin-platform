@@ -1,0 +1,240 @@
+# 退款管理 GraphQL Schema
+# 退款相关的类型定义
+
+# ===== 退款枚举 =====
+enum RefundType {
+  refund_only
+  return_and_refund
+  exchange
+  repair
+}
+
+enum RefundReason {
+  quality_issue
+  wrong_item
+  damaged_in_transit
+  not_as_described
+  size_issue
+  color_issue
+  change_of_mind
+  duplicate_order
+  shipping_delay
+  other
+}
+
+enum RefundStatus {
+  pending
+  approved
+  rejected
+  processing
+  completed
+  cancelled
+  expired
+}
+
+enum RefundMethod {
+  original_payment
+  balance
+  points
+  bank_transfer
+  cash
+}
+
+# ===== 退款类型 =====
+type RefundRequest {
+  id: ID!
+  service_number: String!
+  order_id: String!
+  order: Order
+  user_id: String!
+  user: User
+  refund_type: RefundType!
+  refund_method: RefundMethod!
+  refund_amount: Float!
+  actual_refund_amount: Float
+  shipping_fee_refund: Float!
+  reason: RefundReason!
+  description: String!
+  evidence_images: [String!]
+  return_tracking_number: String
+  return_logistics_company: String
+  status: RefundStatus!
+  admin_notes: String
+  rejection_reason: String
+  processed_at: Date
+  processed_by: String
+  processor: User
+  refunded_at: Date
+  expired_at: Date
+  items: [RefundItem!]!
+  timeline: [RefundTimeline!]!
+  created: Date!
+  updated: Date!
+}
+
+type RefundItem {
+  id: ID!
+  product_id: String!
+  product: Product
+  product_name: String!
+  product_image: String
+  sku: String
+  price: Float!
+  quantity: Int!
+  refund_quantity: Int!
+  refund_amount: Float!
+  reason: String
+}
+
+type RefundTimeline {
+  id: ID!
+  action: String!
+  description: String!
+  operator: String
+  operator_type: String!
+  notes: String
+  created: Date!
+}
+
+type RefundsResponse {
+  items: [RefundRequest!]!
+  pagination: PaginationInfo!
+}
+
+type RefundStats {
+  total: Int!
+  pending: Int!
+  approved: Int!
+  rejected: Int!
+  processing: Int!
+  completed: Int!
+  cancelled: Int!
+  total_amount: Float!
+  avg_amount: Float!
+  avg_processing_time: Float!
+  success_rate: Float!
+  refund_types: JSON!
+  refund_reasons: JSON!
+  monthly_trend: JSON!
+}
+
+# ===== 输入类型 =====
+input RefundQueryInput {
+  page: Int = 1
+  perPage: Int = 20
+  status: RefundStatus
+  refund_type: RefundType
+  reason: RefundReason
+  refund_method: RefundMethod
+  user_id: String
+  order_id: String
+  search: String
+  date_from: Date
+  date_to: Date
+  amount_min: Float
+  amount_max: Float
+  sortBy: String = "created"
+  sortOrder: SortOrder = desc
+}
+
+input RefundItemInput {
+  product_id: String!
+  product_name: String!
+  product_image: String
+  sku: String
+  price: Float!
+  quantity: Int!
+  refund_quantity: Int!
+  reason: String
+}
+
+input RefundRequestInput {
+  order_id: String!
+  refund_type: RefundType!
+  refund_method: RefundMethod = original_payment
+  reason: RefundReason!
+  description: String!
+  evidence_images: [String!]
+  items: [RefundItemInput!]!
+  return_tracking_number: String
+  return_logistics_company: String
+}
+
+input RefundProcessInput {
+  status: RefundStatus!
+  admin_notes: String
+  rejection_reason: String
+  actual_refund_amount: Float
+  refund_method: RefundMethod
+  processed_by: String!
+}
+
+input BatchRefundProcessInput {
+  refund_ids: [ID!]!
+  action: RefundStatus!
+  notes: String
+  processed_by: String!
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取退款列表"""
+  refunds(query: RefundQueryInput): RefundsResponse!
+  
+  """获取单个退款"""
+  refund(id: ID!): RefundRequest
+  
+  """根据服务单号获取退款"""
+  refundByServiceNumber(service_number: String!): RefundRequest
+  
+  """获取退款统计信息"""
+  refundStats: RefundStats!
+  
+  """获取用户退款记录"""
+  userRefunds(user_id: String!, query: RefundQueryInput): RefundsResponse!
+  
+  """获取订单退款记录"""
+  orderRefunds(order_id: String!): [RefundRequest!]!
+  
+  """搜索退款"""
+  searchRefunds(keyword: String!, limit: Int = 10): [RefundRequest!]!
+  
+  """获取待处理退款"""
+  pendingRefunds(limit: Int = 20): [RefundRequest!]!
+  
+  """获取即将过期的退款"""
+  expiringRefunds(days: Int = 3): [RefundRequest!]!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """创建退款申请"""
+  createRefundRequest(input: RefundRequestInput!): RefundRequest!
+  
+  """处理退款申请"""
+  processRefund(id: ID!, input: RefundProcessInput!): RefundRequest!
+  
+  """批准退款"""
+  approveRefund(id: ID!, notes: String, processed_by: String!): RefundRequest!
+  
+  """拒绝退款"""
+  rejectRefund(id: ID!, reason: String!, notes: String, processed_by: String!): RefundRequest!
+  
+  """完成退款"""
+  completeRefund(id: ID!, actual_amount: Float!, notes: String, processed_by: String!): RefundRequest!
+  
+  """取消退款"""
+  cancelRefund(id: ID!, reason: String!, processed_by: String!): RefundRequest!
+  
+  """批量处理退款"""
+  batchProcessRefunds(input: BatchRefundProcessInput!): BatchOperationResult!
+  
+  """更新退款物流信息"""
+  updateRefundLogistics(id: ID!, tracking_number: String!, company: String!): RefundRequest!
+  
+  """添加退款备注"""
+  addRefundNote(id: ID!, note: String!, operator: String!): RefundRequest!
+  
+  """延长退款期限"""
+  extendRefundExpiry(id: ID!, days: Int!, reason: String!): RefundRequest!
+} 

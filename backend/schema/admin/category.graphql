@@ -1,0 +1,132 @@
+# 分类管理 GraphQL Schema
+# 产品分类相关的类型定义
+
+# ===== 分类类型 =====
+type ProductCategory {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  image: String
+  parent_id: String
+  parent: ProductCategory
+  children: [ProductCategory!]
+  level: Int!
+  path: String!
+  sort_order: Int
+  is_active: Boolean!
+  meta_title: String
+  meta_description: String
+  meta_keywords: String
+  products_count: Int
+  created: Date!
+  updated: Date!
+}
+
+type CategoriesResponse {
+  items: [ProductCategory!]!
+  pagination: PaginationInfo!
+}
+
+type CategoryTree {
+  category: ProductCategory!
+  children: [CategoryTree!]
+}
+
+type CategoryStats {
+  total: Int!
+  active: Int!
+  inactive: Int!
+  with_products: Int!
+  without_products: Int!
+  max_depth: Int!
+}
+
+# ===== 输入类型 =====
+input CategoryQueryInput {
+  page: Int = 1
+  perPage: Int = 20
+  parent_id: String
+  level: Int
+  is_active: Boolean
+  search: String
+  sortBy: String = "sort_order"
+  sortOrder: SortOrder = ASC
+}
+
+input CategoryInput {
+  name: String!
+  slug: String
+  description: String
+  image: String
+  parent_id: String
+  sort_order: Int = 0
+  is_active: Boolean = true
+  meta_title: String
+  meta_description: String
+  meta_keywords: String
+}
+
+input CategoryUpdateInput {
+  name: String
+  slug: String
+  description: String
+  image: String
+  parent_id: String
+  sort_order: Int
+  is_active: Boolean
+  meta_title: String
+  meta_description: String
+  meta_keywords: String
+}
+
+input CategoryMoveInput {
+  category_id: ID!
+  new_parent_id: String
+  new_sort_order: Int
+}
+
+# ===== 查询扩展 =====
+extend type Query {
+  """获取分类列表"""
+  categories(query: CategoryQueryInput): CategoriesResponse!
+  
+  """获取单个分类"""
+  category(id: ID!): ProductCategory
+  
+  """获取分类树"""
+  categoryTree(parent_id: String): [CategoryTree!]!
+  
+  """获取根分类"""
+  rootCategories: [ProductCategory!]!
+  
+  """获取分类路径"""
+  categoryPath(id: ID!): [ProductCategory!]!
+  
+  """获取分类统计信息"""
+  categoryStats: CategoryStats!
+  
+  """搜索分类"""
+  searchCategories(keyword: String!, limit: Int = 10): [ProductCategory!]!
+}
+
+# ===== 变更扩展 =====
+extend type Mutation {
+  """创建分类"""
+  createCategory(input: CategoryInput!): ProductCategory!
+  
+  """更新分类"""
+  updateCategory(id: ID!, input: CategoryUpdateInput!): ProductCategory!
+  
+  """删除分类"""
+  deleteCategory(id: ID!): OperationResult!
+  
+  """移动分类"""
+  moveCategory(input: CategoryMoveInput!): ProductCategory!
+  
+  """批量删除分类"""
+  batchDeleteCategories(ids: [ID!]!): BatchOperationResult!
+  
+  """重建分类层级"""
+  rebuildCategoryHierarchy: OperationResult!
+} 
