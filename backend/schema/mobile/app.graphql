@@ -6,6 +6,7 @@ type MobileUser {
   id: ID!
   username: String!
   email: String!
+  identity: String!
   name: String
   avatar: String
   phone: String
@@ -22,12 +23,56 @@ type MobileUser {
 type AppBanner {
   id: ID!
   title: String!
-  image: String!
-  link: String
+  image_url: String!
+  link_url: String
+  type: String!
   sort_order: Int!
   is_active: Boolean!
   created: Date!
   updated: Date!
+}
+
+type AppFeaturedProduct {
+  id: ID!
+  name: String!
+  price: Float!
+  original_price: Float
+  discount_percentage: Float
+  image_url: String!
+  rating: Float!
+  sales_count: Int!
+}
+
+type AppCategory {
+  id: ID!
+  name: String!
+  icon_url: String!
+  product_count: Int!
+}
+
+type AppTrendingItem {
+  id: ID!
+  name: String!
+  image_url: String!
+  score: Float!
+  type: String!
+}
+
+type AppRecommendation {
+  id: ID!
+  name: String!
+  type: String!
+  position: String!
+  products: [AppFeaturedProduct!]!
+}
+
+type AppAdvertisement {
+  id: ID!
+  title: String!
+  image_url: String!
+  link_url: String
+  position: String!
+  type: String!
 }
 
 type AppPackage {
@@ -48,10 +93,11 @@ type AppPackage {
 
 type AppHomeData {
   banners: [AppBanner!]!
-  packages: [AppPackage!]!
-  featured_products: [Product!]!
-  categories: [ProductCategory!]!
-  recommendations: [Product!]!
+  featured_products: [AppFeaturedProduct!]!
+  categories: [AppCategory!]!
+  trending_items: [AppTrendingItem!]!
+  recommendations: [AppRecommendation!]!
+  advertisements: [AppAdvertisement!]!
 }
 
 # ===== 购物车相关类型 =====

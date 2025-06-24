@@ -36,8 +36,9 @@ export const mobileUserResolvers = {
           token: pb.authStore.token,
           record: {
             id: authData.record.id,
+            identity: authData.record.email,
             email: authData.record.email,
-            name: authData.record.name || '',
+            username: authData.record.username || '',
             avatar: authData.record.avatar || '',
             role: pb.authStore.isAdmin ? 'admin' : 'user', // 超级用户角色
             created: authData.record.created,
