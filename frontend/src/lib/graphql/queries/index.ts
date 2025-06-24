@@ -1,20 +1,23 @@
 // 认证模块
-export * from './auth';
+export * from "./auth";
 
 // 用户管理模块
-export * from './users';
+export * from "./users";
 
 // 系统模块
-export * from './system';
+export * from "./system";
 
 // 产品管理模块
-export * from './product';
+export * from "./product";
 
 // 分类管理模块
-export * from './category';
+export * from "./category";
 
 // 品牌管理模块
-export * from './brand';
+export * from "./brand";
 
 // 产品类型管理模块
-export * from './product-type'; 
+export * from "./product-type";
+
+// 会员管理模块
+export * from "./member";

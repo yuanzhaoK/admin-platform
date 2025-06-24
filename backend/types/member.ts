@@ -17,8 +17,6 @@ export interface Member {
   last_login_time?: string;
   total_orders: number;
   total_amount: number;
-  created: string;
-  updated: string;
 }
 
 export interface MemberLevel {
@@ -32,8 +30,6 @@ export interface MemberLevel {
   color?: string;
   sort_order: number;
   is_active: boolean;
-  created: string;
-  updated: string;
 }
 
 export interface MemberQueryInput {
@@ -59,6 +55,8 @@ export interface MemberInput {
   level_id: string;
   points?: number;
   balance?: number;
+  total_orders?: number;
+  total_amount?: number;
   status: 'active' | 'inactive' | 'banned';
 }
 
@@ -72,6 +70,8 @@ export interface MemberUpdateInput {
   level_id?: string;
   points?: number;
   balance?: number;
+  total_orders?: number;
+  total_amount?: number;
   status?: 'active' | 'inactive' | 'banned';
 }
 

@@ -40,7 +40,7 @@ export const mobileUserResolvers = {
             email: authData.record.email,
             username: authData.record.username || '',
             avatar: authData.record.avatar || '',
-            role: pb.authStore.isAdmin ? 'admin' : 'user', // 超级用户角色
+            role: pb.authStore.isSuperuser ? 'admin' : 'user', // 超级用户角色
             created: authData.record.created,
             updated: authData.record.updated,
             collectionId: authData.record.collectionId,

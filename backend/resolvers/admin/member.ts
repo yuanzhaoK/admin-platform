@@ -33,7 +33,7 @@ export const memberResolvers = {
         gender,
         register_date_start,
         register_date_end,
-        sortBy = "created",
+        sortBy = "register_time",
         sortOrder = "desc",
       } = input || {};
 
@@ -79,10 +79,10 @@ export const memberResolvers = {
           sort: sortOrder === "desc" ? `-${sortBy}` : sortBy,
           expand: "level_id",
         });
-
+        const levels = await pb.collection("member_levels").getFullList();
         const items: Member[] = result.items.map((item: any) => ({
           ...item,
-          level: item.expand?.level_id || null,
+          level: levels.find((level: any) => level.id === item.level_id) || null,
         }));
 
         return {
@@ -223,6 +223,25 @@ export const memberResolvers = {
           levelDistribution[levelId] = (levelDistribution[levelId] || 0) + 1;
         });
 
+        // 获取等级详细信息用于分布统计
+        const levels = await pb.collection("member_levels").getFullList();
+        const levelDistributionWithNames: Record<string, { count: number; name: string }> = {};
+        
+        levels.forEach((level: any) => {
+          levelDistributionWithNames[level.id] = {
+            count: levelDistribution[level.id] || 0,
+            name: level.name
+          };
+        });
+        
+        // 添加未知等级
+        if (levelDistribution["unknown"]) {
+          levelDistributionWithNames["unknown"] = {
+            count: levelDistribution["unknown"],
+            name: "未设置等级"
+          };
+        }
+
         // 本月新增会员
         const currentMonth = new Date().toISOString().slice(0, 7);
         const newMembersThisMonth = await pb
@@ -238,7 +257,7 @@ export const memberResolvers = {
           banned: bannedMembers.totalItems,
           totalPoints,
           totalBalance,
-          levelDistribution,
+          levelDistribution: levelDistributionWithNames,
           newMembersThisMonth: newMembersThisMonth.totalItems,
         };
       } catch (error) {
@@ -260,8 +279,8 @@ export const memberResolvers = {
         const memberData = {
           ...input,
           register_time: new Date().toISOString(),
-          total_orders: 0,
-          total_amount: 0,
+          total_orders: input.total_orders || 0,
+          total_amount: input.total_amount || 0,
           points: input.points || 0,
           balance: input.balance || 0,
         };
@@ -475,6 +494,184 @@ export const memberResolvers = {
       } catch (error) {
         console.error("Error adjusting member balance:", error);
         throw new Error("Failed to adjust member balance");
+      }
+    },
+
+    // 导出会员数据
+    exportMembers: async (
+      parent: any,
+      { input }: { input?: MemberQueryInput }
+    ): Promise<string> => {
+      try {
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        // 获取所有会员数据（不分页）
+        const { search, status, level_id, gender, register_date_start, register_date_end } = input || {};
+        
+        let filter = "";
+        const filterParams: string[] = [];
+
+        if (search) {
+          filterParams.push(
+            `(username ~ "${search}" || email ~ "${search}" || real_name ~ "${search}")`
+          );
+        }
+        if (status) filterParams.push(`status = "${status}"`);
+        if (level_id) filterParams.push(`level_id = "${level_id}"`);
+        if (gender) filterParams.push(`gender = "${gender}"`);
+        if (register_date_start) filterParams.push(`register_time >= "${register_date_start}"`);
+        if (register_date_end) filterParams.push(`register_time <= "${register_date_end}"`);
+
+        if (filterParams.length > 0) {
+          filter = filterParams.join(" && ");
+        }
+
+        const members = await pb.collection("members").getFullList({
+          filter,
+          expand: "level_id",
+        });
+
+        // 转换为CSV格式
+        const headers = [
+          "ID", "用户名", "邮箱", "手机号", "真实姓名", "性别", "生日",
+          "会员等级", "积分", "余额", "状态", "注册时间", "最后登录", 
+          "总订单数", "总消费金额", "创建时间", "更新时间"
+        ];
+
+        const csvRows = [headers.join(",")];
+        
+        members.forEach((member: any) => {
+          const row = [
+            member.id,
+            member.username || "",
+            member.email || "",
+            member.phone || "",
+            member.real_name || "",
+            member.gender || "",
+            member.birthday || "",
+            member.expand?.level_id?.name || "",
+            member.points || 0,
+            member.balance || 0,
+            member.status || "",
+            member.register_time || "",
+            member.last_login_time || "",
+            member.total_orders || 0,
+            member.total_amount || 0,
+          ];
+          csvRows.push(row.join(","));
+        });
+
+        return csvRows.join("\n");
+      } catch (error) {
+        console.error("Error exporting members:", error);
+        throw new Error("Failed to export members");
+      }
+    },
+
+    // 批量导入会员
+    importMembers: async (
+      parent: any,
+      { csvData }: { csvData: string }
+    ): Promise<BatchOperationResult> => {
+      await pocketbaseClient.ensureAuth();
+      const pb = pocketbaseClient.getClient();
+
+      let successCount = 0;
+      let failureCount = 0;
+      const errors: string[] = [];
+
+      try {
+        const lines = csvData.split('\n');
+        const headers = lines[0].split(',');
+        
+        // 验证CSV格式
+        const requiredHeaders = ['用户名', '邮箱', '会员等级', '状态'];
+        const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+        if (missingHeaders.length > 0) {
+          throw new Error(`缺少必要的列: ${missingHeaders.join(', ')}`);
+        }
+
+        // 获取所有等级信息用于匹配
+        const levels = await pb.collection("member_levels").getFullList();
+        const levelMap = new Map();
+        levels.forEach((level: any) => {
+          levelMap.set(level.name, level.id);
+        });
+
+        // 处理数据行
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          try {
+            const values = line.split(',');
+            const memberData: any = {};
+
+            headers.forEach((header, index) => {
+              const value = values[index]?.trim();
+              switch (header) {
+                case '用户名':
+                  memberData.username = value;
+                  break;
+                case '邮箱':
+                  memberData.email = value;
+                  break;
+                case '手机号':
+                  memberData.phone = value;
+                  break;
+                case '真实姓名':
+                  memberData.real_name = value;
+                  break;
+                case '性别':
+                  memberData.gender = value;
+                  break;
+                case '生日':
+                  memberData.birthday = value;
+                  break;
+                case '会员等级':
+                  memberData.level_id = levelMap.get(value) || null;
+                  break;
+                case '积分':
+                  memberData.points = parseInt(value) || 0;
+                  break;
+                case '余额':
+                  memberData.balance = parseFloat(value) || 0;
+                  break;
+                case '状态':
+                  memberData.status = value;
+                  break;
+              }
+            });
+
+            // 验证必要字段
+            if (!memberData.username || !memberData.email || !memberData.status) {
+              throw new Error(`第${i + 1}行：缺少必要字段`);
+            }
+
+            // 设置默认值
+            memberData.register_time = new Date().toISOString();
+            memberData.total_orders = 0;
+            memberData.total_amount = 0;
+
+            await pb.collection("members").create(memberData);
+            successCount++;
+          } catch (error) {
+            failureCount++;
+            errors.push(`第${i + 1}行: ${error}`);
+          }
+        }
+
+        return {
+          success: failureCount === 0,
+          message: `成功导入 ${successCount} 个会员，失败 ${failureCount} 个`,
+          successCount,
+          failureCount,
+          errors,
+        };
+      } catch (error) {
+        console.error("Error importing members:", error);
+        throw new Error(`导入失败: ${error}`);
       }
     },
   },

@@ -9,7 +9,7 @@ type Member {
   real_name: String
   gender: Gender
   birthday: String
-  level: MemberLevel!
+  level: MemberLevel
   points: Int!
   balance: Float!
   status: MemberStatus!
@@ -17,8 +17,6 @@ type Member {
   last_login_time: String
   total_orders: Int!
   total_amount: Float!
-  created: String!
-  updated: String!
 }
 
 type MemberLevel {
@@ -32,8 +30,6 @@ type MemberLevel {
   color: String
   sort_order: Int!
   is_active: Boolean!
-  created: String!
-  updated: String!
 }
 
 enum Gender {
@@ -92,6 +88,8 @@ input MemberInput {
   level_id: String!
   points: Int
   balance: Float
+  total_orders: Int
+  total_amount: Float
   status: MemberStatus!
 }
 
@@ -105,6 +103,8 @@ input MemberUpdateInput {
   level_id: String
   points: Int
   balance: Float
+  total_orders: Int
+  total_amount: Float
   status: MemberStatus
 }
 
@@ -152,4 +152,7 @@ extend type Mutation {
   
   adjustMemberPoints(id: String!, points: Int!, reason: String!): Member!
   adjustMemberBalance(id: String!, amount: Float!, reason: String!): Member!
+  
+  exportMembers(input: MemberQueryInput): String!
+  importMembers(csvData: String!): BatchOperationResult!
 } 
