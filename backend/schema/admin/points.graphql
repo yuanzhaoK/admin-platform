@@ -1,0 +1,253 @@
+# 积分管理 GraphQL Schema
+
+type PointsRecord {
+  id: String!
+  user_id: String!
+  username: String!
+  type: PointsType!
+  points: Int!
+  balance: Int!
+  reason: String!
+  order_id: String
+  related_id: String
+  created: String!
+}
+
+type PointsRule {
+  id: String!
+  name: String!
+  description: String
+  type: PointsType!
+  points: Int!
+  conditions: JSON
+  is_active: Boolean!
+  start_time: String
+  end_time: String
+  daily_limit: Int
+  total_limit: Int
+  sort_order: Int!
+  created: String!
+  updated: String!
+}
+
+type PointsExchange {
+  id: String!
+  name: String!
+  description: String
+  image: String
+  points_required: Int!
+  exchange_type: ExchangeType!
+  reward_value: Float
+  reward_product_id: String
+  reward_coupon_id: String
+  stock: Int
+  used_count: Int!
+  status: ExchangeStatus!
+  sort_order: Int!
+  created: String!
+  updated: String!
+}
+
+type PointsExchangeRecord {
+  id: String!
+  user_id: String!
+  username: String!
+  exchange_id: String!
+  exchange: PointsExchange!
+  points_cost: Int!
+  reward_type: ExchangeType!
+  reward_value: Float
+  status: ExchangeRecordStatus!
+  created: String!
+  processed_time: String
+}
+
+enum PointsType {
+  earned_registration
+  earned_login
+  earned_order
+  earned_review
+  earned_referral
+  earned_activity
+  earned_admin
+  spent_exchange
+  spent_order
+  expired
+  admin_adjust
+}
+
+enum ExchangeType {
+  balance
+  coupon
+  product
+  privilege
+}
+
+enum ExchangeStatus {
+  active
+  inactive
+  out_of_stock
+}
+
+enum ExchangeRecordStatus {
+  pending
+  completed
+  cancelled
+  failed
+}
+
+type PointsRecordsResponse {
+  items: [PointsRecord!]!
+  pagination: PaginationInfo!
+}
+
+type PointsRulesResponse {
+  items: [PointsRule!]!
+  pagination: PaginationInfo!
+}
+
+type PointsExchangesResponse {
+  items: [PointsExchange!]!
+  pagination: PaginationInfo!
+}
+
+type PointsExchangeRecordsResponse {
+  items: [PointsExchangeRecord!]!
+  pagination: PaginationInfo!
+}
+
+type PointsStats {
+  totalPoints: Int!
+  totalUsers: Int!
+  totalEarned: Int!
+  totalSpent: Int!
+  totalExpired: Int!
+  exchangeStats: JSON!
+  ruleStats: JSON!
+  monthlyTrend: JSON!
+}
+
+input PointsRecordQueryInput {
+  page: Int
+  perPage: Int
+  user_id: String
+  username: String
+  type: PointsType
+  start_date: String
+  end_date: String
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+input PointsRuleQueryInput {
+  page: Int
+  perPage: Int
+  search: String
+  type: PointsType
+  is_active: Boolean
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+input PointsRuleInput {
+  name: String!
+  description: String
+  type: PointsType!
+  points: Int!
+  conditions: JSON
+  is_active: Boolean!
+  start_time: String
+  end_time: String
+  daily_limit: Int
+  total_limit: Int
+  sort_order: Int!
+}
+
+input PointsRuleUpdateInput {
+  name: String
+  description: String
+  type: PointsType
+  points: Int
+  conditions: JSON
+  is_active: Boolean
+  start_time: String
+  end_time: String
+  daily_limit: Int
+  total_limit: Int
+  sort_order: Int
+}
+
+input PointsExchangeQueryInput {
+  page: Int
+  perPage: Int
+  search: String
+  exchange_type: ExchangeType
+  status: ExchangeStatus
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+input PointsExchangeInput {
+  name: String!
+  description: String
+  image: String
+  points_required: Int!
+  exchange_type: ExchangeType!
+  reward_value: Float
+  reward_product_id: String
+  reward_coupon_id: String
+  stock: Int
+  status: ExchangeStatus!
+  sort_order: Int!
+}
+
+input PointsExchangeUpdateInput {
+  name: String
+  description: String
+  image: String
+  points_required: Int
+  exchange_type: ExchangeType
+  reward_value: Float
+  reward_product_id: String
+  reward_coupon_id: String
+  stock: Int
+  status: ExchangeStatus
+  sort_order: Int
+}
+
+input PointsExchangeRecordQueryInput {
+  page: Int
+  perPage: Int
+  user_id: String
+  exchange_id: String
+  status: ExchangeRecordStatus
+  start_date: String
+  end_date: String
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+extend type Query {
+  pointsRecords(input: PointsRecordQueryInput): PointsRecordsResponse!
+  pointsRules(input: PointsRuleQueryInput): PointsRulesResponse!
+  pointsRule(id: String!): PointsRule
+  pointsExchanges(input: PointsExchangeQueryInput): PointsExchangesResponse!
+  pointsExchange(id: String!): PointsExchange
+  pointsExchangeRecords(input: PointsExchangeRecordQueryInput): PointsExchangeRecordsResponse!
+  pointsStats: PointsStats!
+}
+
+extend type Mutation {
+  createPointsRule(input: PointsRuleInput!): PointsRule!
+  updatePointsRule(id: String!, input: PointsRuleUpdateInput!): PointsRule!
+  deletePointsRule(id: String!): Boolean!
+  
+  createPointsExchange(input: PointsExchangeInput!): PointsExchange!
+  updatePointsExchange(id: String!, input: PointsExchangeUpdateInput!): PointsExchange!
+  deletePointsExchange(id: String!): Boolean!
+  
+  adjustUserPointsRecord(user_id: String!, points: Int!, reason: String!): PointsRecord!
+  batchAdjustPoints(user_ids: [String!]!, points: Int!, reason: String!): BatchOperationResult!
+  
+  processPointsExchange(record_id: String!, status: ExchangeRecordStatus!): PointsExchangeRecord!
+} 

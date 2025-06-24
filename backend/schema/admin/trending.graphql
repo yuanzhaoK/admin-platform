@@ -1,0 +1,209 @@
+# 热门管理 GraphQL Schema
+
+type TrendingItem {
+  id: String!
+  name: String!
+  description: String
+  type: TrendingType!
+  item_id: String!
+  item_data: JSON!
+  category: String
+  tags: [String!]
+  score: Float!
+  manual_score: Float
+  auto_score: Float!
+  rank: Int!
+  status: TrendingStatus!
+  start_time: String
+  end_time: String
+  created: String!
+  updated: String!
+}
+
+type TrendingRule {
+  id: String!
+  name: String!
+  description: String
+  type: TrendingType!
+  display_count: Int!
+  update_frequency: UpdateFrequency!
+  calculation_method: CalculationMethod!
+  weight_config: JSON!
+  is_active: Boolean!
+  sort_order: Int!
+  created: String!
+  updated: String!
+}
+
+type TrendingStats {
+  id: String!
+  item_id: String!
+  date: String!
+  view_count: Int!
+  click_count: Int!
+  share_count: Int!
+  like_count: Int!
+  comment_count: Int!
+  purchase_count: Int!
+  score: Float!
+}
+
+enum TrendingType {
+  product
+  category
+  brand
+  keyword
+  content
+  topic
+}
+
+enum TrendingStatus {
+  active
+  inactive
+  expired
+  pending
+}
+
+enum UpdateFrequency {
+  realtime
+  hourly
+  daily
+  weekly
+  manual
+}
+
+enum CalculationMethod {
+  view_based
+  engagement_based
+  purchase_based
+  composite
+  manual
+}
+
+type TrendingItemsResponse {
+  items: [TrendingItem!]!
+  pagination: PaginationInfo!
+}
+
+type TrendingRulesResponse {
+  items: [TrendingRule!]!
+  pagination: PaginationInfo!
+}
+
+type TrendingStatsResponse {
+  items: [TrendingStats!]!
+  pagination: PaginationInfo!
+}
+
+type TrendingOverviewStats {
+  totalItems: Int!
+  activeItems: Int!
+  totalViews: Int!
+  totalClicks: Int!
+  topTrending: [TrendingItem!]!
+  categoryStats: JSON!
+  typeStats: JSON!
+  dailyTrends: JSON!
+  weeklyTrends: JSON!
+  monthlyTrends: JSON!
+}
+
+input TrendingItemQueryInput {
+  page: Int
+  perPage: Int
+  search: String
+  type: TrendingType
+  category: String
+  status: TrendingStatus
+  score_min: Float
+  score_max: Float
+  rank_min: Int
+  rank_max: Int
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+input TrendingItemInput {
+  name: String!
+  description: String
+  type: TrendingType!
+  item_id: String!
+  category: String
+  tags: [String!]
+  manual_score: Float
+  status: TrendingStatus!
+  start_time: String
+  end_time: String
+}
+
+input TrendingItemUpdateInput {
+  name: String
+  description: String
+  type: TrendingType
+  item_id: String
+  category: String
+  tags: [String!]
+  manual_score: Float
+  status: TrendingStatus
+  start_time: String
+  end_time: String
+}
+
+input TrendingRuleInput {
+  name: String!
+  description: String
+  type: TrendingType!
+  display_count: Int!
+  update_frequency: UpdateFrequency!
+  calculation_method: CalculationMethod!
+  weight_config: JSON!
+  is_active: Boolean!
+  sort_order: Int!
+}
+
+input TrendingRuleUpdateInput {
+  name: String
+  description: String
+  type: TrendingType
+  display_count: Int
+  update_frequency: UpdateFrequency
+  calculation_method: CalculationMethod
+  weight_config: JSON
+  is_active: Boolean
+  sort_order: Int
+}
+
+input TrendingStatsQueryInput {
+  item_id: String
+  start_date: String!
+  end_date: String!
+  page: Int
+  perPage: Int
+}
+
+extend type Query {
+  trendingItems(input: TrendingItemQueryInput): TrendingItemsResponse!
+  trendingItem(id: String!): TrendingItem
+  trendingRules(input: TrendingItemQueryInput): TrendingRulesResponse!
+  trendingRule(id: String!): TrendingRule
+  trendingStats(input: TrendingStatsQueryInput): TrendingStatsResponse!
+  trendingOverviewStats: TrendingOverviewStats!
+  calculateTrendingScore(item_id: String!, type: TrendingType!): Float!
+}
+
+extend type Mutation {
+  createTrendingItem(input: TrendingItemInput!): TrendingItem!
+  updateTrendingItem(id: String!, input: TrendingItemUpdateInput!): TrendingItem!
+  deleteTrendingItem(id: String!): Boolean!
+  batchDeleteTrendingItems(ids: [String!]!): BatchOperationResult!
+  
+  createTrendingRules(input: TrendingRuleInput!): TrendingRule!
+  updateTrendingRules(id: String!, input: TrendingRuleUpdateInput!): TrendingRule!
+  deleteTrendingRules(id: String!): Boolean!
+  
+  refreshTrendingScores(category_id: String): Boolean!
+  updateTrendingRanks(category_id: String): Boolean!
+  
+  addToTrending(item_id: String!, type: TrendingType!, category: String): TrendingItem!
+  removeFromTrending(id: String!): Boolean!
+} 

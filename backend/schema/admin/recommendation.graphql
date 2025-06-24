@@ -1,0 +1,195 @@
+# 商品推荐管理 GraphQL Schema
+
+type ProductRecommendation {
+  id: String!
+  name: String!
+  description: String
+  type: RecommendationType!
+  position: RecommendationPosition!
+  products: [Product!]!
+  product_ids: [String!]!
+  conditions: JSON
+  display_count: Int!
+  sort_type: SortType!
+  is_active: Boolean!
+  start_time: String
+  end_time: String
+  weight: Int!
+  click_count: Int!
+  conversion_count: Int!
+  created: String!
+  updated: String!
+}
+
+type RecommendationRule {
+  id: String!
+  name: String!
+  description: String
+  type: RecommendationType!
+  conditions: JSON!
+  default_display_count: Int!
+  default_sort_type: SortType!
+  is_system: Boolean!
+  created: String!
+  updated: String!
+}
+
+type RecommendationStats {
+  id: String!
+  recommendation_id: String!
+  date: String!
+  view_count: Int!
+  click_count: Int!
+  conversion_count: Int!
+  ctr: Float!
+  conversion_rate: Float!
+}
+
+enum RecommendationType {
+  hot_products
+  new_products
+  recommended_products
+  category_based
+  user_behavior
+  collaborative_filtering
+  custom_selection
+}
+
+enum RecommendationPosition {
+  homepage_banner
+  homepage_grid
+  category_sidebar
+  product_detail_related
+  cart_recommend
+  checkout_recommend
+  search_recommend
+}
+
+enum SortType {
+  manual
+  sales_desc
+  price_asc
+  price_desc
+  created_desc
+  rating_desc
+  random
+}
+
+type ProductRecommendationsResponse {
+  items: [ProductRecommendation!]!
+  pagination: PaginationInfo!
+}
+
+type RecommendationRulesResponse {
+  items: [RecommendationRule!]!
+  pagination: PaginationInfo!
+}
+
+type RecommendationStatsResponse {
+  items: [RecommendationStats!]!
+  pagination: PaginationInfo!
+}
+
+type RecommendationOverviewStats {
+  totalRecommendations: Int!
+  activeRecommendations: Int!
+  totalViews: Int!
+  totalClicks: Int!
+  totalConversions: Int!
+  avgCtr: Float!
+  avgConversionRate: Float!
+  topPerforming: [ProductRecommendation!]!
+  positionStats: JSON!
+  typeStats: JSON!
+}
+
+input ProductRecommendationQueryInput {
+  page: Int
+  perPage: Int
+  search: String
+  type: RecommendationType
+  position: RecommendationPosition
+  is_active: Boolean
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+input ProductRecommendationInput {
+  name: String!
+  description: String
+  type: RecommendationType!
+  position: RecommendationPosition!
+  product_ids: [String!]
+  conditions: JSON
+  display_count: Int!
+  sort_type: SortType!
+  is_active: Boolean!
+  start_time: String
+  end_time: String
+  weight: Int!
+}
+
+input ProductRecommendationUpdateInput {
+  name: String
+  description: String
+  type: RecommendationType
+  position: RecommendationPosition
+  product_ids: [String!]
+  conditions: JSON
+  display_count: Int
+  sort_type: SortType
+  is_active: Boolean
+  start_time: String
+  end_time: String
+  weight: Int
+}
+
+input RecommendationRuleInput {
+  name: String!
+  description: String
+  type: RecommendationType!
+  conditions: JSON!
+  default_display_count: Int!
+  default_sort_type: SortType!
+}
+
+input RecommendationRuleUpdateInput {
+  name: String
+  description: String
+  type: RecommendationType
+  conditions: JSON
+  default_display_count: Int
+  default_sort_type: SortType
+}
+
+input RecommendationStatsQueryInput {
+  recommendation_id: String
+  start_date: String!
+  end_date: String!
+  page: Int
+  perPage: Int
+}
+
+extend type Query {
+  productRecommendations(input: ProductRecommendationQueryInput): ProductRecommendationsResponse!
+  productRecommendation(id: String!): ProductRecommendation
+  recommendationRules(input: ProductRecommendationQueryInput): RecommendationRulesResponse!
+  recommendationRule(id: String!): RecommendationRule
+  recommendationStats(input: RecommendationStatsQueryInput): RecommendationStatsResponse!
+  recommendationOverviewStats: RecommendationOverviewStats!
+  previewRecommendation(input: ProductRecommendationInput!): [Product!]!
+}
+
+extend type Mutation {
+  createProductRecommendation(input: ProductRecommendationInput!): ProductRecommendation!
+  updateProductRecommendation(id: String!, input: ProductRecommendationUpdateInput!): ProductRecommendation!
+  deleteProductRecommendation(id: String!): Boolean!
+  batchDeleteProductRecommendations(ids: [String!]!): BatchOperationResult!
+  
+  createRecommendationRules(input: RecommendationRuleInput!): RecommendationRule!
+  updateRecommendationRules(id: String!, input: RecommendationRuleUpdateInput!): RecommendationRule!
+  deleteRecommendationRules(id: String!): Boolean!
+  
+  duplicateRecommendation(id: String!): ProductRecommendation!
+  reorderRecommendations(ids: [String!]!): Boolean!
+} 

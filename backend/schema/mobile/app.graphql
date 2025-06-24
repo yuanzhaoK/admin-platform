@@ -115,7 +115,7 @@ type MobileNotification {
 }
 
 # ===== 优惠券相关类型 =====
-type Coupon {
+type MobileCoupon {
   id: ID!
   name: String!
   code: String!
@@ -137,7 +137,7 @@ type UserCoupon {
   id: ID!
   user_id: String!
   coupon_id: String!
-  coupon: Coupon!
+  coupon: MobileCoupon!
   status: String!
   used_at: Date
   created: Date!

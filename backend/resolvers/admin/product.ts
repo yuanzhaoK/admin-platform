@@ -113,7 +113,12 @@ export const productResolvers = {
           lowStock: 0,
           outOfStock: 0,
           brands: {},
-          productTypes: {}
+          productTypes: {},
+          review_status_distribution: {
+            pending: 0,
+            approved: 0,
+            rejected: 0
+          }
         };
 
         let totalPrice = 0;

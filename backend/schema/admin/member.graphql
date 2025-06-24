@@ -1,0 +1,155 @@
+# 会员管理 GraphQL Schema
+
+type Member {
+  id: String!
+  username: String!
+  email: String!
+  phone: String
+  avatar: String
+  real_name: String
+  gender: Gender
+  birthday: String
+  level: MemberLevel!
+  points: Int!
+  balance: Float!
+  status: MemberStatus!
+  register_time: String!
+  last_login_time: String
+  total_orders: Int!
+  total_amount: Float!
+  created: String!
+  updated: String!
+}
+
+type MemberLevel {
+  id: String!
+  name: String!
+  description: String
+  discount_rate: Float!
+  points_required: Int!
+  benefits: [String!]
+  icon: String
+  color: String
+  sort_order: Int!
+  is_active: Boolean!
+  created: String!
+  updated: String!
+}
+
+enum Gender {
+  male
+  female
+  unknown
+}
+
+enum MemberStatus {
+  active
+  inactive
+  banned
+}
+
+type MembersResponse {
+  items: [Member!]!
+  pagination: PaginationInfo!
+}
+
+type MemberLevelsResponse {
+  items: [MemberLevel!]!
+  pagination: PaginationInfo!
+}
+
+type MemberStats {
+  total: Int!
+  active: Int!
+  inactive: Int!
+  banned: Int!
+  totalPoints: Int!
+  totalBalance: Float!
+  levelDistribution: JSON!
+  newMembersThisMonth: Int!
+}
+
+input MemberQueryInput {
+  page: Int
+  perPage: Int
+  search: String
+  status: MemberStatus
+  level_id: String
+  gender: Gender
+  register_date_start: String
+  register_date_end: String
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+input MemberInput {
+  username: String!
+  email: String!
+  phone: String
+  real_name: String
+  gender: Gender
+  birthday: String
+  level_id: String!
+  points: Int
+  balance: Float
+  status: MemberStatus!
+}
+
+input MemberUpdateInput {
+  username: String
+  email: String
+  phone: String
+  real_name: String
+  gender: Gender
+  birthday: String
+  level_id: String
+  points: Int
+  balance: Float
+  status: MemberStatus
+}
+
+input MemberLevelInput {
+  name: String!
+  description: String
+  discount_rate: Float!
+  points_required: Int!
+  benefits: [String!]
+  icon: String
+  color: String
+  sort_order: Int!
+  is_active: Boolean!
+}
+
+input MemberLevelUpdateInput {
+  name: String
+  description: String
+  discount_rate: Float
+  points_required: Int
+  benefits: [String!]
+  icon: String
+  color: String
+  sort_order: Int
+  is_active: Boolean
+}
+
+extend type Query {
+  members(input: MemberQueryInput): MembersResponse!
+  member(id: String!): Member
+  memberLevels(input: MemberQueryInput): MemberLevelsResponse!
+  memberLevel(id: String!): MemberLevel
+  memberStats: MemberStats!
+}
+
+extend type Mutation {
+  createMember(input: MemberInput!): Member!
+  updateMember(id: String!, input: MemberUpdateInput!): Member!
+  deleteMember(id: String!): Boolean!
+  batchDeleteMembers(ids: [String!]!): BatchOperationResult!
+  
+  createMemberLevel(input: MemberLevelInput!): MemberLevel!
+  updateMemberLevel(id: String!, input: MemberLevelUpdateInput!): MemberLevel!
+  deleteMemberLevel(id: String!): Boolean!
+  
+  adjustMemberPoints(id: String!, points: Int!, reason: String!): Member!
+  adjustMemberBalance(id: String!, amount: Float!, reason: String!): Member!
+} 

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-read --allow-write
 
-import { pocketbaseClient } from '../config/pocketbase.ts';
+import { pocketbaseClient } from '../../config/pocketbase.ts';
 
 // 初始化移动端商城数据
 async function initMobileData() {

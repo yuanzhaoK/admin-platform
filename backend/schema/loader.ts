@@ -33,7 +33,7 @@ export function loadSchema(): string {
   // 通用 schemas
   schemas.push(readGraphQLFile('common/auth.graphql'));
 
-  // 管理后台 schemas
+  // 管理后台 schemas - 只加载实际存在的文件
   schemas.push(readGraphQLFile('admin/user.graphql'));
   schemas.push(readGraphQLFile('admin/product.graphql'));
   schemas.push(readGraphQLFile('admin/category.graphql'));
@@ -42,6 +42,12 @@ export function loadSchema(): string {
   schemas.push(readGraphQLFile('admin/order.graphql'));
   schemas.push(readGraphQLFile('admin/refund.graphql'));
   schemas.push(readGraphQLFile('admin/setting.graphql'));
+  schemas.push(readGraphQLFile('admin/advertisement.graphql'));
+  schemas.push(readGraphQLFile('admin/coupon.graphql'));
+  schemas.push(readGraphQLFile('admin/member.graphql'));
+  schemas.push(readGraphQLFile('admin/points.graphql'));
+  schemas.push(readGraphQLFile('admin/recommendation.graphql'));
+  schemas.push(readGraphQLFile('admin/trending.graphql'));
   
   // 移动端 schemas
   schemas.push(readGraphQLFile('mobile/app.graphql'));

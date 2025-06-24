@@ -1,4 +1,4 @@
-import { pocketbaseClient } from '../config/pocketbase.ts';
+import { pocketbaseClient } from '../../config/pocketbase.ts';
 
 async function importMobileCollections() {
   try {

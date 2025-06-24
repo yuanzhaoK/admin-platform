@@ -1,0 +1,235 @@
+# 广告管理 GraphQL Schema
+
+type Advertisement {
+  id: String!
+  name: String!
+  description: String
+  type: AdType!
+  position: AdPosition!
+  image: String!
+  link_type: LinkType!
+  link_url: String
+  link_product_id: String
+  link_category_id: String
+  target_type: TargetType!
+  content: String
+  status: AdStatus!
+  start_time: String!
+  end_time: String!
+  weight: Int!
+  click_count: Int!
+  view_count: Int!
+  budget: Float
+  cost: Float!
+  tags: [String!]
+  created: String!
+  updated: String!
+}
+
+type AdGroup {
+  id: String!
+  name: String!
+  description: String
+  position: AdPosition!
+  ads: [Advertisement!]!
+  display_count: Int!
+  rotation_type: RotationType!
+  is_active: Boolean!
+  created: String!
+  updated: String!
+}
+
+type AdStats {
+  id: String!
+  ad_id: String!
+  date: String!
+  view_count: Int!
+  click_count: Int!
+  ctr: Float!
+  cost: Float!
+  conversion_count: Int!
+  conversion_rate: Float!
+}
+
+enum AdType {
+  banner
+  popup
+  floating
+  text
+  video
+  rich_media
+}
+
+enum AdPosition {
+  homepage_top
+  homepage_middle
+  homepage_bottom
+  category_top
+  category_sidebar
+  product_detail_top
+  product_detail_bottom
+  cart_page
+  checkout_page
+  search_results
+  mobile_banner
+}
+
+enum LinkType {
+  url
+  product
+  category
+  page
+  none
+}
+
+enum TargetType {
+  self
+  blank
+}
+
+enum AdStatus {
+  active
+  inactive
+  expired
+  paused
+}
+
+enum RotationType {
+  sequential
+  random
+  weighted
+}
+
+type AdvertisementsResponse {
+  items: [Advertisement!]!
+  pagination: PaginationInfo!
+}
+
+type AdGroupsResponse {
+  items: [AdGroup!]!
+  pagination: PaginationInfo!
+}
+
+type AdStatsResponse {
+  items: [AdStats!]!
+  pagination: PaginationInfo!
+}
+
+type AdOverviewStats {
+  totalAds: Int!
+  activeAds: Int!
+  totalViews: Int!
+  totalClicks: Int!
+  totalCost: Float!
+  avgCtr: Float!
+  topPerforming: [Advertisement!]!
+  positionStats: JSON!
+  typeStats: JSON!
+  dailyStats: JSON!
+}
+
+input AdvertisementQueryInput {
+  page: Int
+  perPage: Int
+  search: String
+  type: AdType
+  position: AdPosition
+  status: AdStatus
+  start_date: String
+  end_date: String
+  sortBy: String
+  sortOrder: SortOrder
+}
+
+input AdvertisementInput {
+  name: String!
+  description: String
+  type: AdType!
+  position: AdPosition!
+  image: String!
+  link_type: LinkType!
+  link_url: String
+  link_product_id: String
+  link_category_id: String
+  target_type: TargetType!
+  content: String
+  status: AdStatus!
+  start_time: String!
+  end_time: String!
+  weight: Int!
+  budget: Float
+  tags: [String!]
+}
+
+input AdvertisementUpdateInput {
+  name: String
+  description: String
+  type: AdType
+  position: AdPosition
+  image: String
+  link_type: LinkType
+  link_url: String
+  link_product_id: String
+  link_category_id: String
+  target_type: TargetType
+  content: String
+  status: AdStatus
+  start_time: String
+  end_time: String
+  weight: Int
+  budget: Float
+  tags: [String!]
+}
+
+input AdGroupInput {
+  name: String!
+  description: String
+  position: AdPosition!
+  ad_ids: [String!]!
+  display_count: Int!
+  rotation_type: RotationType!
+  is_active: Boolean!
+}
+
+input AdGroupUpdateInput {
+  name: String
+  description: String
+  position: AdPosition
+  ad_ids: [String!]
+  display_count: Int
+  rotation_type: RotationType
+  is_active: Boolean
+}
+
+input AdStatsQueryInput {
+  ad_id: String
+  start_date: String!
+  end_date: String!
+  page: Int
+  perPage: Int
+}
+
+extend type Query {
+  advertisements(input: AdvertisementQueryInput): AdvertisementsResponse!
+  advertisement(id: String!): Advertisement
+  adGroups(input: AdvertisementQueryInput): AdGroupsResponse!
+  adGroup(id: String!): AdGroup
+  adStats(input: AdStatsQueryInput): AdStatsResponse!
+  adOverviewStats: AdOverviewStats!
+  previewAd(input: AdvertisementInput!): Advertisement!
+}
+
+extend type Mutation {
+  createAdvertisement(input: AdvertisementInput!): Advertisement!
+  updateAdvertisement(id: String!, input: AdvertisementUpdateInput!): Advertisement!
+  deleteAdvertisement(id: String!): Boolean!
+  batchDeleteAdvertisements(ids: [String!]!): BatchOperationResult!
+  
+  createAdGroup(input: AdGroupInput!): AdGroup!
+  updateAdGroup(id: String!, input: AdGroupUpdateInput!): AdGroup!
+  deleteAdGroup(id: String!): Boolean!
+  
+  duplicateAdvertisement(id: String!): Advertisement!
+  pauseAdvertisement(id: String!): Advertisement!
+  resumeAdvertisement(id: String!): Advertisement!
+} 
