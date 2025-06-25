@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "@apollo/client";
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -28,86 +30,147 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
+import {
   Activity,
-  Calendar,
   Copy,
   DollarSign,
   Edit,
   Eye,
   Gift,
+  Loader2,
   Percent,
   Plus,
   Search,
   Trash2,
-  TrendingUp,
-  Users,
 } from "lucide-react";
+import {
+  BATCH_DELETE_COUPONS,
+  DELETE_COUPON,
+  GET_COUPON_STATS,
+  GET_COUPON_USAGES,
+  GET_COUPONS,
+} from "@/lib/graphql/queries";
+import CouponCreateForm from "@/components/coupons/CouponCreateForm";
+import CouponViewModal from "@/components/coupons/CouponViewModal";
+import CouponEditModal from "@/components/coupons/CouponEditModal";
+import BatchGenerateModal from "@/components/coupons/BatchGenerateModal";
 
-// 模拟数据
-const mockCoupons = [
-  {
-    id: "1",
-    name: "新用户专享优惠券",
-    code: "NEWUSER50",
-    type: "new_user",
-    discountType: "fixed_amount",
-    discountValue: 50,
-    minAmount: 100,
-    usageLimit: 1000,
-    usedCount: 342,
-    startTime: "2024-01-01",
-    endTime: "2024-12-31",
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "春季大促销",
-    code: "SPRING20",
-    type: "general",
-    discountType: "percentage",
-    discountValue: 20,
-    minAmount: 200,
-    usageLimit: 5000,
-    usedCount: 2840,
-    startTime: "2024-03-01",
-    endTime: "2024-05-31",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "会员专享折扣",
-    code: "VIP15",
-    type: "member_exclusive",
-    discountType: "percentage",
-    discountValue: 15,
-    minAmount: 0,
-    usageLimit: null,
-    usedCount: 1560,
-    startTime: "2024-01-01",
-    endTime: "2024-12-31",
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "生日特惠券",
-    code: "BIRTHDAY",
-    type: "birthday",
-    discountType: "fixed_amount",
-    discountValue: 30,
-    minAmount: 50,
-    usageLimit: null,
-    usedCount: 89,
-    startTime: "2024-01-01",
-    endTime: "2024-12-31",
-    status: "active",
-  },
-];
+interface Coupon {
+  id: string;
+  name: string;
+  description?: string;
+  code: string;
+  type: string;
+  discount_type: string;
+  discount_value: number;
+  min_amount?: number;
+  max_discount?: number;
+  total_quantity?: number;
+  used_quantity: number;
+  per_user_limit?: number;
+  status: string;
+  start_time: string;
+  end_time: string;
+  applicable_products?: string[];
+  applicable_categories?: string[];
+  applicable_brands?: string[];
+  applicable_member_levels?: string[];
+}
+
+interface CouponStats {
+  total: number;
+  active: number;
+  expired: number;
+  used_up: number;
+  totalUsage: number;
+  totalDiscount: number;
+  typeDistribution: Record<string, number>;
+  usageThisMonth: number;
+}
 
 export default function CouponsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [selectedTab, setSelectedTab] = useState("coupons");
+  const [currentPage] = useState(1);
+  const [selectedCoupons, setSelectedCoupons] = useState<string[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showSingleDeleteDialog, setShowSingleDeleteDialog] = useState(false);
+  const [showBatchGenerateDialog, setShowBatchGenerateDialog] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  const [couponToDelete, setCouponToDelete] = useState<Coupon | null>(null);
+  const { toast } = useToast();
+
+  // GraphQL查询
+  const {
+    data: couponsData,
+    loading: couponsLoading,
+    refetch: refetchCoupons,
+  } = useQuery(GET_COUPONS, {
+    variables: {
+      input: {
+        page: currentPage,
+        perPage: 20,
+        search: searchTerm || undefined,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        type: typeFilter !== "all" ? typeFilter : undefined,
+        sortBy: "start_time",
+        sortOrder: "desc",
+      },
+    },
+  });
+
+  const { data: statsData, loading: statsLoading } = useQuery(GET_COUPON_STATS);
+
+  const { data: usagesData, loading: usagesLoading } = useQuery(
+    GET_COUPON_USAGES,
+    {
+      variables: {
+        input: {
+          page: 1,
+          perPage: 50,
+          sortBy: "used_time",
+          sortOrder: "desc",
+        },
+      },
+      skip: selectedTab !== "usage",
+    },
+  );
+
+  // GraphQL变更
+  const [deleteCoupon] = useMutation(DELETE_COUPON);
+  const [batchDeleteCoupons] = useMutation(BATCH_DELETE_COUPONS);
+
+  const coupons: Coupon[] = couponsData?.coupons?.items || [];
+  const stats: CouponStats = statsData?.couponStats || {
+    total: 0,
+    active: 0,
+    expired: 0,
+    used_up: 0,
+    totalUsage: 0,
+    totalDiscount: 0,
+    typeDistribution: {},
+    usageThisMonth: 0,
+  };
+
+  // 重新获取数据当搜索条件改变时
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      refetchCoupons();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, statusFilter, typeFilter, refetchCoupons]);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -154,8 +217,8 @@ export default function CouponsPage() {
     }
   };
 
-  const getUsageProgress = (used: number, limit: number | null) => {
-    if (limit === null) return null;
+  const getUsageProgress = (used: number, limit: number | null | undefined) => {
+    if (limit === null || limit === undefined) return null;
     const percentage = (used / limit) * 100;
     return {
       percentage: Math.min(percentage, 100),
@@ -163,18 +226,105 @@ export default function CouponsPage() {
     };
   };
 
-  // 统计数据
-  const stats = {
-    total: mockCoupons.length,
-    active: mockCoupons.filter((c) => c.status === "active").length,
-    totalUsed: mockCoupons.reduce((sum, c) => sum + c.usedCount, 0),
-    totalSavings: mockCoupons.reduce((sum, c) => {
-      if (c.discountType === "fixed_amount") {
-        return sum + (c.discountValue * c.usedCount);
-      }
-      return sum + (c.usedCount * 20); // 假设平均节省20元
-    }, 0),
+  const handleDeleteCoupon = (coupon: Coupon) => {
+    setCouponToDelete(coupon);
+    setShowSingleDeleteDialog(true);
   };
+
+  const confirmDeleteCoupon = async () => {
+    if (!couponToDelete) return;
+
+    try {
+      await deleteCoupon({ variables: { id: couponToDelete.id } });
+      toast({
+        title: "删除成功",
+        description: "优惠券已成功删除",
+      });
+      refetchCoupons();
+      setShowSingleDeleteDialog(false);
+      setCouponToDelete(null);
+    } catch (error) {
+      console.error("Delete coupon error:", error);
+      toast({
+        title: "删除失败",
+        description: "删除优惠券时发生错误",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedCoupons.length === 0) return;
+
+    try {
+      const result = await batchDeleteCoupons({
+        variables: { ids: selectedCoupons },
+      });
+
+      toast({
+        title: "批量删除完成",
+        description: result.data?.batchDeleteCoupons?.message || "操作完成",
+      });
+
+      setSelectedCoupons([]);
+      setShowDeleteDialog(false);
+      refetchCoupons();
+    } catch (error) {
+      console.error("Batch delete error:", error);
+      toast({
+        title: "批量删除失败",
+        description: "批量删除优惠券时发生错误",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSelectCoupon = (couponId: string, checked: boolean) => {
+    setSelectedCoupons((prev) =>
+      checked ? [...prev, couponId] : prev.filter((id) => id !== couponId)
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedCoupons(checked ? coupons.map((c) => c.id) : []);
+  };
+
+  // 批量生成功能已移至 BatchGenerateModal 组件
+
+  const handleViewCoupon = (coupon: Coupon) => {
+    setSelectedCoupon(coupon);
+    setShowViewModal(true);
+  };
+
+  const handleEditCoupon = (coupon: Coupon) => {
+    setSelectedCoupon(coupon);
+    setShowEditModal(true);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "复制成功",
+        description: "优惠券代码已复制到剪贴板",
+      });
+    } catch (error) {
+      console.error("Copy error:", error);
+      toast({
+        title: "复制失败",
+        description: "无法复制到剪贴板",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (couponsLoading || statsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -187,11 +337,14 @@ export default function CouponsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={() => setShowBatchGenerateDialog(true)}
+          >
             <Copy className="mr-2 h-4 w-4" />
             批量生成
           </Button>
-          <Button>
+          <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
             创建优惠券
           </Button>
@@ -220,10 +373,12 @@ export default function CouponsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats.totalUsed.toLocaleString()}
+              {stats.totalUsage.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-blue-600">+156</span> 今日新增
+              <span className="text-blue-600">+{stats.usageThisMonth}</span>
+              {" "}
+              本月新增
             </p>
           </CardContent>
         </Card>
@@ -235,12 +390,14 @@ export default function CouponsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ¥{stats.totalSavings.toLocaleString()}
+              ¥{stats.totalDiscount.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
               平均每券{" "}
               <span className="text-green-600">
-                ¥{Math.round(stats.totalSavings / stats.totalUsed)}
+                ¥{stats.totalUsage > 0
+                  ? Math.round(stats.totalDiscount / stats.totalUsage)
+                  : 0}
               </span>
             </p>
           </CardContent>
@@ -252,9 +409,13 @@ export default function CouponsPage() {
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">68.5%</div>
+            <div className="text-2xl font-bold">
+              {stats.total > 0
+                ? ((stats.totalUsage / stats.total) * 100).toFixed(1)
+                : 0}%
+            </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+5.2%</span> 较上月
+              较上月 <span className="text-green-600">+5.2%</span>
             </p>
           </CardContent>
         </Card>
@@ -324,15 +485,40 @@ export default function CouponsPage() {
           {/* 优惠券列表 */}
           <Card>
             <CardHeader>
-              <CardTitle>优惠券列表</CardTitle>
-              <CardDescription>
-                共 {mockCoupons.length} 张优惠券
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>优惠券列表</CardTitle>
+                  <CardDescription>
+                    共 {coupons.length} 张优惠券
+                    {selectedCoupons.length > 0 && (
+                      <span className="ml-2 text-blue-600">
+                        已选择 {selectedCoupons.length} 张
+                      </span>
+                    )}
+                  </CardDescription>
+                </div>
+                {selectedCoupons.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    删除选中 ({selectedCoupons.length})
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedCoupons.length === coupons.length &&
+                          coupons.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>优惠券信息</TableHead>
                     <TableHead>类型</TableHead>
                     <TableHead>优惠额度</TableHead>
@@ -343,22 +529,29 @@ export default function CouponsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockCoupons.map((coupon) => {
+                  {coupons.map((coupon) => {
                     const progress = getUsageProgress(
-                      coupon.usedCount,
-                      coupon.usageLimit,
+                      coupon.used_quantity,
+                      coupon.total_quantity,
                     );
                     return (
                       <TableRow key={coupon.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedCoupons.includes(coupon.id)}
+                            onCheckedChange={(checked) =>
+                              handleSelectCoupon(coupon.id, checked as boolean)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">{coupon.name}</div>
                             <div className="text-sm text-muted-foreground">
                               代码: {coupon.code}
                             </div>
-                            {coupon.minAmount > 0 && (
+                            {coupon.min_amount && (
                               <div className="text-xs text-muted-foreground">
-                                满¥{coupon.minAmount}可用
+                                满¥{coupon.min_amount}可用
                               </div>
                             )}
                           </div>
@@ -369,15 +562,15 @@ export default function CouponsPage() {
                         <TableCell>
                           <div className="font-medium text-lg text-green-600">
                             {getDiscountDisplay(
-                              coupon.discountType,
-                              coupon.discountValue,
+                              coupon.discount_type,
+                              coupon.discount_value,
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">
-                              {coupon.usedCount.toLocaleString()} 次
+                              {coupon.used_quantity.toLocaleString()} 次
                             </div>
                             {progress && (
                               <div className="mt-1">
@@ -402,8 +595,8 @@ export default function CouponsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{coupon.startTime}</div>
-                            <div>至 {coupon.endTime}</div>
+                            <div>{coupon.start_time}</div>
+                            <div>至 {coupon.end_time}</div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -411,16 +604,36 @@ export default function CouponsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewCoupon(coupon)}
+                              title="查看详情"
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCoupon(coupon)}
+                              title="编辑"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(coupon.code)}
+                              title="复制代码"
+                            >
                               <Copy className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCoupon(coupon)}
+                              title="删除"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -494,8 +707,75 @@ export default function CouponsPage() {
           </div>
 
           <Card>
-            <CardContent className="text-center py-8 text-muted-foreground">
-              使用记录列表将在后续实现
+            <CardHeader>
+              <CardTitle>使用记录</CardTitle>
+              <CardDescription>
+                最近的优惠券使用记录
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {usagesLoading
+                ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                )
+                : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>优惠券</TableHead>
+                        <TableHead>用户ID</TableHead>
+                        <TableHead>订单ID</TableHead>
+                        <TableHead>优惠金额</TableHead>
+                        <TableHead>使用时间</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {usagesData?.couponUsages?.items?.map((usage: {
+                        id: string;
+                        coupon?: { name?: string; code?: string };
+                        coupon_id: string;
+                        user_id: string;
+                        order_id?: string;
+                        discount_amount: number;
+                        used_time: string;
+                      }) => (
+                        <TableRow key={usage.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">
+                                {usage.coupon?.name || "未知优惠券"}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {usage.coupon?.code || usage.coupon_id}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{usage.user_id}</TableCell>
+                          <TableCell>{usage.order_id || "-"}</TableCell>
+                          <TableCell>
+                            <span className="font-medium text-green-600">
+                              ¥{usage.discount_amount}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(usage.used_time).toLocaleString("zh-CN")}
+                          </TableCell>
+                        </TableRow>
+                      )) || (
+                        <TableRow>
+                          <TableCell
+                            colSpan={5}
+                            className="text-center py-8 text-muted-foreground"
+                          >
+                            暂无使用记录
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -509,29 +789,211 @@ export default function CouponsPage() {
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>使用趋势</CardTitle>
-                <CardDescription>最近30天优惠券使用趋势</CardDescription>
+                <CardTitle>类型分布</CardTitle>
+                <CardDescription>各类型优惠券数量分布</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  图表组件将在后续实现
+                <div className="space-y-4">
+                  {Object.entries(stats.typeDistribution).map((
+                    [type, count],
+                  ) => (
+                    <div
+                      key={type}
+                      className="flex justify-between items-center"
+                    >
+                      <div className="flex items-center gap-2">
+                        {getTypeBadge(type)}
+                        <span className="text-sm">{type}</span>
+                      </div>
+                      <span className="font-medium">{count} 张</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>类型分布</CardTitle>
-                <CardDescription>各类型优惠券使用占比</CardDescription>
+                <CardTitle>状态统计</CardTitle>
+                <CardDescription>优惠券状态分布情况</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  饼图组件将在后续实现
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-green-100 text-green-800">
+                        有效
+                      </Badge>
+                    </div>
+                    <span className="font-medium">{stats.active} 张</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-red-100 text-red-800">已过期</Badge>
+                    </div>
+                    <span className="font-medium">{stats.expired} 张</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-orange-100 text-orange-800">
+                        已用完
+                      </Badge>
+                    </div>
+                    <span className="font-medium">{stats.used_up} 张</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
+
+        {/* 单个优惠券删除确认对话框 */}
+        <Dialog
+          open={showSingleDeleteDialog}
+          onOpenChange={setShowSingleDeleteDialog}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>确认删除优惠券</DialogTitle>
+              <DialogDescription>
+                您确定要删除优惠券 &ldquo;{couponToDelete?.name}&rdquo;
+                吗？此操作不可撤销。
+              </DialogDescription>
+            </DialogHeader>
+            {couponToDelete && (
+              <div className="py-4">
+                <div className="bg-muted p-4 rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      优惠券名称:
+                    </span>
+                    <span className="text-sm font-medium">
+                      {couponToDelete.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      优惠券代码:
+                    </span>
+                    <code className="text-sm font-mono">
+                      {couponToDelete.code}
+                    </code>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      已使用次数:
+                    </span>
+                    <span className="text-sm">
+                      {couponToDelete.used_quantity} 次
+                    </span>
+                  </div>
+                  {couponToDelete.used_quantity > 0 && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                      ⚠️ 注意：该优惠券已被使用 {couponToDelete.used_quantity}
+                      {" "}
+                      次，删除后相关使用记录将无法恢复。
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSingleDeleteDialog(false);
+                  setCouponToDelete(null);
+                }}
+              >
+                取消
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteCoupon}>
+                确认删除
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 批量删除确认对话框 */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>确认批量删除</DialogTitle>
+              <DialogDescription>
+                您确定要删除选中的 {selectedCoupons.length}{" "}
+                个优惠券吗？此操作不可撤销。
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="bg-muted p-4 rounded-lg">
+                <div className="text-sm text-muted-foreground mb-2">
+                  将要删除的优惠券：
+                </div>
+                <div className="max-h-32 overflow-y-auto space-y-1">
+                  {coupons
+                    .filter((coupon) => selectedCoupons.includes(coupon.id))
+                    .map((coupon) => (
+                      <div
+                        key={coupon.id}
+                        className="flex justify-between text-sm"
+                      >
+                        <span>{coupon.name}</span>
+                        <code className="font-mono">{coupon.code}</code>
+                      </div>
+                    ))}
+                </div>
+                {coupons.some((coupon) =>
+                  selectedCoupons.includes(coupon.id) &&
+                  coupon.used_quantity > 0
+                ) && (
+                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                    ⚠️ 注意：部分优惠券已被使用，删除后相关使用记录将无法恢复。
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+              >
+                取消
+              </Button>
+              <Button variant="destructive" onClick={handleBatchDelete}>
+                确认删除 {selectedCoupons.length} 个
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 批量生成优惠券 */}
+        <BatchGenerateModal
+          open={showBatchGenerateDialog}
+          onOpenChange={setShowBatchGenerateDialog}
+          onSuccess={refetchCoupons}
+        />
+
+        {/* 创建优惠券表单 */}
+        <CouponCreateForm
+          open={showCreateForm}
+          onOpenChange={setShowCreateForm}
+          onSuccess={refetchCoupons}
+        />
+
+        {/* 查看优惠券详情 */}
+        <CouponViewModal
+          open={showViewModal}
+          onOpenChange={setShowViewModal}
+          coupon={selectedCoupon}
+        />
+
+        {/* 编辑优惠券 */}
+        <CouponEditModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          coupon={selectedCoupon}
+          onSuccess={refetchCoupons}
+        />
       </Tabs>
     </div>
   );

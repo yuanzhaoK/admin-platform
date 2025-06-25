@@ -1,39 +1,5 @@
 # 优惠券管理 GraphQL Schema
 
-type Coupon {
-  id: String!
-  name: String!
-  description: String
-  code: String!
-  type: CouponType!
-  discount_type: DiscountType!
-  discount_value: Float!
-  min_amount: Float
-  max_discount: Float
-  usage_limit: Int
-  used_count: Int!
-  user_limit: Int
-  status: CouponStatus!
-  start_time: String!
-  end_time: String!
-  applicable_products: [String!]
-  applicable_categories: [String!]
-  applicable_brands: [String!]
-  applicable_member_levels: [String!]
-  created: String!
-  updated: String!
-}
-
-type CouponUsage {
-  id: String!
-  coupon_id: String!
-  coupon: Coupon!
-  user_id: String!
-  order_id: String
-  discount_amount: Float!
-  used_time: String!
-  created: String!
-}
 
 enum CouponType {
   general
@@ -47,6 +13,7 @@ enum DiscountType {
   percentage
   fixed_amount
   free_shipping
+  fixed
 }
 
 enum CouponStatus {
@@ -54,6 +21,38 @@ enum CouponStatus {
   inactive
   expired
   used_up
+}
+
+type Coupon {
+  id: String!
+  name: String!
+  description: String
+  code: String!
+  type: CouponType!
+  discount_type: DiscountType!
+  discount_value: Float!
+  min_amount: Float
+  max_discount: Float
+  total_quantity: Int
+  used_quantity: Int!
+  per_user_limit: Int
+  status: CouponStatus!
+  start_time: String!
+  end_time: String!
+  applicable_products: [String!]
+  applicable_categories: [String!]
+  applicable_brands: [String!]
+  applicable_member_levels: [String!]
+}
+
+type CouponUsage {
+  id: String!
+  coupon_id: String!
+  coupon: Coupon!
+  user_id: String!
+  order_id: String
+  discount_amount: Float!
+  used_time: String!
 }
 
 type CouponsResponse {
@@ -99,8 +98,8 @@ input CouponInput {
   discount_value: Float!
   min_amount: Float
   max_discount: Float
-  usage_limit: Int
-  user_limit: Int
+  total_quantity: Int
+  per_user_limit: Int
   status: CouponStatus!
   start_time: String!
   end_time: String!
@@ -119,8 +118,8 @@ input CouponUpdateInput {
   discount_value: Float
   min_amount: Float
   max_discount: Float
-  usage_limit: Int
-  user_limit: Int
+  total_quantity: Int
+  per_user_limit: Int
   status: CouponStatus
   start_time: String
   end_time: String

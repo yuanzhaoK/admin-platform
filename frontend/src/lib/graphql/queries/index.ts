@@ -21,3 +21,6 @@ export * from "./product-type";
 
 // 会员管理模块
 export * from "./member";
+
+// 优惠券管理模块
+export * from "./coupon";

@@ -49,7 +49,7 @@ async function checkCouponUsage() {
         user_id: 'test_user_001',
         order_id: 'test_order_001',
         discount_amount: 10.00,
-        use_time: '2024-12-11T12:00:00Z',
+        used_time: '2024-12-11T12:00:00Z',
         status: 'used'
       };
       

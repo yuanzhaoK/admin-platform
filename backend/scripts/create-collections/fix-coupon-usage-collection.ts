@@ -65,7 +65,7 @@ async function fixCouponUsageCollection() {
           required: false
         },
         {
-          name: 'use_time',
+          name: 'used_time',
           type: 'date',
           required: true
         },
