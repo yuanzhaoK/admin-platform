@@ -24,3 +24,6 @@ export * from "./member";
 
 // 优惠券管理模块
 export * from "./coupon";
+
+// 积分管理模块
+export * from "./points";

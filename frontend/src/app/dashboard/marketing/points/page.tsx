@@ -1,6 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation, useQuery } from "@apollo/client";
+import {
+  DELETE_POINTS_EXCHANGE,
+  DELETE_POINTS_RULE,
+  EXPORT_POINTS_RECORDS,
+  GET_POINTS_EXCHANGES,
+  GET_POINTS_RECORDS,
+  GET_POINTS_RULES,
+  GET_POINTS_STATS,
+  type PointsExchangeQueryInput,
+  type PointsRecordQueryInput,
+  type PointsRuleQueryInput,
+} from "@/lib/graphql/queries";
 import {
   Card,
   CardContent,
@@ -9,7 +22,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -19,143 +31,139 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Activity,
   Coins,
   Edit,
-  Gift,
-  History,
   Plus,
   RefreshCw,
-  Search,
   Settings,
   Star,
   Target,
   Trash2,
-  TrendingUp,
   Users,
 } from "lucide-react";
+import PointsRuleModal from "@/components/points/PointsRuleModal";
+import PointsExchangeModal from "@/components/points/PointsExchangeModal";
+import PointsAdjustmentModal from "@/components/points/PointsAdjustmentModal";
+import PointsRecordFilter, {
+  type PointsRecordFilterOptions,
+} from "@/components/points/PointsRecordFilter";
 
-// 模拟数据
-const mockPointsRules = [
-  {
-    id: "1",
-    name: "用户注册",
-    type: "earned_registration",
-    points: 100,
-    description: "新用户注册完成后获得积分",
-    isActive: true,
-    conditions: { minAmount: 0 },
-    dailyLimit: 1,
-    totalLimit: 1,
-  },
-  {
-    id: "2",
-    name: "每日签到",
-    type: "earned_login",
-    points: 10,
-    description: "每日首次登录获得积分",
-    isActive: true,
-    conditions: {},
-    dailyLimit: 1,
-    totalLimit: null,
-  },
-  {
-    id: "3",
-    name: "订单消费",
-    type: "earned_order",
-    points: 1,
-    description: "每消费1元获得1积分",
-    isActive: true,
-    conditions: { per_yuan: 1 },
-    dailyLimit: null,
-    totalLimit: null,
-  },
-  {
-    id: "4",
-    name: "商品评价",
-    type: "earned_review",
-    points: 50,
-    description: "完成订单商品评价获得积分",
-    isActive: true,
-    conditions: {},
-    dailyLimit: 5,
-    totalLimit: null,
-  },
-];
+// 定义类型接口
+interface PointsRule {
+  id: string;
+  name: string;
+  description?: string;
+  type: string;
+  points: number;
+  is_active: boolean;
+  daily_limit?: number;
+  total_limit?: number;
+  sort_order: number;
+  created: string;
+}
 
-const mockExchangeItems = [
-  {
-    id: "1",
-    name: "10元优惠券",
-    pointsRequired: 1000,
-    exchangeType: "coupon",
-    stock: 500,
-    usedCount: 245,
-    status: "active",
-    image: "/placeholder-coupon.jpg",
-  },
-  {
-    id: "2",
-    name: "账户余额充值",
-    pointsRequired: 100,
-    exchangeType: "balance",
-    rewardValue: 1,
-    stock: null,
-    usedCount: 1560,
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "免费配送券",
-    pointsRequired: 200,
-    exchangeType: "privilege",
-    stock: 1000,
-    usedCount: 89,
-    status: "active",
-  },
-];
+interface PointsExchange {
+  id: string;
+  name: string;
+  description?: string;
+  image?: string;
+  points_required: number;
+  exchange_type: string;
+  reward_value?: number;
+  stock?: number;
+  used_count: number;
+  status: string;
+  sort_order: number;
+  created: string;
+}
 
-const mockRecords = [
-  {
-    id: "1",
-    username: "user001",
-    type: "earned_order",
-    points: 128,
-    balance: 2580,
-    reason: "订单消费获得积分",
-    created: "2024-03-15 14:30:25",
-  },
-  {
-    id: "2",
-    username: "user002",
-    type: "spent_exchange",
-    points: -1000,
-    balance: 1500,
-    reason: "兑换10元优惠券",
-    created: "2024-03-15 12:15:30",
-  },
-  {
-    id: "3",
-    username: "user003",
-    type: "earned_login",
-    points: 10,
-    balance: 890,
-    reason: "每日签到",
-    created: "2024-03-15 09:20:15",
-  },
-];
+interface PointsRecord {
+  id: string;
+  user_id: string;
+  username: string;
+  type: string;
+  points: number;
+  balance: number;
+  reason: string;
+  created: string;
+}
 
 export default function PointsPage() {
   const [selectedTab, setSelectedTab] = useState("rules");
+
+  // 模态框状态
+  const [ruleModalOpen, setRuleModalOpen] = useState(false);
+  const [exchangeModalOpen, setExchangeModalOpen] = useState(false);
+  const [adjustmentModalOpen, setAdjustmentModalOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<PointsRule | undefined>();
+  const [editingExchange, setEditingExchange] = useState<
+    PointsExchange | undefined
+  >();
+
+  // 筛选状态
+  const [recordFilters, setRecordFilters] = useState<PointsRecordFilterOptions>(
+    {
+      sort_by: "created",
+      sort_order: "desc",
+    },
+  );
+
+  // GraphQL查询
+  const { data: statsData, loading: statsLoading, refetch: refetchStats } =
+    useQuery(GET_POINTS_STATS);
+  const { data: rulesData, loading: rulesLoading, refetch: refetchRules } =
+    useQuery(GET_POINTS_RULES, {
+      variables: {
+        input: {
+          page: 1,
+          perPage: 20,
+          sortBy: "created",
+          sortOrder: "desc",
+        } as PointsRuleQueryInput,
+      },
+    });
+  const {
+    data: exchangesData,
+    loading: exchangesLoading,
+    refetch: refetchExchanges,
+  } = useQuery(GET_POINTS_EXCHANGES, {
+    variables: {
+      input: {
+        page: 1,
+        perPage: 20,
+        sortBy: "created",
+        sortOrder: "desc",
+      } as PointsExchangeQueryInput,
+    },
+  });
+  const {
+    data: recordsData,
+    loading: recordsLoading,
+    refetch: refetchRecords,
+  } = useQuery(GET_POINTS_RECORDS, {
+    variables: {
+      input: {
+        page: 1,
+        perPage: 20,
+        sortBy: "created",
+        sortOrder: "desc",
+      } as PointsRecordQueryInput,
+    },
+  });
+
+  // Mutations
+  const [deleteRule] = useMutation(DELETE_POINTS_RULE, {
+    onCompleted: () => refetchRules(),
+  });
+  const [deleteExchange] = useMutation(DELETE_POINTS_EXCHANGE, {
+    onCompleted: () => refetchExchanges(),
+  });
+  const [exportRecords, { loading: exportLoading }] = useMutation(
+    EXPORT_POINTS_RECORDS,
+  );
 
   const getTypeDisplay = (type: string) => {
     const typeMap = {
@@ -203,15 +211,147 @@ export default function PointsPage() {
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
+  // 处理数据和事件
+  const handleDeleteRule = async (id: string) => {
+    if (confirm("确定要删除这个积分规则吗？")) {
+      try {
+        await deleteRule({ variables: { id } });
+      } catch (error) {
+        console.error("删除规则失败:", error);
+      }
+    }
+  };
+
+  const handleDeleteExchange = async (id: string) => {
+    if (confirm("确定要删除这个兑换项吗？")) {
+      try {
+        await deleteExchange({ variables: { id } });
+      } catch (error) {
+        console.error("删除兑换项失败:", error);
+      }
+    }
+  };
+
+  const handleRefresh = () => {
+    refetchStats();
+    refetchRules();
+    refetchExchanges();
+    refetchRecords();
+  };
+
+  // 模态框处理函数
+  const handleCreateRule = () => {
+    setEditingRule(undefined);
+    setRuleModalOpen(true);
+  };
+
+  const handleEditRule = (rule: PointsRule) => {
+    setEditingRule(rule);
+    setRuleModalOpen(true);
+  };
+
+  const handleCreateExchange = () => {
+    setEditingExchange(undefined);
+    setExchangeModalOpen(true);
+  };
+
+  const handleEditExchange = (exchange: PointsExchange) => {
+    setEditingExchange(exchange);
+    setExchangeModalOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    handleRefresh();
+  };
+
+  // 筛选处理函数
+  const handleRecordFilter = (filters: PointsRecordFilterOptions) => {
+    setRecordFilters(filters);
+    // 更新积分记录查询参数
+    refetchRecords({
+      input: {
+        page: 1,
+        perPage: 20,
+        username: filters.username,
+        user_id: filters.user_id,
+        type: filters.type,
+        sortBy: filters.sort_by || "created",
+        sortOrder: filters.sort_order || "desc",
+      } as PointsRecordQueryInput,
+    });
+  };
+
+  // 导出处理函数
+  const handleExportRecords = async (filters: PointsRecordFilterOptions) => {
+    try {
+      const result = await exportRecords({
+        variables: {
+          input: {
+            username: filters.username,
+            user_id: filters.user_id,
+            type: filters.type,
+            points_min: filters.points_min,
+            points_max: filters.points_max,
+            date_from: filters.date_from,
+            date_to: filters.date_to,
+            sortBy: filters.sort_by || "created",
+            sortOrder: filters.sort_order || "desc",
+          },
+        },
+      });
+
+      if (result.data?.exportPointsRecords) {
+        const exportData = result.data.exportPointsRecords;
+        downloadCSV(exportData);
+      }
+    } catch (error) {
+      console.error("导出失败:", error);
+    }
+  };
+
+  // CSV下载函数
+  const downloadCSV = (
+    data: { headers: string[]; rows: string[][]; filename: string },
+  ) => {
+    const csvContent = [
+      data.headers.join(","),
+      ...data.rows.map((row: string[]) =>
+        row.map((cell: string) => `"${cell}"`).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", data.filename || "export.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // 统计数据
   const stats = {
-    totalPoints: 2450000,
-    totalUsers: 8900,
-    totalEarned: 1890000,
-    totalSpent: 560000,
-    activeRules: mockPointsRules.filter((r) => r.isActive).length,
-    exchangeItems: mockExchangeItems.length,
+    totalPoints: statsData?.pointsStats?.totalPoints || 0,
+    totalUsers: statsData?.pointsStats?.totalUsers || 0,
+    totalEarned: statsData?.pointsStats?.totalEarned || 0,
+    totalSpent: statsData?.pointsStats?.totalSpent || 0,
+    activeRules:
+      rulesData?.pointsRules?.items?.filter((r: PointsRule) => r.is_active)
+        .length ||
+      0,
+    exchangeItems: exchangesData?.pointsExchanges?.items?.length || 0,
   };
+
+  // 获取数据
+  const pointsRules = rulesData?.pointsRules?.items || [];
+  const pointsExchanges = exchangesData?.pointsExchanges?.items || [];
+  const pointsRecords = recordsData?.pointsRecords?.items || [];
+
+  // 数据加载状态
+  const isLoading = statsLoading || rulesLoading || exchangesLoading ||
+    recordsLoading;
 
   return (
     <div className="space-y-8">
@@ -224,11 +364,15 @@ export default function PointsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
             <RefreshCw className="mr-2 h-4 w-4" />
-            同步积分
+            刷新数据
           </Button>
-          <Button>
+          <Button onClick={handleCreateRule}>
             <Plus className="mr-2 h-4 w-4" />
             添加规则
           </Button>
@@ -324,7 +468,7 @@ export default function PointsPage() {
                 配置用户获得积分的规则和条件
               </p>
             </div>
-            <Button>
+            <Button onClick={handleCreateRule}>
               <Plus className="mr-2 h-4 w-4" />
               添加规则
             </Button>
@@ -344,61 +488,95 @@ export default function PointsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockPointsRules.map((rule) => (
-                    <TableRow key={rule.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{rule.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {rule.description}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getTypeDisplay(rule.type)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-green-600">
-                          +{rule.points}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {rule.dailyLimit && (
-                            <div>每日限制: {rule.dailyLimit}次</div>
-                          )}
-                          {rule.totalLimit && (
-                            <div>总限制: {rule.totalLimit}次</div>
-                          )}
-                          {!rule.dailyLimit && !rule.totalLimit && (
-                            <div className="text-muted-foreground">无限制</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={rule.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"}
+                  {rulesLoading
+                    ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          加载中...
+                        </TableCell>
+                      </TableRow>
+                    )
+                    : pointsRules.length === 0
+                    ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center py-8 text-muted-foreground"
                         >
-                          {rule.isActive ? "启用" : "禁用"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          暂无积分规则
+                        </TableCell>
+                      </TableRow>
+                    )
+                    : (
+                      pointsRules.map((rule: PointsRule) => (
+                        <TableRow key={rule.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{rule.name}</div>
+                              {rule.description && (
+                                <div className="text-sm text-muted-foreground">
+                                  {rule.description}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getTypeDisplay(rule.type)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium text-green-600">
+                              +{rule.points}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {rule.daily_limit && (
+                                <div>每日限制: {rule.daily_limit}次</div>
+                              )}
+                              {rule.total_limit && (
+                                <div>总限制: {rule.total_limit}次</div>
+                              )}
+                              {!rule.daily_limit && !rule.total_limit && (
+                                <div className="text-muted-foreground">
+                                  无限制
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={rule.is_active
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"}
+                            >
+                              {rule.is_active ? "启用" : "禁用"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleEditRule(rule)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteRule(rule.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -413,89 +591,113 @@ export default function PointsPage() {
                 管理用户可以兑换的商品和服务
               </p>
             </div>
-            <Button>
+            <Button onClick={handleCreateExchange}>
               <Plus className="mr-2 h-4 w-4" />
               添加兑换项
             </Button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {mockExchangeItems.map((item) => (
-              <Card key={item.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{item.name}</CardTitle>
-                      <div className="flex items-center gap-2 mt-2">
-                        {getExchangeTypeBadge(item.exchangeType)}
-                        {getStatusBadge(item.status)}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {item.pointsRequired.toLocaleString()} 积分
-                    </div>
-                    {item.exchangeType === "balance" && item.rewardValue && (
-                      <div className="text-sm text-muted-foreground">
-                        = ¥{item.rewardValue}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>已兑换</span>
-                      <span className="font-medium">
-                        {item.usedCount.toLocaleString()}
-                      </span>
-                    </div>
-                    {item.stock && (
-                      <div className="flex justify-between text-sm">
-                        <span>剩余库存</span>
-                        <span className="font-medium">
-                          {(item.stock - item.usedCount).toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-                    {!item.stock && (
-                      <div className="flex justify-between text-sm">
-                        <span>库存</span>
-                        <span className="font-medium text-green-600">无限</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {item.stock && (
-                    <div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{
-                            width: `${(item.usedCount / item.stock) * 100}%`,
-                          }}
-                        >
+            {exchangesLoading
+              ? <div className="col-span-full text-center py-8">加载中...</div>
+              : pointsExchanges.length === 0
+              ? (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  暂无兑换商品
+                </div>
+              )
+              : (
+                pointsExchanges.map((item: PointsExchange) => (
+                  <Card key={item.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{item.name}</CardTitle>
+                          <div className="flex items-center gap-2 mt-2">
+                            {getExchangeTypeBadge(item.exchange_type)}
+                            {getStatusBadge(item.status)}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              handleEditExchange(item)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteExchange(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {((item.usedCount / item.stock) * 100).toFixed(1)}%
-                        已兑换
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {item.points_required.toLocaleString()} 积分
+                        </div>
+                        {item.exchange_type === "balance" &&
+                          item.reward_value && (
+                          <div className="text-sm text-muted-foreground">
+                            = ¥{item.reward_value}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>已兑换</span>
+                          <span className="font-medium">
+                            {item.used_count.toLocaleString()}
+                          </span>
+                        </div>
+                        {item.stock && (
+                          <div className="flex justify-between text-sm">
+                            <span>剩余库存</span>
+                            <span className="font-medium">
+                              {(item.stock - item.used_count).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                        {!item.stock && (
+                          <div className="flex justify-between text-sm">
+                            <span>库存</span>
+                            <span className="font-medium text-green-600">
+                              无限
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {item.stock && (
+                        <div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{
+                                width: `${
+                                  (item.used_count / item.stock) * 100
+                                }%`,
+                              }}
+                            >
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {((item.used_count / item.stock) * 100).toFixed(1)}%
+                            已兑换
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
 
             <Card className="border-dashed border-2">
               <CardContent className="flex items-center justify-center h-full min-h-48">
@@ -511,44 +713,25 @@ export default function PointsPage() {
         </TabsContent>
 
         <TabsContent value="records" className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold">积分记录</h2>
-            <p className="text-muted-foreground">
-              查看所有用户的积分获得和消费记录
-            </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">积分记录</h2>
+              <p className="text-muted-foreground">
+                查看所有用户的积分获得和消费记录
+              </p>
+            </div>
+            <Button onClick={() => setAdjustmentModalOpen(true)}>
+              <Settings className="mr-2 h-4 w-4" />
+              调整积分
+            </Button>
           </div>
 
-          {/* 搜索和过滤 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>筛选条件</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="搜索用户名"
-                      className="pl-8"
-                    />
-                  </div>
-                </div>
-                <Select>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="积分类型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部类型</SelectItem>
-                    <SelectItem value="earned">获得积分</SelectItem>
-                    <SelectItem value="spent">消费积分</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input type="date" className="w-40" />
-                <Input type="date" className="w-40" />
-              </div>
-            </CardContent>
-          </Card>
+          {/* 筛选组件 */}
+          <PointsRecordFilter
+            onFilter={handleRecordFilter}
+            onExport={handleExportRecords}
+            loading={recordsLoading || exportLoading}
+          />
 
           <Card>
             <CardContent>
@@ -564,41 +747,62 @@ export default function PointsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>
-                        <div className="font-medium">{record.username}</div>
-                      </TableCell>
-                      <TableCell>
-                        {getTypeDisplay(record.type)}
-                      </TableCell>
-                      <TableCell>
-                        <div
-                          className={`font-medium ${
-                            record.points > 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
+                  {recordsLoading
+                    ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          加载中...
+                        </TableCell>
+                      </TableRow>
+                    )
+                    : pointsRecords.length === 0
+                    ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center py-8 text-muted-foreground"
                         >
-                          {record.points > 0 ? "+" : ""}
-                          {record.points.toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                          {record.balance.toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{record.reason}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-muted-foreground">
-                          {record.created}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          暂无积分记录
+                        </TableCell>
+                      </TableRow>
+                    )
+                    : (
+                      pointsRecords.map((record: PointsRecord) => (
+                        <TableRow key={record.id}>
+                          <TableCell>
+                            <div className="font-medium">{record.username}</div>
+                          </TableCell>
+                          <TableCell>
+                            {getTypeDisplay(record.type)}
+                          </TableCell>
+                          <TableCell>
+                            <div
+                              className={`font-medium ${
+                                record.points > 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {record.points > 0 ? "+" : ""}
+                              {record.points.toLocaleString()}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              {record.balance.toLocaleString()}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">{record.reason}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(record.created).toLocaleString()}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -633,30 +837,63 @@ export default function PointsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockExchangeItems
-                    .sort((a, b) => b.usedCount - a.usedCount)
-                    .map((item, index) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-medium">
-                            {index + 1}
-                          </div>
-                          <span className="font-medium">{item.name}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {item.usedCount.toLocaleString()} 次
-                        </div>
+                  {exchangesLoading
+                    ? <div className="text-center py-4">加载中...</div>
+                    : pointsExchanges.length === 0
+                    ? (
+                      <div className="text-center py-4 text-muted-foreground">
+                        暂无数据
                       </div>
-                    ))}
+                    )
+                    : (
+                      pointsExchanges
+                        .sort((a: PointsExchange, b: PointsExchange) =>
+                          b.used_count - a.used_count
+                        )
+                        .map((item: PointsExchange, index: number) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs flex items-center justify-center font-medium">
+                                {index + 1}
+                              </div>
+                              <span className="font-medium">{item.name}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {item.used_count.toLocaleString()} 次
+                            </div>
+                          </div>
+                        ))
+                    )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* 模态框组件 */}
+      <PointsRuleModal
+        open={ruleModalOpen}
+        onOpenChange={setRuleModalOpen}
+        rule={editingRule}
+        onSuccess={handleModalSuccess}
+      />
+
+      <PointsExchangeModal
+        open={exchangeModalOpen}
+        onOpenChange={setExchangeModalOpen}
+        exchange={editingExchange}
+        onSuccess={handleModalSuccess}
+      />
+
+      <PointsAdjustmentModal
+        open={adjustmentModalOpen}
+        onOpenChange={setAdjustmentModalOpen}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 }

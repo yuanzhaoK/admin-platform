@@ -235,6 +235,8 @@ extend type Query {
   pointsExchange(id: String!): PointsExchange
   pointsExchangeRecords(input: PointsExchangeRecordQueryInput): PointsExchangeRecordsResponse!
   pointsStats: PointsStats!
+  pointsRuleTemplates(input: PointsRuleTemplateQueryInput): PointsRuleTemplatesResponse!
+  pointsRuleTemplate(id: String!): PointsRuleTemplate
 }
 
 extend type Mutation {
@@ -248,6 +250,76 @@ extend type Mutation {
   
   adjustUserPointsRecord(user_id: String!, points: Int!, reason: String!): PointsRecord!
   batchAdjustPoints(user_ids: [String!]!, points: Int!, reason: String!): BatchOperationResult!
+  exportPointsRecords(input: PointsRecordFilterInput): ExportResult!
+  
+  createPointsRuleTemplate(input: PointsRuleTemplateInput!): PointsRuleTemplate!
+  updatePointsRuleTemplate(id: String!, input: PointsRuleTemplateUpdateInput!): PointsRuleTemplate!
+  deletePointsRuleTemplate(id: String!): Boolean!
+  applyPointsRuleTemplate(template_id: String!, rule_input: PointsRuleInput!): PointsRule!
   
   processPointsExchange(record_id: String!, status: ExchangeRecordStatus!): PointsExchangeRecord!
+}
+
+input PointsRecordFilterInput {
+  username: String
+  user_id: String
+  type: String
+  points_min: Int
+  points_max: Int
+  date_from: String
+  date_to: String
+  sortBy: String
+  sortOrder: String
+}
+
+type ExportResult {
+  headers: [String!]!
+  rows: [[String!]!]!
+  total: Int!
+  filename: String!
+}
+
+type PointsRuleTemplate {
+  id: String!
+  name: String!
+  description: String
+  template_data: JSON!
+  category: String
+  is_public: Boolean!
+  usage_count: Int!
+  created_by: String!
+  created: String!
+  updated: String!
+}
+
+type PointsRuleTemplatesResponse {
+  items: [PointsRuleTemplate!]!
+  pagination: PaginationInfo!
+}
+
+input PointsRuleTemplateQueryInput {
+  page: Int
+  perPage: Int
+  search: String
+  category: String
+  is_public: Boolean
+  created_by: String
+  sortBy: String
+  sortOrder: String
+}
+
+input PointsRuleTemplateInput {
+  name: String!
+  description: String
+  template_data: JSON!
+  category: String
+  is_public: Boolean!
+}
+
+input PointsRuleTemplateUpdateInput {
+  name: String
+  description: String
+  template_data: JSON
+  category: String
+  is_public: Boolean
 } 

@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:pocketbase@*": "0.26.1",
     "npm:pocketbase@~0.26.1": "0.26.1"
   },
   "npm": {
