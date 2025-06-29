@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery } from "@apollo/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -51,42 +53,63 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BarChart3,
+  Copy,
   Edit,
   Eye,
-  Filter,
-  Heart,
   Plus,
+  RefreshCw,
   Search,
   Settings,
-  ShoppingCart,
-  Star,
   Target,
   Trash2,
   TrendingUp,
-  Users,
 } from "lucide-react";
 
-// 模拟数据类型
+// GraphQL 查询和变更
+import {
+  CREATE_PRODUCT_RECOMMENDATION,
+  CREATE_RECOMMENDATION_RULE,
+  DELETE_PRODUCT_RECOMMENDATION,
+  DELETE_RECOMMENDATION_RULE,
+  DUPLICATE_RECOMMENDATION,
+  GET_PRODUCT_RECOMMENDATIONS,
+  GET_RECOMMENDATION_OVERVIEW_STATS,
+  GET_RECOMMENDATION_RULES,
+  UPDATE_PRODUCT_RECOMMENDATION,
+} from "@/lib/graphql/queries";
+
+// 类型定义
 interface Product {
   id: string;
   name: string;
   price: number;
-  image: string;
-  category: string;
-  rating: number;
-  sales: number;
+  images: string[];
+  category?: {
+    name: string;
+  };
+  brand?: {
+    name: string;
+  };
+  rating?: number;
+  sales_count?: number;
 }
 
-interface Recommendation {
+interface ProductRecommendation {
   id: string;
   name: string;
-  type: "hot" | "new" | "recommend" | "category";
+  description?: string;
+  type: string;
   position: string;
   products: Product[];
-  status: "active" | "inactive";
-  priority: number;
-  clicks: number;
-  views: number;
+  product_ids: string[];
+  display_count: number;
+  sort_type: string;
+  is_active: boolean;
+  start_time?: string;
+  end_time?: string;
+  weight: number;
+  click_count: number;
+  conversion_count: number;
   created: string;
   updated: string;
 }
@@ -94,183 +117,333 @@ interface Recommendation {
 interface RecommendationRule {
   id: string;
   name: string;
-  type: "sales" | "rating" | "views" | "new" | "category";
-  condition: string;
-  value: number;
-  status: "active" | "inactive";
+  description?: string;
+  type: string;
+  conditions: Record<string, unknown>;
+  default_display_count: number;
+  default_sort_type: string;
+  is_system: boolean;
   created: string;
+  updated: string;
+}
+
+interface TopPerformingItem {
+  id: string;
+  name: string;
+  click_count: number;
+  conversion_count: number;
 }
 
 export default function RecommendationsPage() {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [rules, setRules] = useState<RecommendationRule[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedPosition, setSelectedPosition] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
-  const [selectedRecommendation, setSelectedRecommendation] = useState<
-    Recommendation | null
+  const [editingRecommendation, setEditingRecommendation] = useState<
+    ProductRecommendation | null
   >(null);
-  const [selectedRule, setSelectedRule] = useState<RecommendationRule | null>(
-    null,
-  );
-
-  // 模拟数据
-  useEffect(() => {
-    const mockRecommendations: Recommendation[] = [
-      {
-        id: "1",
-        name: "首页热门推荐",
-        type: "hot",
-        position: "首页轮播",
-        products: [
-          {
-            id: "p1",
-            name: "iPhone 15 Pro",
-            price: 7999,
-            image: "/api/placeholder/100/100",
-            category: "手机",
-            rating: 4.8,
-            sales: 1200,
-          },
-          {
-            id: "p2",
-            name: "MacBook Pro",
-            price: 12999,
-            image: "/api/placeholder/100/100",
-            category: "电脑",
-            rating: 4.9,
-            sales: 800,
-          },
-        ],
-        status: "active",
-        priority: 1,
-        clicks: 15420,
-        views: 52800,
-        created: "2024-01-01",
-        updated: "2024-01-15",
-      },
-      {
-        id: "2",
-        name: "新品推荐",
-        type: "new",
-        position: "分类页顶部",
-        products: [
-          {
-            id: "p3",
-            name: "iPad Air",
-            price: 4599,
-            image: "/api/placeholder/100/100",
-            category: "平板",
-            rating: 4.7,
-            sales: 600,
-          },
-        ],
-        status: "active",
-        priority: 2,
-        clicks: 8900,
-        views: 28600,
-        created: "2024-01-10",
-        updated: "2024-01-20",
-      },
-    ];
-
-    const mockRules: RecommendationRule[] = [
-      {
-        id: "r1",
-        name: "销量排行规则",
-        type: "sales",
-        condition: "大于",
-        value: 100,
-        status: "active",
-        created: "2024-01-01",
-      },
-      {
-        id: "r2",
-        name: "评分推荐规则",
-        type: "rating",
-        condition: "大于等于",
-        value: 4.5,
-        status: "active",
-        created: "2024-01-05",
-      },
-    ];
-
-    setRecommendations(mockRecommendations);
-    setRules(mockRules);
-  }, []);
-
-  // 过滤推荐
-  const filteredRecommendations = recommendations.filter((rec) => {
-    const matchesSearch = rec.name.toLowerCase().includes(
-      searchTerm.toLowerCase(),
-    );
-    const matchesType = selectedType === "all" || rec.type === selectedType;
-    const matchesPosition = selectedPosition === "all" ||
-      rec.position.includes(selectedPosition);
-    return matchesSearch && matchesType && matchesPosition;
+  const { toast } = useToast();
+  // 表单状态
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    type: "hot_products",
+    position: "homepage_banner",
+    display_count: 10,
+    sort_type: "manual",
+    is_active: true,
+    weight: 1,
+    product_ids: [] as string[],
   });
 
-  const handleCreateRecommendation = () => {
-    // 创建推荐逻辑
-    setIsCreateDialogOpen(false);
+  const [ruleFormData, setRuleFormData] = useState({
+    name: "",
+    description: "",
+    type: "hot_products",
+    conditions: {},
+    default_display_count: 10,
+    default_sort_type: "manual",
+  });
+
+  // GraphQL 查询
+  const {
+    data: recommendationsData,
+    loading: recommendationsLoading,
+    refetch: refetchRecommendations,
+  } = useQuery(
+    GET_PRODUCT_RECOMMENDATIONS,
+    {
+      variables: {
+        input: {
+          page: 1,
+          perPage: 50,
+          search: searchTerm || undefined,
+          type: selectedType !== "all" ? selectedType : undefined,
+          position: selectedPosition !== "all" ? selectedPosition : undefined,
+        },
+      },
+      errorPolicy: "all",
+    },
+  );
+
+  const { data: rulesData, loading: rulesLoading, refetch: refetchRules } =
+    useQuery(
+      GET_RECOMMENDATION_RULES,
+      {
+        variables: { input: { page: 1, perPage: 50 } },
+        errorPolicy: "all",
+      },
+    );
+
+  const { data: statsData, loading: statsLoading } = useQuery(
+    GET_RECOMMENDATION_OVERVIEW_STATS,
+    { errorPolicy: "all" },
+  );
+
+  // GraphQL 变更
+  const [createRecommendation] = useMutation(CREATE_PRODUCT_RECOMMENDATION, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "推荐创建成功" });
+      setIsCreateDialogOpen(false);
+      resetForm();
+      refetchRecommendations();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [updateRecommendation] = useMutation(UPDATE_PRODUCT_RECOMMENDATION, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "推荐更新成功" });
+      setEditingRecommendation(null);
+      resetForm();
+      refetchRecommendations();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [deleteRecommendation] = useMutation(DELETE_PRODUCT_RECOMMENDATION, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "推荐删除成功" });
+      refetchRecommendations();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [duplicateRecommendation] = useMutation(DUPLICATE_RECOMMENDATION, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "推荐复制成功" });
+      refetchRecommendations();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [createRule] = useMutation(CREATE_RECOMMENDATION_RULE, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "规则创建成功" });
+      setIsRuleDialogOpen(false);
+      resetRuleForm();
+      refetchRules();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [deleteRule] = useMutation(DELETE_RECOMMENDATION_RULE, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "规则删除成功" });
+      refetchRules();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 重置表单
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      type: "hot_products",
+      position: "homepage_banner",
+      display_count: 10,
+      sort_type: "manual",
+      is_active: true,
+      weight: 1,
+      product_ids: [],
+    });
   };
 
-  const handleCreateRule = () => {
-    // 创建规则逻辑
-    setIsRuleDialogOpen(false);
+  const resetRuleForm = () => {
+    setRuleFormData({
+      name: "",
+      description: "",
+      type: "hot_products",
+      conditions: {},
+      default_display_count: 10,
+      default_sort_type: "manual",
+    });
+  };
+
+  // 处理函数
+  const handleCreateRecommendation = () => {
+    createRecommendation({
+      variables: { input: formData },
+    });
+  };
+
+  const handleUpdateRecommendation = () => {
+    if (!editingRecommendation) return;
+    updateRecommendation({
+      variables: {
+        id: editingRecommendation.id,
+        input: formData,
+      },
+    });
   };
 
   const handleDeleteRecommendation = (id: string) => {
-    setRecommendations(recommendations.filter((rec) => rec.id !== id));
+    deleteRecommendation({ variables: { id } });
+  };
+
+  const handleDuplicateRecommendation = (id: string) => {
+    duplicateRecommendation({ variables: { id } });
+  };
+
+  const handleToggleRecommendationStatus = (
+    recommendation: ProductRecommendation,
+  ) => {
+    updateRecommendation({
+      variables: {
+        id: recommendation.id,
+        input: { is_active: !recommendation.is_active },
+      },
+    });
+  };
+
+  const handleCreateRule = () => {
+    createRule({
+      variables: { input: ruleFormData },
+    });
   };
 
   const handleDeleteRule = (id: string) => {
-    setRules(rules.filter((rule) => rule.id !== id));
+    deleteRule({ variables: { id } });
   };
 
-  const handleToggleStatus = (id: string, type: "recommendation" | "rule") => {
-    if (type === "recommendation") {
-      setRecommendations(
-        recommendations.map((rec) =>
-          rec.id === id
-            ? {
-              ...rec,
-              status: rec.status === "active" ? "inactive" : "active",
-            }
-            : rec
-        ),
-      );
-    } else {
-      setRules(
-        rules.map((rule) =>
-          rule.id === id
-            ? {
-              ...rule,
-              status: rule.status === "active" ? "inactive" : "active",
-            }
-            : rule
-        ),
-      );
-    }
+  // 编辑处理
+  const handleEditRecommendation = (recommendation: ProductRecommendation) => {
+    setEditingRecommendation(recommendation);
+    setFormData({
+      name: recommendation.name,
+      description: recommendation.description || "",
+      type: recommendation.type,
+      position: recommendation.position,
+      display_count: recommendation.display_count,
+      sort_type: recommendation.sort_type,
+      is_active: recommendation.is_active,
+      weight: recommendation.weight,
+      product_ids: recommendation.product_ids,
+    });
+    setIsCreateDialogOpen(true);
   };
 
+  // 数据获取
+  const recommendations = recommendationsData?.productRecommendations?.items ||
+    [];
+  const rules = rulesData?.recommendationRules?.items || [];
+  const stats = statsData?.recommendationOverviewStats;
+
+  // 过滤逻辑
+  const filteredRecommendations = recommendations.filter(
+    (rec: ProductRecommendation) => {
+      const matchesSearch = rec.name.toLowerCase().includes(
+        searchTerm.toLowerCase(),
+      );
+      const matchesType = selectedType === "all" || rec.type === selectedType;
+      const matchesPosition = selectedPosition === "all" ||
+        rec.position.includes(selectedPosition);
+      return matchesSearch && matchesType && matchesPosition;
+    },
+  );
+
+  // 选项配置
   const typeOptions = [
     { value: "all", label: "全部类型" },
-    { value: "hot", label: "热门推荐" },
-    { value: "new", label: "新品推荐" },
-    { value: "recommend", label: "编辑推荐" },
-    { value: "category", label: "分类推荐" },
+    { value: "hot_products", label: "热门推荐" },
+    { value: "new_products", label: "新品推荐" },
+    { value: "recommended_products", label: "编辑推荐" },
+    { value: "category_based", label: "分类推荐" },
+    { value: "user_behavior", label: "用户行为" },
+    { value: "collaborative_filtering", label: "协同过滤" },
+    { value: "custom_selection", label: "自定义选择" },
   ];
 
   const positionOptions = [
     { value: "all", label: "全部位置" },
-    { value: "首页", label: "首页" },
-    { value: "分类页", label: "分类页" },
-    { value: "搜索页", label: "搜索页" },
-    { value: "详情页", label: "详情页" },
+    { value: "homepage_banner", label: "首页轮播" },
+    { value: "homepage_grid", label: "首页网格" },
+    { value: "category_sidebar", label: "分类侧边" },
+    { value: "product_detail_related", label: "商品详情相关" },
+    { value: "cart_recommend", label: "购物车推荐" },
+    { value: "checkout_recommend", label: "结算推荐" },
+    { value: "search_recommend", label: "搜索推荐" },
   ];
+
+  const sortOptions = [
+    { value: "manual", label: "手动排序" },
+    { value: "sales_desc", label: "销量降序" },
+    { value: "price_asc", label: "价格升序" },
+    { value: "price_desc", label: "价格降序" },
+    { value: "created_desc", label: "创建时间降序" },
+    { value: "rating_desc", label: "评分降序" },
+    { value: "random", label: "随机排序" },
+  ];
+
+  // 获取类型显示文本
+  const getTypeLabel = (type: string) => {
+    const option = typeOptions.find((opt) => opt.value === type);
+    return option?.label || type;
+  };
+
+  // 获取位置显示文本
+  const getPositionLabel = (position: string) => {
+    const option = positionOptions.find((opt) => opt.value === position);
+    return option?.label || position;
+  };
 
   return (
     <div className="space-y-6">
@@ -280,6 +453,21 @@ export default function RecommendationsPage() {
           <p className="text-muted-foreground">管理商品推荐位置和推荐规则</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              refetchRecommendations();
+              refetchRules();
+            }}
+            disabled={recommendationsLoading || rulesLoading}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${
+                recommendationsLoading || rulesLoading ? "animate-spin" : ""
+              }`}
+            />
+            刷新
+          </Button>
           <Dialog open={isRuleDialogOpen} onOpenChange={setIsRuleDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -295,54 +483,95 @@ export default function RecommendationsPage() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="rule-name">规则名称</Label>
-                  <Input id="rule-name" placeholder="输入规则名称" />
+                  <Input
+                    id="rule-name"
+                    placeholder="输入规则名称"
+                    value={ruleFormData.name}
+                    onChange={(e) =>
+                      setRuleFormData({
+                        ...ruleFormData,
+                        name: e.target.value,
+                      })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rule-description">规则描述</Label>
+                  <Textarea
+                    id="rule-description"
+                    placeholder="输入规则描述"
+                    value={ruleFormData.description}
+                    onChange={(e) =>
+                      setRuleFormData({
+                        ...ruleFormData,
+                        description: e.target.value,
+                      })}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="rule-type">规则类型</Label>
-                  <Select>
+                  <Select
+                    value={ruleFormData.type}
+                    onValueChange={(value) =>
+                      setRuleFormData({ ...ruleFormData, type: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="选择规则类型" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sales">销量排行</SelectItem>
-                      <SelectItem value="rating">评分排行</SelectItem>
-                      <SelectItem value="views">浏览量排行</SelectItem>
-                      <SelectItem value="new">新品推荐</SelectItem>
-                      <SelectItem value="category">分类推荐</SelectItem>
+                      {typeOptions.slice(1).map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="rule-condition">条件</Label>
-                  <div className="flex gap-2">
-                    <Select>
-                      <SelectTrigger className="w-24">
-                        <SelectValue placeholder="条件" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="gt">大于</SelectItem>
-                        <SelectItem value="gte">大于等于</SelectItem>
-                        <SelectItem value="lt">小于</SelectItem>
-                        <SelectItem value="lte">小于等于</SelectItem>
-                        <SelectItem value="eq">等于</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      placeholder="数值"
-                      className="flex-1"
-                    />
-                  </div>
+                  <Label htmlFor="rule-display-count">默认显示数量</Label>
+                  <Input
+                    id="rule-display-count"
+                    type="number"
+                    placeholder="10"
+                    min="1"
+                    max="50"
+                    value={ruleFormData.default_display_count}
+                    onChange={(e) =>
+                      setRuleFormData({
+                        ...ruleFormData,
+                        default_display_count: parseInt(e.target.value) || 10,
+                      })}
+                  />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch id="rule-status" />
-                  <Label htmlFor="rule-status">启用规则</Label>
+                <div>
+                  <Label htmlFor="rule-sort-type">默认排序类型</Label>
+                  <Select
+                    value={ruleFormData.default_sort_type}
+                    onValueChange={(value) =>
+                      setRuleFormData({
+                        ...ruleFormData,
+                        default_sort_type: value,
+                      })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择排序类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sortOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setIsRuleDialogOpen(false)}
+                  onClick={() => {
+                    setIsRuleDialogOpen(false);
+                    resetRuleForm();
+                  }}
                 >
                   取消
                 </Button>
@@ -352,7 +581,13 @@ export default function RecommendationsPage() {
           </Dialog>
           <Dialog
             open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open);
+              if (!open) {
+                setEditingRecommendation(null);
+                resetForm();
+              }
+            }}
           >
             <DialogTrigger asChild>
               <Button>
@@ -362,26 +597,43 @@ export default function RecommendationsPage() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>创建商品推荐</DialogTitle>
-                <DialogDescription>添加新的商品推荐位置</DialogDescription>
+                <DialogTitle>
+                  {editingRecommendation ? "编辑推荐" : "创建商品推荐"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingRecommendation
+                    ? "修改推荐配置"
+                    : "添加新的商品推荐位置"}
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="rec-name">推荐名称</Label>
-                    <Input id="rec-name" placeholder="输入推荐名称" />
+                    <Input
+                      id="rec-name"
+                      placeholder="输入推荐名称"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="rec-type">推荐类型</Label>
-                    <Select>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, type: value })}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="选择推荐类型" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="hot">热门推荐</SelectItem>
-                        <SelectItem value="new">新品推荐</SelectItem>
-                        <SelectItem value="recommend">编辑推荐</SelectItem>
-                        <SelectItem value="category">分类推荐</SelectItem>
+                        {typeOptions.slice(1).map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -389,49 +641,114 @@ export default function RecommendationsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="rec-position">显示位置</Label>
-                    <Select>
+                    <Select
+                      value={formData.position}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, position: value })}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="选择显示位置" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="home-banner">首页轮播</SelectItem>
-                        <SelectItem value="home-grid">首页网格</SelectItem>
-                        <SelectItem value="category-top">分类页顶部</SelectItem>
-                        <SelectItem value="search-side">搜索页侧边</SelectItem>
-                        <SelectItem value="detail-bottom">
-                          详情页底部
-                        </SelectItem>
+                        {positionOptions.slice(1).map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="rec-priority">优先级</Label>
+                    <Label htmlFor="rec-weight">优先级</Label>
                     <Input
-                      id="rec-priority"
+                      id="rec-weight"
                       type="number"
                       placeholder="1-100"
                       min="1"
                       max="100"
+                      value={formData.weight}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          weight: parseInt(e.target.value) || 1,
+                        })}
                     />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="rec-display-count">显示数量</Label>
+                    <Input
+                      id="rec-display-count"
+                      type="number"
+                      placeholder="10"
+                      min="1"
+                      max="50"
+                      value={formData.display_count}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          display_count: parseInt(e.target.value) || 10,
+                        })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="rec-sort-type">排序类型</Label>
+                    <Select
+                      value={formData.sort_type}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, sort_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择排序类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sortOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="rec-description">推荐说明</Label>
-                  <Textarea id="rec-description" placeholder="输入推荐说明" />
+                  <Textarea
+                    id="rec-description"
+                    placeholder="输入推荐说明"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })}
+                  />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch id="rec-status" />
-                  <Label htmlFor="rec-status">立即启用</Label>
+                  <Switch
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, is_active: checked })}
+                  />
+                  <Label>立即启用</Label>
                 </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    setEditingRecommendation(null);
+                    resetForm();
+                  }}
                 >
                   取消
                 </Button>
-                <Button onClick={handleCreateRecommendation}>创建推荐</Button>
+                <Button
+                  onClick={editingRecommendation
+                    ? handleUpdateRecommendation
+                    : handleCreateRecommendation}
+                >
+                  {editingRecommendation ? "更新推荐" : "创建推荐"}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -462,7 +779,7 @@ export default function RecommendationsPage() {
                   </div>
                 </div>
                 <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -477,7 +794,7 @@ export default function RecommendationsPage() {
                   value={selectedPosition}
                   onValueChange={setSelectedPosition}
                 >
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -499,120 +816,137 @@ export default function RecommendationsPage() {
               <CardDescription>管理所有商品推荐位置</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>推荐名称</TableHead>
-                    <TableHead>类型</TableHead>
-                    <TableHead>位置</TableHead>
-                    <TableHead>商品数量</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>优先级</TableHead>
-                    <TableHead>点击/浏览</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRecommendations.map((recommendation) => (
-                    <TableRow key={recommendation.id}>
-                      <TableCell className="font-medium">
-                        {recommendation.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={recommendation.type === "hot"
-                            ? "destructive"
-                            : recommendation.type === "new"
-                            ? "default"
-                            : recommendation.type === "recommend"
-                            ? "secondary"
-                            : "outline"}
-                        >
-                          {recommendation.type === "hot"
-                            ? "热门"
-                            : recommendation.type === "new"
-                            ? "新品"
-                            : recommendation.type === "recommend"
-                            ? "编辑"
-                            : "分类"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{recommendation.position}</TableCell>
-                      <TableCell>{recommendation.products.length}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={recommendation.status === "active"
-                            ? "default"
-                            : "secondary"}
-                        >
-                          {recommendation.status === "active" ? "启用" : "禁用"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{recommendation.priority}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            {recommendation.views.toLocaleString()}
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Target className="h-3 w-3" />
-                            {recommendation.clicks.toLocaleString()}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              handleToggleStatus(
-                                recommendation.id,
-                                "recommendation",
-                              )}
-                          >
-                            <Switch
-                              checked={recommendation.status === "active"}
-                              className="h-4 w-4"
-                            />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
+              {recommendationsLoading
+                ? (
+                  <div className="flex justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin" />
+                  </div>
+                )
+                : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>推荐名称</TableHead>
+                        <TableHead>类型</TableHead>
+                        <TableHead>位置</TableHead>
+                        <TableHead>商品数量</TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead>优先级</TableHead>
+                        <TableHead>点击/浏览</TableHead>
+                        <TableHead>操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRecommendations.map((
+                        recommendation: ProductRecommendation,
+                      ) => (
+                        <TableRow key={recommendation.id}>
+                          <TableCell className="font-medium">
+                            {recommendation.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {getTypeLabel(recommendation.type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {getPositionLabel(recommendation.position)}
+                          </TableCell>
+                          <TableCell>
+                            {recommendation.products?.length || 0}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={recommendation.is_active
+                                ? "default"
+                                : "secondary"}
+                            >
+                              {recommendation.is_active ? "启用" : "禁用"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{recommendation.weight}</TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div className="flex items-center gap-1">
+                                <Target className="h-3 w-3" />
+                                {recommendation.click_count?.toLocaleString() ||
+                                  0}
+                              </div>
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Eye className="h-3 w-3" />
+                                点击率: {recommendation.conversion_count || 0}%
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleToggleRecommendationStatus(
+                                    recommendation,
+                                  )}
+                              >
+                                <Switch
+                                  checked={recommendation.is_active}
+                                  className="h-4 w-4"
+                                />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>确认删除</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  确定要删除推荐"{recommendation
-                                    .name}"吗？此操作无法撤销。
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>取消</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() =>
-                                    handleDeleteRecommendation(
-                                      recommendation.id,
-                                    )}
-                                >
-                                  删除
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleEditRecommendation(recommendation)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleDuplicateRecommendation(
+                                    recommendation.id,
+                                  )}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      确认删除
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      确定要删除推荐&quot;{recommendation
+                                        .name}&quot;吗？此操作无法撤销。
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>取消</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() =>
+                                        handleDeleteRecommendation(
+                                          recommendation.id,
+                                        )}
+                                    >
+                                      删除
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -624,175 +958,208 @@ export default function RecommendationsPage() {
               <CardDescription>管理自动推荐商品的规则</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>规则名称</TableHead>
-                    <TableHead>类型</TableHead>
-                    <TableHead>条件</TableHead>
-                    <TableHead>数值</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>创建时间</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rules.map((rule) => (
-                    <TableRow key={rule.id}>
-                      <TableCell className="font-medium">{rule.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {rule.type === "sales"
-                            ? "销量"
-                            : rule.type === "rating"
-                            ? "评分"
-                            : rule.type === "views"
-                            ? "浏览"
-                            : rule.type === "new"
-                            ? "新品"
-                            : "分类"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{rule.condition}</TableCell>
-                      <TableCell>{rule.value}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={rule.status === "active"
-                            ? "default"
-                            : "secondary"}
-                        >
-                          {rule.status === "active" ? "启用" : "禁用"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{rule.created}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleStatus(rule.id, "rule")}
-                          >
-                            <Switch
-                              checked={rule.status === "active"}
-                              className="h-4 w-4"
-                            />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>确认删除</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  确定要删除规则"{rule
-                                    .name}"吗？此操作无法撤销。
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>取消</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteRule(rule.id)}
-                                >
-                                  删除
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {rulesLoading
+                ? (
+                  <div className="flex justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin" />
+                  </div>
+                )
+                : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>规则名称</TableHead>
+                        <TableHead>类型</TableHead>
+                        <TableHead>默认显示数量</TableHead>
+                        <TableHead>默认排序</TableHead>
+                        <TableHead>系统规则</TableHead>
+                        <TableHead>创建时间</TableHead>
+                        <TableHead>操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rules.map((rule: RecommendationRule) => (
+                        <TableRow key={rule.id}>
+                          <TableCell className="font-medium">
+                            {rule.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {getTypeLabel(rule.type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{rule.default_display_count}</TableCell>
+                          <TableCell>{rule.default_sort_type}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={rule.is_system ? "default" : "secondary"}
+                            >
+                              {rule.is_system ? "系统" : "自定义"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(rule.created).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {!rule.is_system && (
+                                <>
+                                  <Button variant="ghost" size="sm">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          确认删除
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          确定要删除规则&quot;{rule
+                                            .name}&quot;吗？此操作无法撤销。
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                          取消
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() =>
+                                            handleDeleteRule(rule.id)}
+                                        >
+                                          删除
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">总推荐数</CardTitle>
-                <Target className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {recommendations.length}
+          {statsLoading
+            ? (
+              <div className="flex justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin" />
+              </div>
+            )
+            : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        总推荐数
+                      </CardTitle>
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {stats?.totalRecommendations || 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        活跃: {stats?.activeRecommendations || 0}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        总点击数
+                      </CardTitle>
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {(stats?.totalClicks || 0).toLocaleString()}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        总浏览: {(stats?.totalViews || 0).toLocaleString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        总转化数
+                      </CardTitle>
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {(stats?.totalConversions || 0).toLocaleString()}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        转化率: {(stats?.avgConversionRate || 0).toFixed(1)}%
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        点击率
+                      </CardTitle>
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {(stats?.avgCtr || 0).toFixed(1)}%
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        平均点击率
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  +2 相比上月
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">总点击数</CardTitle>
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {recommendations.reduce((sum, rec) => sum + rec.clicks, 0)
-                    .toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  +12.5% 相比上月
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">总浏览数</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {recommendations.reduce((sum, rec) => sum + rec.views, 0)
-                    .toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  +8.2% 相比上月
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">点击率</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {(
-                    (recommendations.reduce((sum, rec) => sum + rec.clicks, 0) /
-                      recommendations.reduce(
-                        (sum, rec) => sum + rec.views,
-                        0,
-                      )) * 100
-                  ).toFixed(1)}%
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  +3.1% 相比上月
-                </p>
-              </CardContent>
-            </Card>
-          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>推荐效果分析</CardTitle>
-              <CardDescription>各推荐位置的效果对比</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                图表组件 - 后续实现
-              </p>
-            </CardContent>
-          </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>推荐效果分析</CardTitle>
+                    <CardDescription>各推荐位置的效果对比</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {stats?.topPerforming && stats.topPerforming.length > 0
+                      ? (
+                        <div className="space-y-2">
+                          <h4 className="font-medium">表现最佳的推荐</h4>
+                          {stats.topPerforming.map((
+                            item: TopPerformingItem,
+                          ) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between p-2 border rounded"
+                            >
+                              <span>{item.name}</span>
+                              <div className="text-sm text-muted-foreground">
+                                点击: {item.click_count} | 转化:{" "}
+                                {item.conversion_count}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                      : (
+                        <p className="text-sm text-muted-foreground">
+                          暂无统计数据
+                        </p>
+                      )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
         </TabsContent>
       </Tabs>
     </div>

@@ -30,9 +30,8 @@ export type {
 // ==================== 产品相关类型 ====================
 export * from './product.ts';
 export type {
-  BatchPriceUpdateInput, Brand, ExportProductsInput,
-  ExportResult, Product,
-  ProductCategory, ProductDimensions, ProductInput, ProductQuery, ProductsResponse, ProductStats, ProductType,
+  BatchPriceUpdateInput, Brand, ExportProductsInput, Product,
+  ProductCategory, ProductDimensions, ProductExportResult, ProductInput, ProductQuery, ProductsResponse, ProductStats, ProductType,
   ProductTypeAttribute, ProductUpdateInput, StockAdjustmentInput, StockOperationResult
 } from './product.ts';
 

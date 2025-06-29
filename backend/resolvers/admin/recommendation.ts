@@ -200,13 +200,48 @@ export const recommendationResolvers = {
       parent: any,
       { input }: { input: any }
     ): Promise<{ items: any[]; pagination: PaginationInfo }> => {
-      const { page = 1, perPage = 20 } = input || {};
+      const { page = 1, perPage = 20, recommendation_id, start_date, end_date } = input || {};
       
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         
-        // 这里应该从统计表获取数据，暂时返回空数据
+        let filter = '';
+        const filterParams: string[] = [];
+
+        if (recommendation_id) {
+          filterParams.push(`recommendation_id = "${recommendation_id}"`);
+        }
+
+        if (start_date) {
+          filterParams.push(`date >= "${start_date}"`);
+        }
+
+        if (end_date) {
+          filterParams.push(`date <= "${end_date}"`);
+        }
+
+        if (filterParams.length > 0) {
+          filter = filterParams.join(' && ');
+        }
+
+        const result = await pb.collection('recommendation_stats').getList(page, perPage, {
+          filter,
+          sort: '-date'
+        });
+
+        return {
+          items: result.items,
+          pagination: {
+            page: result.page,
+            perPage: result.perPage,
+            totalItems: result.totalItems,
+            totalPages: result.totalPages
+          }
+        };
+      } catch (error) {
+        console.error('Error fetching recommendation stats:', error);
+        // 如果统计表不存在，返回空数据
         return {
           items: [],
           pagination: {
@@ -216,9 +251,6 @@ export const recommendationResolvers = {
             totalPages: 0
           }
         };
-      } catch (error) {
-        console.error('Error fetching recommendation stats:', error);
-        throw new Error('Failed to fetch recommendation stats');
       }
     },
 
@@ -230,8 +262,88 @@ export const recommendationResolvers = {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         
-        // 这里应该根据推荐规则预览商品，暂时返回空数组
-        return [];
+        const { type, position, product_ids, conditions, display_count = 10, sort_type = 'manual' } = input;
+
+        let products: any[] = [];
+
+        // 如果指定了商品ID，直接获取这些商品
+        if (product_ids && product_ids.length > 0) {
+          for (const productId of product_ids.slice(0, display_count)) {
+            try {
+              const product = await pb.collection('products').getOne(productId, {
+                expand: 'category,brand'
+              });
+              products.push({
+                ...product,
+                category: product.expand?.category,
+                brand: product.expand?.brand
+              });
+            } catch (error) {
+              console.warn(`Product ${productId} not found`);
+            }
+          }
+        } else {
+          // 根据推荐类型和条件获取商品
+          let filter = 'status = "active"';
+          let sort = '';
+
+          // 根据推荐类型设定过滤条件
+          switch (type) {
+            case 'hot_products':
+              sort = '-sales_count';
+              break;
+            case 'new_products':
+              sort = '-created';
+              break;
+            case 'recommended_products':
+              filter += ' && is_featured = true';
+              break;
+            case 'category_based':
+              if (conditions?.category_id) {
+                filter += ` && category_id = "${conditions.category_id}"`;
+              }
+              break;
+          }
+
+          // 根据排序类型设定排序
+          switch (sort_type) {
+            case 'sales_desc':
+              sort = '-sales_count';
+              break;
+            case 'price_asc':
+              sort = 'price';
+              break;
+            case 'price_desc':
+              sort = '-price';
+              break;
+            case 'created_desc':
+              sort = '-created';
+              break;
+            case 'rating_desc':
+              sort = '-rating';
+              break;
+            case 'random':
+              // PocketBase不支持随机排序，使用created替代
+              sort = '-created';
+              break;
+            default:
+              sort = '-created';
+          }
+
+          const result = await pb.collection('products').getList(1, display_count, {
+            filter,
+            sort,
+            expand: 'category,brand'
+          });
+
+          products = result.items.map((item: any) => ({
+            ...item,
+            category: item.expand?.category,
+            brand: item.expand?.brand
+          }));
+        }
+
+        return products;
       } catch (error) {
         console.error('Error previewing recommendation:', error);
         return [];

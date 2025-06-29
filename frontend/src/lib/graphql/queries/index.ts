@@ -27,3 +27,6 @@ export * from "./coupon";
 
 // 积分管理模块
 export * from "./points";
+
+// 推荐管理模块
+export * from "./recommendation";

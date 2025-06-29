@@ -435,7 +435,7 @@ export interface ExportProductsInput {
  * 导出结果接口
  * @description 导出操作的结果
  */
-export interface ExportResult {
+export interface ProductExportResult {
   /** 操作是否成功 */
   success: boolean;
   /** 结果消息 */

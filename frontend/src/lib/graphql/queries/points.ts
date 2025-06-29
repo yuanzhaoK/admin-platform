@@ -458,7 +458,7 @@ export interface PointsRecordFilterInput {
   sortOrder?: string;
 }
 
-export interface ExportResult {
+export interface PointsExportResult {
   headers: string[];
   rows: string[][];
   total: number;
