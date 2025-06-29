@@ -250,7 +250,7 @@ extend type Mutation {
   
   adjustUserPointsRecord(user_id: String!, points: Int!, reason: String!): PointsRecord!
   batchAdjustPoints(user_ids: [String!]!, points: Int!, reason: String!): BatchOperationResult!
-  exportPointsRecords(input: PointsRecordFilterInput): ExportResult!
+  exportPointsRecords(input: PointsRecordFilterInput): PointsExportResult!
   
   createPointsRuleTemplate(input: PointsRuleTemplateInput!): PointsRuleTemplate!
   updatePointsRuleTemplate(id: String!, input: PointsRuleTemplateUpdateInput!): PointsRuleTemplate!
@@ -272,7 +272,7 @@ input PointsRecordFilterInput {
   sortOrder: String
 }
 
-type ExportResult {
+type PointsExportResult {
   headers: [String!]!
   rows: [[String!]!]!
   total: Int!

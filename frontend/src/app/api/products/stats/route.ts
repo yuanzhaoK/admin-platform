@@ -1,90 +1,58 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { apolloClient, handleGraphQLError } from "@/lib/graphql/client";
+import { GET_PRODUCT_STATS } from "@/lib/graphql/queries/product";
+import { NextResponse } from "next/server";
 
-const DENO_PROXY_URL = 'http://127.0.0.1:8090';
+// CORS 头配置
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Requested-With",
+  "Content-Type": "application/json; charset=utf-8",
+};
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // 获取所有产品数据
-    const headers: HeadersInit = {};
-    
-    // Copy authorization header from the original request
-    const authHeader = request.headers.get('authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
+    console.log("📊 GraphQL查询产品统计数据...");
 
-    const response = await fetch(`${DENO_PROXY_URL}/api/collections/products/records`, {
-      method: 'GET',
-      headers,
+    // 执行GraphQL查询获取产品统计信息
+    const { data, error } = await apolloClient.query({
+      query: GET_PRODUCT_STATS,
+      fetchPolicy: "no-cache", // 统计数据不使用缓存，确保获取最新数据
     });
 
-    if (!response.ok) {
-      return new NextResponse(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Failed to fetch products' 
-        }),
-        {
-          status: response.status,
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
+    if (error) {
+      const errorResponse = handleGraphQLError(error);
+      return new NextResponse(JSON.stringify(errorResponse), {
+        status: 400,
+        headers: corsHeaders,
+      });
     }
 
-    const data = await response.json();
-    const products = data.items || [];
-
-    // 计算统计信息
-    const stats = {
-      total: products.length,
-      active: products.filter((p: any) => p.status === 'active').length,
-      inactive: products.filter((p: any) => p.status === 'inactive').length,
-      draft: products.filter((p: any) => p.status === 'draft').length,
-      categories: products.reduce((acc: Record<string, number>, p: any) => {
-        if (p.category) {
-          acc[p.category] = (acc[p.category] || 0) + 1;
-        }
-        return acc;
-      }, {}),
-      avgPrice: products.length > 0 
-        ? products.reduce((sum: number, p: any) => sum + (p.price || 0), 0) / products.length 
-        : 0,
-      totalStock: products.reduce((sum: number, p: any) => sum + (p.stock || 0), 0)
-    };
+    console.log("✅ 产品统计数据获取成功:", data.productStats);
 
     return new NextResponse(
-      JSON.stringify({ 
-        success: true, 
-        data: stats 
+      JSON.stringify({
+        success: true,
+        data: data.productStats,
       }),
       {
         status: 200,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',  
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-        },
-      }
+        headers: corsHeaders,
+      },
     );
   } catch (error) {
-    console.error('Products stats API error:', error);
+    console.error("产品统计API错误:", error);
     return new NextResponse(
-      JSON.stringify({ 
-        success: false, 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error' 
+      JSON.stringify({
+        success: false,
+        error: "获取产品统计失败",
+        details: error instanceof Error ? error.message : "未知错误",
       }),
       {
         status: 500,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
+        headers: corsHeaders,
+      },
     );
   }
 }
@@ -93,10 +61,11 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-      'Access-Control-Max-Age': '86400',
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers":
+        "Content-Type, Authorization, X-Requested-With",
+      "Access-Control-Max-Age": "86400",
     },
   });
-} 
+}

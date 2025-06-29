@@ -87,18 +87,24 @@ download_pocketbase() {
 start_dev() {
     print_info "启动开发环境..."
     
+    # 检查外部PocketBase连接
+    if ! check_pocketbase_connection; then
+        print_error "无法连接到外部PocketBase服务器"
+        exit 1
+    fi
+    
     # 检查端口是否被占用
     check_ports
     
-    # 启动后端服务
-    print_info "启动后端服务 (PocketBase + GraphQL + Proxy)..."
+    # 启动GraphQL服务
+    print_info "启动GraphQL服务器..."
     cd backend
-    deno task dev &
+    POCKETBASE_URL="http://47.111.142.237:8090" GRAPHQL_PORT="8082" deno task server &
     BACKEND_PID=$!
     cd ..
     
-    # 等待后端服务启动
-    print_info "等待后端服务启动..."
+    # 等待GraphQL服务启动
+    print_info "等待GraphQL服务器启动..."
     sleep 5
     
     # 启动前端服务
@@ -114,12 +120,13 @@ start_dev() {
     
     print_success "开发环境启动完成!"
     print_info "服务地址:"
-    echo "  前端应用:        http://localhost:3000"
-    echo "  GraphQL API:     http://localhost:8082/graphql"
-    echo "  PocketBase:      http://localhost:8090"
-    echo "  PocketBase 管理: http://localhost:8090/_/"
-    echo "  代理服务器:      http://localhost:8091"
+    echo "  前端应用:              http://localhost:3000"
+    echo "  GraphQL API:           http://localhost:8082/graphql"
+    echo "  GraphQL健康检查:       http://localhost:8082/health"
+    echo "  外部PocketBase:        http://47.111.142.237:8090"
+    echo "  外部PocketBase管理:    http://47.111.142.237:8090/_/"
     echo ""
+    print_info "架构: 外部PocketBase + 本地GraphQL + 本地Next.js"
     print_info "按 Ctrl+C 停止所有服务"
     
     # 等待用户中断
@@ -129,7 +136,7 @@ start_dev() {
 
 # 检查端口占用
 check_ports() {
-    local ports=(3000 8082 8090 8091)
+    local ports=(3000 8082)
     for port in "${ports[@]}"; do
         if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
             print_warning "端口 $port 已被占用"
@@ -167,6 +174,14 @@ stop_services() {
     print_success "所有服务已停止"
 }
 
+# 运行健康检查
+run_health_check() {
+    print_info "运行系统健康检查..."
+    cd backend
+    deno task health-check
+    cd ..
+}
+
 # 清理并重启
 clean_restart() {
     print_info "清理数据库并重启..."
@@ -181,16 +196,22 @@ clean_restart() {
 start_prod() {
     print_info "启动生产环境..."
     
+    # 检查外部PocketBase连接
+    if ! check_pocketbase_connection; then
+        print_error "无法连接到外部PocketBase服务器"
+        exit 1
+    fi
+    
     # 构建前端
     print_info "构建前端..."
     cd frontend
     npm run build
     cd ..
     
-    # 启动后端
-    print_info "启动后端服务..."
+    # 启动GraphQL服务
+    print_info "启动GraphQL服务器..."
     cd backend
-    deno task start &
+    POCKETBASE_URL="http://47.111.142.237:8090" GRAPHQL_PORT="8082" deno task start &
     BACKEND_PID=$!
     cd ..
     
@@ -205,6 +226,12 @@ start_prod() {
     echo $FRONTEND_PID > .frontend.pid
     
     print_success "生产环境启动完成!"
+    print_info "服务地址:"
+    echo "  前端应用:              http://localhost:3000"
+    echo "  GraphQL API:           http://localhost:8082/graphql"
+    echo "  外部PocketBase:        http://47.111.142.237:8090"
+    echo ""
+    print_info "架构: 外部PocketBase + 本地GraphQL + 本地Next.js"
     
     trap 'stop_services' INT
     wait
@@ -239,13 +266,11 @@ main() {
         dev)
             check_dependencies
             install_frontend_deps
-            download_pocketbase
             start_dev
             ;;
         prod)
             check_dependencies
             install_frontend_deps
-            download_pocketbase
             start_prod
             ;;
         clean)
@@ -253,6 +278,9 @@ main() {
             ;;
         stop)
             stop_services
+            ;;
+        health)
+            run_health_check
             ;;
         help|--help|-h)
             show_help

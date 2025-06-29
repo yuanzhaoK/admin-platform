@@ -114,7 +114,6 @@ backend/
 ├── backups/                 # 备份文件
 ├── bin/                     # 二进制文件
 ├── server.ts                # 主服务器文件
-├── proxy-server.ts          # 代理服务器
 ├── simple-start.ts          # 简单启动文件
 ├── setup-admin.ts           # 管理员设置
 ├── clean.ts                 # 清理脚本

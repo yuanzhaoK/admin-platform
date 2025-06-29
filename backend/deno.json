@@ -4,10 +4,11 @@
   "description": "Deno backend for admin platform with PocketBase and GraphQL",
   "exports": "./server.ts",
   "tasks": {
-    "dev": "deno run --allow-all proxy-server.ts",
-    "start": "deno run --allow-all proxy-server.ts",
-    "server": "deno run --allow-all server.ts",
+    "dev": "POCKETBASE_URL=http://47.111.142.237:8090 GRAPHQL_PORT=8082 deno run --allow-all server.ts",
+    "start": "POCKETBASE_URL=http://47.111.142.237:8090 GRAPHQL_PORT=8082 deno run --allow-all server.ts",
+    "server": "POCKETBASE_URL=http://47.111.142.237:8090 GRAPHQL_PORT=8082 deno run --allow-all server.ts",
     "graphql": "GRAPHQL_PORT=8082 POCKETBASE_URL=http://47.111.142.237:8090 deno run --allow-all server.ts",
+    "local": "POCKETBASE_URL=http://localhost:8090 GRAPHQL_PORT=8082 deno run --allow-all server.ts",
     "setup": "deno run --allow-all setup.ts",
     "download-pb": "deno run --allow-all download-pocketbase.ts",
     "clean": "deno run --allow-write --allow-read clean.ts",
@@ -17,7 +18,9 @@
     "create-test-data": "deno run --allow-all create-test-data.ts",
     "fix-orders": "deno run --allow-all fix-orders-data.ts",
     "validate-schema": "deno run --allow-read --allow-env scripts/validate-schema.ts",
-    "schema-check": "deno task validate-schema"
+    "schema-check": "deno task validate-schema",
+    "health-check": "deno run --allow-net --allow-env scripts/health-check.ts",
+    "test-env": "deno run --allow-env config/environment.ts"
   },
   "imports": {
     "@std/http": "https://deno.land/std@0.208.0/http/mod.ts",

@@ -91,7 +91,7 @@ type StockOperationResult {
   newStock: Int
 }
 
-type ExportResult {
+type ProductExportResult {
   success: Boolean!
   message: String
   downloadUrl: String
@@ -303,5 +303,5 @@ extend type Mutation {
   reorderProductImages(productId: ID!, imageUrls: [String!]!): OperationResult!
   
   """导出产品数据"""
-  exportProducts(input: ExportProductsInput!): ExportResult!
+  exportProducts(input: ExportProductsInput!): ProductExportResult!
 } 

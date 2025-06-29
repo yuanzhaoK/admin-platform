@@ -1,172 +1,322 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { apolloClient, handleGraphQLError } from "@/lib/graphql/client";
+import {
+  DELETE_PRODUCT,
+  DUPLICATE_PRODUCT,
+  GET_PRODUCT,
+  type ProductUpdateInput,
+  UPDATE_PRODUCT,
+} from "@/lib/graphql/queries/product";
+import { NextRequest, NextResponse } from "next/server";
 
-const DENO_PROXY_URL = 'http://127.0.0.1:8090';
+// CORS 头配置
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Requested-With",
+  "Content-Type": "application/json; charset=utf-8",
+};
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const resolvedParams = await params;
-  return proxyRequest(request, resolvedParams.path, 'GET');
+  try {
+    const resolvedParams = await params;
+    const productId = resolvedParams.path[0];
+
+    if (!productId) {
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          error: "缺少产品ID",
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        },
+      );
+    }
+
+    console.log("🔍 GraphQL查询单个产品:", productId);
+
+    const { data, error } = await apolloClient.query({
+      query: GET_PRODUCT,
+      variables: { id: productId },
+      fetchPolicy: "cache-first",
+    });
+
+    if (error) {
+      const errorResponse = handleGraphQLError(error);
+      return new NextResponse(JSON.stringify(errorResponse), {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+
+    if (!data.product) {
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          error: "产品不存在",
+        }),
+        {
+          status: 404,
+          headers: corsHeaders,
+        },
+      );
+    }
+
+    return new NextResponse(
+      JSON.stringify({
+        success: true,
+        data: data.product,
+      }),
+      {
+        status: 200,
+        headers: corsHeaders,
+      },
+    );
+  } catch (error) {
+    console.error("产品API GET错误:", error);
+    return new NextResponse(
+      JSON.stringify({
+        success: false,
+        error: "获取产品失败",
+        details: error instanceof Error ? error.message : "未知错误",
+      }),
+      {
+        status: 500,
+        headers: corsHeaders,
+      },
+    );
+  }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const resolvedParams = await params;
-  return proxyRequest(request, resolvedParams.path, 'POST');
+  try {
+    const resolvedParams = await params;
+    const action = resolvedParams.path[1]; // 例如: duplicate
+    const productId = resolvedParams.path[0];
+
+    if (!productId) {
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          error: "缺少产品ID",
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        },
+      );
+    }
+
+    // 处理产品复制操作
+    if (action === "duplicate") {
+      console.log("📋 GraphQL复制产品:", productId);
+
+      const { data, errors } = await apolloClient.mutate({
+        mutation: DUPLICATE_PRODUCT,
+        variables: { id: productId },
+      });
+
+      if (errors) {
+        const errorResponse = handleGraphQLError({ graphQLErrors: errors });
+        return new NextResponse(JSON.stringify(errorResponse), {
+          status: 400,
+          headers: corsHeaders,
+        });
+      }
+
+      return new NextResponse(
+        JSON.stringify({
+          success: true,
+          data: data.duplicateProduct,
+          message: "产品复制成功",
+        }),
+        {
+          status: 201,
+          headers: corsHeaders,
+        },
+      );
+    }
+
+    // 未知操作
+    return new NextResponse(
+      JSON.stringify({
+        success: false,
+        error: "不支持的操作",
+      }),
+      {
+        status: 400,
+        headers: corsHeaders,
+      },
+    );
+  } catch (error) {
+    console.error("产品API POST错误:", error);
+    return new NextResponse(
+      JSON.stringify({
+        success: false,
+        error: "操作失败",
+        details: error instanceof Error ? error.message : "未知错误",
+      }),
+      {
+        status: 500,
+        headers: corsHeaders,
+      },
+    );
+  }
 }
 
 export async function PUT(
-  request: NextRequest, 
-  { params }: { params: Promise<{ path: string[] }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const resolvedParams = await params;
-  return proxyRequest(request, resolvedParams.path, 'PUT');
+  try {
+    const resolvedParams = await params;
+    const productId = resolvedParams.path[0];
+
+    if (!productId) {
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          error: "缺少产品ID",
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        },
+      );
+    }
+
+    const body: ProductUpdateInput = await request.json();
+
+    console.log("✏️ GraphQL更新产品 (动态路径):", { id: productId, ...body });
+
+    const { data, errors } = await apolloClient.mutate({
+      mutation: UPDATE_PRODUCT,
+      variables: { id: productId, input: body },
+    });
+
+    if (errors) {
+      const errorResponse = handleGraphQLError({ graphQLErrors: errors });
+      return new NextResponse(JSON.stringify(errorResponse), {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+
+    return new NextResponse(
+      JSON.stringify({
+        success: true,
+        data: data.updateProduct,
+        message: "产品更新成功",
+      }),
+      {
+        status: 200,
+        headers: corsHeaders,
+      },
+    );
+  } catch (error) {
+    console.error("产品API PUT错误:", error);
+    return new NextResponse(
+      JSON.stringify({
+        success: false,
+        error: "更新产品失败",
+        details: error instanceof Error ? error.message : "未知错误",
+      }),
+      {
+        status: 500,
+        headers: corsHeaders,
+      },
+    );
+  }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const resolvedParams = await params;
-  return proxyRequest(request, resolvedParams.path, 'DELETE');
+  try {
+    const resolvedParams = await params;
+    const productId = resolvedParams.path[0];
+
+    if (!productId) {
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          error: "缺少产品ID",
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        },
+      );
+    }
+
+    console.log("🗑️ GraphQL删除产品 (动态路径):", productId);
+
+    const { data, errors } = await apolloClient.mutate({
+      mutation: DELETE_PRODUCT,
+      variables: { id: productId },
+    });
+
+    if (errors) {
+      const errorResponse = handleGraphQLError({ graphQLErrors: errors });
+      return new NextResponse(JSON.stringify(errorResponse), {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+
+    return new NextResponse(
+      JSON.stringify({
+        success: true,
+        data: data.deleteProduct,
+        message: "产品删除成功",
+      }),
+      {
+        status: 200,
+        headers: corsHeaders,
+      },
+    );
+  } catch (error) {
+    console.error("产品API DELETE错误:", error);
+    return new NextResponse(
+      JSON.stringify({
+        success: false,
+        error: "删除产品失败",
+        details: error instanceof Error ? error.message : "未知错误",
+      }),
+      {
+        status: 500,
+        headers: corsHeaders,
+      },
+    );
+  }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const resolvedParams = await params;
-  return proxyRequest(request, resolvedParams.path, 'PATCH');
+  // PATCH请求复用PUT逻辑
+  return PUT(request, { params });
 }
 
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-      'Access-Control-Max-Age': '86400',
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers":
+        "Content-Type, Authorization, X-Requested-With",
+      "Access-Control-Max-Age": "86400",
     },
   });
 }
-
-async function proxyRequest(request: NextRequest, pathParts: string[], method: string) {
-  try {
-    const path = pathParts.join('/');
-    const url = new URL(request.url);
-    const searchParams = url.searchParams.toString();
-    
-    // 对于具体的产品ID操作，直接代理到PocketBase collections API
-    const fullUrl = `${DENO_PROXY_URL}/api/collections/products/records/${path}${searchParams ? `?${searchParams}` : ''}`;
-    
-    console.log(`🔄 Proxying ${method} request to: ${fullUrl}`);
-    
-    const headers: HeadersInit = {};
-    
-    // Copy relevant headers from the original request
-    const authHeader = request.headers.get('authorization');
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-    
-    const contentType = request.headers.get('content-type');
-    if (contentType) {
-      headers['Content-Type'] = contentType;
-    }
-
-    let body: string | FormData | undefined;
-    
-    if (method !== 'GET' && method !== 'DELETE') {
-      try {
-        if (contentType?.includes('application/json')) {
-          body = await request.text();
-        } else if (contentType?.includes('multipart/form-data')) {
-          body = await request.formData();
-        } else {
-          body = await request.text();
-        }
-      } catch (error) {
-        console.warn('Failed to read request body:', error);
-      }
-    }
-
-    const response = await fetch(fullUrl, {
-      method,
-      headers,
-      body,
-    });
-
-    const responseBody = await response.text();
-    
-    const responseHeaders: Record<string, string> = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-      'Content-Type': 'application/json; charset=utf-8'
-    };
-
-    if (response.ok) {
-      // 处理成功响应 - 转换PocketBase格式为前端期望格式
-      try {
-        const data = JSON.parse(responseBody);
-        const apiResponse = {
-          success: true,
-          data: data
-        };
-        return new NextResponse(JSON.stringify(apiResponse), {
-          status: response.status,
-          headers: responseHeaders,
-        });
-      } catch (parseError) {
-        // 如果解析失败，返回原始响应
-        return new NextResponse(responseBody, {
-          status: response.status,
-          headers: responseHeaders,
-        });
-      }
-    } else {
-      // 处理错误响应
-      try {
-        const errorData = JSON.parse(responseBody);
-        const apiResponse = {
-          success: false,
-          error: errorData.message || 'Request failed',
-          data: errorData.data || {}
-        };
-        return new NextResponse(JSON.stringify(apiResponse), {
-          status: response.status,
-          headers: responseHeaders,
-        });
-      } catch (parseError) {
-        // 如果解析失败，返回通用错误
-        const apiResponse = {
-          success: false,
-          error: 'Request failed'
-        };
-        return new NextResponse(JSON.stringify(apiResponse), {
-          status: response.status,
-          headers: responseHeaders,
-        });
-      }
-    }
-  } catch (error) {
-    console.error('Products API proxy error:', error);
-    return new NextResponse(
-      JSON.stringify({ 
-        error: 'Products API request failed', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      }),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
-    );
-  }
-} 
