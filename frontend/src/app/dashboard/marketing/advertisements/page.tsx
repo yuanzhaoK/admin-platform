@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery } from "@apollo/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -37,7 +39,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,93 +52,217 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BarChart3,
-  Calendar,
+  Copy,
   DollarSign,
   Edit,
   Eye,
-  Filter,
-  Heart,
   Image,
   Plus,
+  RefreshCw,
   Search,
-  Settings,
-  ShoppingCart,
-  Star,
   Target,
   Trash2,
-  TrendingUp,
-  Users,
 } from "lucide-react";
+
+// GraphQL 查询和变更
+import {
+  CREATE_ADVERTISEMENT,
+  DELETE_ADVERTISEMENT,
+  DUPLICATE_ADVERTISEMENT,
+  GET_AD_OVERVIEW_STATS,
+  GET_ADVERTISEMENTS,
+  PAUSE_ADVERTISEMENT,
+  RESUME_ADVERTISEMENT,
+  UPDATE_ADVERTISEMENT,
+} from "@/lib/graphql/queries";
 
 interface Advertisement {
   id: string;
-  title: string;
-  type: "banner" | "popup" | "sidebar" | "inline";
+  name: string;
+  description?: string;
+  type: string;
   position: string;
   image: string;
-  link: string;
-  status: "active" | "inactive" | "scheduled";
-  priority: number;
-  impressions: number;
-  clicks: number;
+  link_type: string;
+  link_url?: string;
+  content?: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+  weight: number;
+  click_count: number;
+  view_count: number;
+  budget?: number;
   cost: number;
-  budget: number;
-  startDate: string;
-  endDate: string;
+  tags?: string[];
   created: string;
+  updated: string;
 }
 
 export default function AdvertisementsPage() {
-  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
+  const { toast } = useToast();
 
-  // 模拟数据
-  useEffect(() => {
-    const mockAds: Advertisement[] = [
+  // 表单状态
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    type: "banner",
+    position: "homepage_top",
+    image: "",
+    link_type: "url",
+    link_url: "",
+    content: "",
+    status: "active",
+    start_time: "",
+    end_time: "",
+    weight: 1,
+    budget: 0,
+    tags: [] as string[],
+  });
+
+  // GraphQL 查询
+  const { data: advertisementsData, loading: adsLoading, refetch: refetchAds } =
+    useQuery(
+      GET_ADVERTISEMENTS,
       {
-        id: "1",
-        title: "春季促销横幅",
-        type: "banner",
-        position: "首页顶部",
-        image: "/api/placeholder/300/150",
-        link: "/promotions/spring",
-        status: "active",
-        priority: 1,
-        impressions: 125600,
-        clicks: 3840,
-        cost: 2580,
-        budget: 5000,
-        startDate: "2024-03-01",
-        endDate: "2024-03-31",
-        created: "2024-02-25",
+        variables: {
+          input: {
+            page: 1,
+            perPage: 50,
+            search: searchTerm || undefined,
+            type: selectedType !== "all" ? selectedType : undefined,
+            status: selectedStatus !== "all" ? selectedStatus : undefined,
+          },
+        },
+        errorPolicy: "all",
       },
-      {
-        id: "2",
-        title: "新品发布弹窗",
-        type: "popup",
-        position: "全站弹窗",
-        image: "/api/placeholder/400/300",
-        link: "/products/new",
-        status: "scheduled",
-        priority: 2,
-        impressions: 45200,
-        clicks: 1260,
-        cost: 890,
-        budget: 2000,
-        startDate: "2024-04-01",
-        endDate: "2024-04-15",
-        created: "2024-03-20",
-      },
-    ];
+    );
 
-    setAdvertisements(mockAds);
-  }, []);
+  const { data: statsData, loading: statsLoading } = useQuery(
+    GET_AD_OVERVIEW_STATS,
+    { errorPolicy: "all" },
+  );
 
-  const filteredAds = advertisements.filter((ad) => {
-    const matchesSearch = ad.title.toLowerCase().includes(
+  // GraphQL 变更
+  const [createAd] = useMutation(CREATE_ADVERTISEMENT, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "广告创建成功" });
+      setIsCreateDialogOpen(false);
+      resetForm();
+      refetchAds();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [updateAd] = useMutation(UPDATE_ADVERTISEMENT, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "广告更新成功" });
+      setEditingAd(null);
+      resetForm();
+      refetchAds();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [deleteAd] = useMutation(DELETE_ADVERTISEMENT, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "广告删除成功" });
+      refetchAds();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [duplicateAd] = useMutation(DUPLICATE_ADVERTISEMENT, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "广告复制成功" });
+      refetchAds();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [pauseAd] = useMutation(PAUSE_ADVERTISEMENT, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "广告已暂停" });
+      refetchAds();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [resumeAd] = useMutation(RESUME_ADVERTISEMENT, {
+    onCompleted: () => {
+      toast({ title: "成功", description: "广告已恢复" });
+      refetchAds();
+    },
+    onError: (error) => {
+      toast({
+        title: "错误",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 重置表单
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      type: "banner",
+      position: "homepage_top",
+      image: "",
+      link_type: "url",
+      link_url: "",
+      content: "",
+      status: "active",
+      start_time: "",
+      end_time: "",
+      weight: 1,
+      budget: 0,
+      tags: [],
+    });
+  };
+
+  // 数据获取
+  const advertisements = advertisementsData?.advertisements?.items || [];
+  const stats = statsData?.adOverviewStats;
+
+  const filteredAds = advertisements.filter((ad: Advertisement) => {
+    const matchesSearch = ad.name.toLowerCase().includes(
       searchTerm.toLowerCase(),
     );
     const matchesType = selectedType === "all" || ad.type === selectedType;
@@ -146,34 +271,68 @@ export default function AdvertisementsPage() {
     return matchesSearch && matchesType && matchesStatus;
   });
 
+  // 处理函数
   const handleCreateAd = () => {
-    setIsCreateDialogOpen(false);
+    createAd({
+      variables: { input: formData },
+    });
+  };
+
+  const handleUpdateAd = () => {
+    if (!editingAd) return;
+    updateAd({
+      variables: {
+        id: editingAd.id,
+        input: formData,
+      },
+    });
   };
 
   const handleDeleteAd = (id: string) => {
-    setAdvertisements(advertisements.filter((ad) => ad.id !== id));
+    deleteAd({ variables: { id } });
+  };
+
+  const handleDuplicateAd = (id: string) => {
+    duplicateAd({ variables: { id } });
   };
 
   const handleToggleStatus = (id: string) => {
-    setAdvertisements(
-      advertisements.map((ad) =>
-        ad.id === id
-          ? { ...ad, status: ad.status === "active" ? "inactive" : "active" }
-          : ad
-      ),
-    );
+    const ad = advertisements.find((a: Advertisement) => a.id === id);
+    if (!ad) return;
+
+    if (ad.status === "active") {
+      pauseAd({ variables: { id } });
+    } else {
+      resumeAd({ variables: { id } });
+    }
   };
 
-  const totalImpressions = advertisements.reduce(
-    (sum, ad) => sum + ad.impressions,
-    0,
-  );
-  const totalClicks = advertisements.reduce((sum, ad) => sum + ad.clicks, 0);
-  const totalCost = advertisements.reduce((sum, ad) => sum + ad.cost, 0);
-  const totalBudget = advertisements.reduce((sum, ad) => sum + ad.budget, 0);
-  const ctr = totalImpressions > 0
-    ? (totalClicks / totalImpressions * 100).toFixed(2)
-    : "0";
+  const handleEditAd = (ad: Advertisement) => {
+    setEditingAd(ad);
+    setFormData({
+      name: ad.name,
+      description: ad.description || "",
+      type: ad.type,
+      position: ad.position,
+      image: ad.image,
+      link_type: ad.link_type,
+      link_url: ad.link_url || "",
+      content: ad.content || "",
+      status: ad.status,
+      start_time: ad.start_time,
+      end_time: ad.end_time,
+      weight: ad.weight,
+      budget: ad.budget || 0,
+      tags: ad.tags || [],
+    });
+    setIsCreateDialogOpen(true);
+  };
+
+  // 统计数据
+  const totalViews = stats?.totalViews || 0;
+  const totalClicks = stats?.totalClicks || 0;
+  const totalCost = stats?.totalCost || 0;
+  const avgCtr = stats?.avgCtr || 0;
 
   return (
     <div className="space-y-6">
@@ -182,110 +341,225 @@ export default function AdvertisementsPage() {
           <h1 className="text-2xl font-bold tracking-tight">广告管理</h1>
           <p className="text-muted-foreground">管理所有广告位和推广内容</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              创建广告
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>创建广告</DialogTitle>
-              <DialogDescription>添加新的广告内容</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="ad-title">广告标题</Label>
-                  <Input id="ad-title" placeholder="输入广告标题" />
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              refetchAds();
+            }}
+            disabled={adsLoading || statsLoading}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${
+                adsLoading || statsLoading ? "animate-spin" : ""
+              }`}
+            />
+            刷新
+          </Button>
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open);
+              if (!open) {
+                setEditingAd(null);
+                resetForm();
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                创建广告
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingAd ? "编辑广告" : "创建广告"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingAd ? "修改广告内容" : "添加新的广告内容"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="ad-name">广告名称</Label>
+                    <Input
+                      id="ad-name"
+                      placeholder="输入广告名称"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ad-type">广告类型</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择广告类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="banner">横幅广告</SelectItem>
+                        <SelectItem value="popup">弹窗广告</SelectItem>
+                        <SelectItem value="floating">浮动广告</SelectItem>
+                        <SelectItem value="text">文字广告</SelectItem>
+                        <SelectItem value="video">视频广告</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="ad-position">广告位置</Label>
+                    <Select
+                      value={formData.position}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, position: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择广告位置" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="homepage_top">首页顶部</SelectItem>
+                        <SelectItem value="homepage_middle">
+                          首页中部
+                        </SelectItem>
+                        <SelectItem value="homepage_bottom">
+                          首页底部
+                        </SelectItem>
+                        <SelectItem value="category_top">分类页顶部</SelectItem>
+                        <SelectItem value="product_detail_top">
+                          商品详情顶部
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="ad-weight">权重</Label>
+                    <Input
+                      id="ad-weight"
+                      type="number"
+                      placeholder="1-100"
+                      min="1"
+                      max="100"
+                      value={formData.weight}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          weight: parseInt(e.target.value) || 1,
+                        })}
+                    />
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="ad-type">广告类型</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择广告类型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="banner">横幅广告</SelectItem>
-                      <SelectItem value="popup">弹窗广告</SelectItem>
-                      <SelectItem value="sidebar">侧边栏广告</SelectItem>
-                      <SelectItem value="inline">内容广告</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="ad-position">展示位置</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择展示位置" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="home-top">首页顶部</SelectItem>
-                      <SelectItem value="home-side">首页侧边</SelectItem>
-                      <SelectItem value="category-top">分类页顶部</SelectItem>
-                      <SelectItem value="product-bottom">商品页底部</SelectItem>
-                      <SelectItem value="popup-center">弹窗中心</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="ad-priority">优先级</Label>
+                  <Label htmlFor="ad-image">广告图片</Label>
                   <Input
-                    id="ad-priority"
-                    type="number"
-                    placeholder="1-100"
-                    min="1"
-                    max="100"
+                    id="ad-image"
+                    placeholder="输入图片URL"
+                    value={formData.image}
+                    onChange={(e) =>
+                      setFormData({ ...formData, image: e.target.value })}
                   />
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="ad-link">跳转链接</Label>
-                <Input id="ad-link" placeholder="输入跳转链接" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="ad-budget">预算金额</Label>
-                  <Input id="ad-budget" type="number" placeholder="0.00" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="ad-link-type">链接类型</Label>
+                    <Select
+                      value={formData.link_type}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, link_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择链接类型" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="url">外部链接</SelectItem>
+                        <SelectItem value="product">商品页面</SelectItem>
+                        <SelectItem value="category">分类页面</SelectItem>
+                        <SelectItem value="page">自定义页面</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="ad-link-url">链接地址</Label>
+                    <Input
+                      id="ad-link-url"
+                      placeholder="输入链接地址"
+                      value={formData.link_url}
+                      onChange={(e) =>
+                        setFormData({ ...formData, link_url: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="ad-start">开始日期</Label>
-                  <Input id="ad-start" type="date" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="ad-start-time">开始时间</Label>
+                    <Input
+                      id="ad-start-time"
+                      type="datetime-local"
+                      value={formData.start_time}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          start_time: e.target.value,
+                        })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ad-end-time">结束时间</Label>
+                    <Input
+                      id="ad-end-time"
+                      type="datetime-local"
+                      value={formData.end_time}
+                      onChange={(e) =>
+                        setFormData({ ...formData, end_time: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={formData.status === "active"}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        status: checked ? "active" : "inactive",
+                      })}
+                  />
+                  <Label>立即启用</Label>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="ad-end">结束日期</Label>
-                <Input id="ad-end" type="date" />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    setEditingAd(null);
+                    resetForm();
+                  }}
+                >
+                  取消
+                </Button>
+                <Button onClick={editingAd ? handleUpdateAd : handleCreateAd}>
+                  {editingAd ? "更新广告" : "创建广告"}
+                </Button>
               </div>
-              <div className="flex items-center space-x-2">
-                <Switch id="ad-status" />
-                <Label htmlFor="ad-status">立即启用</Label>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
-                取消
-              </Button>
-              <Button onClick={handleCreateAd}>创建广告</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      <Tabs defaultValue="list" className="space-y-4">
+      <Tabs defaultValue="advertisements" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="list">广告列表</TabsTrigger>
+          <TabsTrigger value="advertisements">广告列表</TabsTrigger>
           <TabsTrigger value="analytics">数据分析</TabsTrigger>
-          <TabsTrigger value="settings">广告设置</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="space-y-4">
+        <TabsContent value="advertisements" className="space-y-4">
           {/* 统计卡片 */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
@@ -295,7 +569,7 @@ export default function AdvertisementsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {totalImpressions.toLocaleString()}
+                  {totalViews.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">+12.5% 相比上月</p>
               </CardContent>
@@ -318,7 +592,7 @@ export default function AdvertisementsPage() {
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{ctr}%</div>
+                <div className="text-2xl font-bold">{avgCtr}%</div>
                 <p className="text-xs text-muted-foreground">+2.1% 相比上月</p>
               </CardContent>
             </Card>
@@ -332,7 +606,7 @@ export default function AdvertisementsPage() {
                   ¥{totalCost.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  预算: ¥{totalBudget.toLocaleString()}
+                  预算管理中
                 </p>
               </CardContent>
             </Card>
@@ -346,7 +620,7 @@ export default function AdvertisementsPage() {
                   <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="搜索广告标题..."
+                      placeholder="搜索广告名称..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-8"
@@ -361,8 +635,8 @@ export default function AdvertisementsPage() {
                     <SelectItem value="all">全部类型</SelectItem>
                     <SelectItem value="banner">横幅</SelectItem>
                     <SelectItem value="popup">弹窗</SelectItem>
-                    <SelectItem value="sidebar">侧边栏</SelectItem>
-                    <SelectItem value="inline">内容</SelectItem>
+                    <SelectItem value="floating">浮动</SelectItem>
+                    <SelectItem value="text">文字</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select
@@ -376,7 +650,7 @@ export default function AdvertisementsPage() {
                     <SelectItem value="all">全部状态</SelectItem>
                     <SelectItem value="active">启用</SelectItem>
                     <SelectItem value="inactive">禁用</SelectItem>
-                    <SelectItem value="scheduled">定时</SelectItem>
+                    <SelectItem value="paused">暂停</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -390,188 +664,278 @@ export default function AdvertisementsPage() {
               <CardDescription>管理所有广告内容</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>广告标题</TableHead>
-                    <TableHead>类型</TableHead>
-                    <TableHead>位置</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>展示/点击</TableHead>
-                    <TableHead>预算/消费</TableHead>
-                    <TableHead>投放期间</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAds.map((ad) => (
-                    <TableRow key={ad.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
-                            <Image className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <div>
-                            <div className="font-medium">{ad.title}</div>
-                            <div className="text-sm text-muted-foreground">
-                              优先级: {ad.priority}
+              {adsLoading
+                ? (
+                  <div className="flex justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin" />
+                  </div>
+                )
+                : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>广告名称</TableHead>
+                        <TableHead>类型</TableHead>
+                        <TableHead>位置</TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead>展示/点击</TableHead>
+                        <TableHead>预算/消费</TableHead>
+                        <TableHead>投放期间</TableHead>
+                        <TableHead>操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAds.map((ad: Advertisement) => (
+                        <TableRow key={ad.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-8 bg-gray-100 rounded flex items-center justify-center">
+                                <Image className="h-4 w-4 text-gray-400" />
+                              </div>
+                              <div>
+                                <div className="font-medium">{ad.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  权重: {ad.weight}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {ad.type === "banner"
-                            ? "横幅"
-                            : ad.type === "popup"
-                            ? "弹窗"
-                            : ad.type === "sidebar"
-                            ? "侧边栏"
-                            : "内容"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{ad.position}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={ad.status === "active"
-                            ? "default"
-                            : ad.status === "scheduled"
-                            ? "secondary"
-                            : "outline"}
-                        >
-                          {ad.status === "active"
-                            ? "启用"
-                            : ad.status === "scheduled"
-                            ? "定时"
-                            : "禁用"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            {ad.impressions.toLocaleString()}
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Target className="h-3 w-3" />
-                            {ad.clicks.toLocaleString()}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>预算: ¥{ad.budget.toLocaleString()}</div>
-                          <div className="text-muted-foreground">
-                            消费: ¥{ad.cost.toLocaleString()}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>{ad.startDate}</div>
-                          <div className="text-muted-foreground">
-                            至 {ad.endDate}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleToggleStatus(ad.id)}
-                          >
-                            <Switch
-                              checked={ad.status === "active"}
-                              className="h-4 w-4"
-                            />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {ad.type === "banner"
+                                ? "横幅"
+                                : ad.type === "popup"
+                                ? "弹窗"
+                                : ad.type === "floating"
+                                ? "浮动"
+                                : ad.type === "text"
+                                ? "文字"
+                                : "其他"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{ad.position}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={ad.status === "active"
+                                ? "default"
+                                : ad.status === "paused"
+                                ? "secondary"
+                                : "outline"}
+                            >
+                              {ad.status === "active"
+                                ? "启用"
+                                : ad.status === "paused"
+                                ? "暂停"
+                                : "禁用"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div className="flex items-center gap-1">
+                                <Eye className="h-3 w-3" />
+                                {ad.view_count.toLocaleString()}
+                              </div>
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Target className="h-3 w-3" />
+                                {ad.click_count.toLocaleString()}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>
+                                预算: ¥{(ad.budget || 0).toLocaleString()}
+                              </div>
+                              <div className="text-muted-foreground">
+                                消费: ¥{ad.cost.toLocaleString()}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>
+                                {new Date(ad.start_time).toLocaleDateString()}
+                              </div>
+                              <div className="text-muted-foreground">
+                                至 {new Date(ad.end_time).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={ad.status === "active"}
+                                onCheckedChange={() =>
+                                  handleToggleStatus(ad.id)}
+                                className="h-4 w-4"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditAd(ad)}
+                              >
+                                <Edit className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>确认删除</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  确定要删除广告"{ad.title}"吗？此操作无法撤销。
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>取消</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteAd(ad.id)}
-                                >
-                                  删除
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDuplicateAd(ad.id)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      确认删除
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      确定要删除广告&quot;{ad
+                                        .name}&quot;吗？此操作无法撤销。
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>取消</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteAd(ad.id)}
+                                    >
+                                      删除
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>广告效果分析</CardTitle>
-              <CardDescription>各广告位的投放效果统计</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                图表组件 - 后续实现
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          {statsLoading
+            ? (
+              <div className="flex justify-center py-8">
+                <RefreshCw className="h-6 w-6 animate-spin" />
+              </div>
+            )
+            : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        总广告数
+                      </CardTitle>
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {stats?.totalAds || 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        活跃: {stats?.activeAds || 0}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        总展示数
+                      </CardTitle>
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {(stats?.totalViews || 0).toLocaleString()}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        今日展示
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        总点击数
+                      </CardTitle>
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {(stats?.totalClicks || 0).toLocaleString()}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        点击率: {(stats?.avgCtr || 0).toFixed(1)}%
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        总消费
+                      </CardTitle>
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        ¥{(stats?.totalCost || 0).toLocaleString()}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        广告投入
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
 
-        <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>广告设置</CardTitle>
-              <CardDescription>配置广告系统的全局设置</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="auto-rotate">自动轮播广告</Label>
-                  <p className="text-sm text-muted-foreground">
-                    在同一位置自动轮播多个广告
-                  </p>
-                </div>
-                <Switch id="auto-rotate" />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="click-tracking">点击跟踪</Label>
-                  <p className="text-sm text-muted-foreground">
-                    跟踪广告点击数据
-                  </p>
-                </div>
-                <Switch id="click-tracking" />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="auto-close">自动关闭弹窗</Label>
-                  <p className="text-sm text-muted-foreground">
-                    弹窗广告自动关闭时间(秒)
-                  </p>
-                </div>
-                <Input type="number" placeholder="10" className="w-20" />
-              </div>
-            </CardContent>
-          </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>广告效果分析</CardTitle>
+                    <CardDescription>各广告位的投放效果统计</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {stats?.topPerforming && stats.topPerforming.length > 0
+                      ? (
+                        <div className="space-y-2">
+                          <h4 className="font-medium">表现最佳的广告</h4>
+                          {stats.topPerforming.map((
+                            item: {
+                              id: string;
+                              name: string;
+                              click_count: number;
+                              view_count: number;
+                            },
+                          ) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between p-2 border rounded"
+                            >
+                              <span>{item.name}</span>
+                              <div className="text-sm text-muted-foreground">
+                                点击: {item.click_count} | 展示:{" "}
+                                {item.view_count}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                      : (
+                        <p className="text-sm text-muted-foreground">
+                          暂无统计数据
+                        </p>
+                      )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
         </TabsContent>
       </Tabs>
     </div>

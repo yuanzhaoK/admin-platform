@@ -880,19 +880,14 @@ export default function RecommendationsPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
+                              <Switch
+                                checked={recommendation.is_active}
+                                onCheckedChange={() =>
                                   handleToggleRecommendationStatus(
                                     recommendation,
                                   )}
-                              >
-                                <Switch
-                                  checked={recommendation.is_active}
-                                  className="h-4 w-4"
-                                />
-                              </Button>
+                                className="h-4 w-4"
+                              />
                               <Button
                                 variant="ghost"
                                 size="sm"

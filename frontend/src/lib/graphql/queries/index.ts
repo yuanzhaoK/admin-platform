@@ -30,3 +30,6 @@ export * from "./points";
 
 // 推荐管理模块
 export * from "./recommendation";
+
+// 广告管理模块
+export * from "./advertisement";
