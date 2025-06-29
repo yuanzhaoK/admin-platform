@@ -7,7 +7,7 @@
     "dev": "deno run --allow-all proxy-server.ts",
     "start": "deno run --allow-all proxy-server.ts",
     "server": "deno run --allow-all server.ts",
-    "graphql": "GRAPHQL_PORT=8082 POCKETBASE_URL=http://localhost:8090 deno run --allow-all server.ts",
+    "graphql": "GRAPHQL_PORT=8082 POCKETBASE_URL=http://47.111.142.237:8090 deno run --allow-all server.ts",
     "setup": "deno run --allow-all setup.ts",
     "download-pb": "deno run --allow-all download-pocketbase.ts",
     "clean": "deno run --allow-write --allow-read clean.ts",
