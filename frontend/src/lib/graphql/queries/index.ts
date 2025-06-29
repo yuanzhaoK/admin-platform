@@ -33,3 +33,6 @@ export * from "./recommendation";
 
 // 广告管理模块
 export * from "./advertisement";
+
+// 热门管理模块
+export * from "./trending";
