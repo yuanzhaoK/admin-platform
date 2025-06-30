@@ -3,10 +3,11 @@
  * 负责加载和合并所有 .graphql 文件
  */
 
-import { dirname, join } from "https://deno.land/std@0.208.0/path/mod.ts";
+import { dirname, join, fromFileUrl } from "https://deno.land/std@0.208.0/path/mod.ts";
 import { buildSchema } from "https://deno.land/x/graphql_deno@v15.0.0/mod.ts";
 
-const __dirname = dirname(new URL(import.meta.url).pathname);
+// 使用 fromFileUrl 来正确处理所有平台的文件URL
+const __dirname = dirname(fromFileUrl(import.meta.url));
 
 /**
  * 读取 GraphQL 文件内容
@@ -20,6 +21,7 @@ function readGraphQLFile(relativePath: string): string {
     return '';
   }
 }
+
 
 /**
  * 加载所有 GraphQL schema 文件
