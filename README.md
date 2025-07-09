@@ -33,8 +33,6 @@ admin-platform/
 │   │   └── index.ts           # 类型定义
 │   ├── utils/                 # 工具函数
 │   │   └── pocketbase.ts      # PocketBase 客户端
-│   ├── pb_hooks/              # PocketBase 钩子
-│   │   └── main.pb.js         # 主钩子文件
 │   ├── pb_data/               # 数据库文件
 │   ├── bin/                   # PocketBase 二进制文件
 │   ├── server.ts              # GraphQL 服务器
@@ -89,17 +87,10 @@ deno task dev
 - **GraphQL Server**: http://localhost:8082 (GraphQL API)
 - **代理服务器**: http://localhost:8091 (开发代理)
 
-#### 单独启动服务
-```bash
-# 仅启动 PocketBase
-deno task pocketbase
 
 # 仅启动 GraphQL 服务器
 deno task graphql
 
-# 启动代理服务器
-deno task proxy
-```
 
 ### 3. 启动前端服务
 
@@ -116,29 +107,12 @@ npm run dev
 - **PocketBase 管理**: http://localhost:8090/_/
 - **GraphQL Playground**: http://localhost:8082/graphql
 
-### 5. 初始化数据
 
-首次启动时，系统会自动：
-- 创建必要的数据集合 (users, products)
-- 创建测试管理员账户: `admin@example.com` / `admin123`
-- 插入示例产品数据
+## 已开发功能模块
 
-## 📊 功能模块
 
-### 1. 产品管理 (GraphQL 驱动)
-- ✅ 产品列表展示 (分页、过滤、排序)
-- ✅ 创建/编辑/删除产品
-- ✅ 批量操作 (状态更新、删除、价格调整)
-- ✅ 产品状态管理 (活跃/停用/草稿)
-- ✅ 高级过滤 (价格范围、库存范围、标签)
-- ✅ 分类管理
-- ✅ 库存管理和预警
-- ✅ 搜索和推荐
-- ✅ 数据导出 (JSON/CSV/Excel)
-- ✅ 图片管理
-- ✅ 实时数据同步
 
-### 2. GraphQL API
+### 1. GraphQL API
 - ✅ 类型安全的 API 接口
 - ✅ 模块化 Schema 设计
 - ✅ 高效的数据查询
@@ -148,8 +122,13 @@ npm run dev
 
 ### 3. 用户管理
 - ✅ 用户认证系统
-- ✅ 角色权限控制
 - ✅ 用户信息管理
+- ✅ 商品管理
+- ✅ 营销管理
+- ✅ 商品管理
+- ✅ 订单管理
+- ...
+- 
 
 ## 🔧 开发指南
 
@@ -248,15 +227,6 @@ POST /graphql - GraphQL 查询和变更
 GET /graphql - GraphQL Playground (开发环境)
 ```
 
-### PocketBase API (端口 8090)
-```
-POST /api/collections/users/auth-with-password - 用户登录
-POST /api/collections/users/auth-refresh - 刷新token
-GET /api/collections/*/records - 获取记录列表
-POST /api/collections/*/records - 创建记录
-PATCH /api/collections/*/records/:id - 更新记录
-DELETE /api/collections/*/records/:id - 删除记录
-```
 
 ### 服务架构
 ```
@@ -308,14 +278,6 @@ deno task start
 NEXT_PUBLIC_GRAPHQL_URL=https://your-domain.com/graphql
 NEXT_PUBLIC_POCKETBASE_URL=https://your-domain.com
 ```
-
-## 🤝 贡献指南
-
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开 Pull Request
 
 
 

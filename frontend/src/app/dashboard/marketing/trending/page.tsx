@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@apollo/client";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -108,6 +108,7 @@ export default function TrendingPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isRuleDialogOpen, setIsRuleDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const { toast } = useToast();
   const [formData, setFormData] = useState<TrendingFormData>({
     name: "",
     description: "",
