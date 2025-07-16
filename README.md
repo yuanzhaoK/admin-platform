@@ -85,7 +85,7 @@ deno task dev
 这将启动：
 - **PocketBase**: http://localhost:8090 (数据库服务)
 - **GraphQL Server**: http://localhost:8082 (GraphQL API)
-- **代理服务器**: http://localhost:8091 (开发代理)
+
 
 
 # 仅启动 GraphQL 服务器
@@ -130,79 +130,6 @@ npm run dev
 - ...
 - 
 
-## 🔧 开发指南
-
-### GraphQL 开发
-
-#### 添加新的 GraphQL 模块
-
-1. **定义 Schema** (在 `backend/schema/modules/your_module.ts`)
-```typescript
-export const yourModuleTypeDefs = `
-  type YourType {
-    id: ID!
-    name: String!
-    created: String!
-    updated: String!
-  }
-
-  extend type Query {
-    yourTypes: [YourType!]!
-    yourType(id: ID!): YourType
-  }
-
-  extend type Mutation {
-    createYourType(input: YourTypeInput!): YourType!
-    updateYourType(id: ID!, input: YourTypeInput!): YourType!
-    deleteYourType(id: ID!): Boolean!
-  }
-
-  input YourTypeInput {
-    name: String!
-  }
-`;
-```
-
-2. **实现 Resolvers** (在 `backend/resolvers/modules/your_module.ts`)
-```typescript
-import { pb } from '../../utils/pocketbase.ts';
-
-export const yourModuleResolvers = {
-  Query: {
-    yourTypes: async () => {
-      const records = await pb.collection('your_collection').getFullList();
-      return records;
-    },
-    yourType: async (_: any, { id }: { id: string }) => {
-      const record = await pb.collection('your_collection').getOne(id);
-      return record;
-    },
-  },
-  Mutation: {
-    createYourType: async (_: any, { input }: { input: any }) => {
-      const record = await pb.collection('your_collection').create(input);
-      return record;
-    },
-    // ... 其他 mutations
-  },
-};
-```
-
-3. **更新前端查询** (在 `frontend/src/lib/graphql/queries.ts`)
-```typescript
-export const GET_YOUR_TYPES = gql`
-  query GetYourTypes {
-    yourTypes {
-      id
-      name
-      created
-      updated
-    }
-  }
-`;
-```
-
-### 数据库操作
 
 #### 🦕 Deno 命令
 ```bash
