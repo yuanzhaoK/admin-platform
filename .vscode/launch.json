@@ -25,7 +25,8 @@
       "runtimeArgs": [
         "run",
         "--inspect-wait",
-        "--allow-all"
+        "--allow-all",
+        "--watch-hmr"
       ],
       "program": "proxy-server.ts",
       "env": {
