@@ -2,11 +2,11 @@
 
 type Advertisement {
   id: String!
-  name: String!
+  title: String!
   description: String
   type: AdType!
   position: AdPosition!
-  image: String!
+  image_url: String!
   link_type: LinkType!
   link_url: String
   link_product_id: String

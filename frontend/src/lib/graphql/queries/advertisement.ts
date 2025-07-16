@@ -6,11 +6,11 @@ export const GET_ADVERTISEMENTS = gql`
     advertisements(input: $input) {
       items {
         id
-        name
+        title
         description
         type
         position
-        image
+        image_url
         link_type
         link_url
         link_product_id
@@ -44,11 +44,11 @@ export const GET_ADVERTISEMENT = gql`
   query GetAdvertisement($id: String!) {
     advertisement(id: $id) {
       id
-      name
+      title
       description
       type
       position
-      image
+      image_url
       link_type
       link_url
       link_product_id

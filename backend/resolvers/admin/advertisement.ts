@@ -7,7 +7,7 @@ export const advertisementResolvers = {
       parent: any,
       { input }: { input?: any }
     ): Promise<{ items: any[]; pagination: PaginationInfo }> => {
-      const { page = 1, perPage = 20, search, type, status, position, start_date, end_date, sortBy = 'created', sortOrder = 'desc' } = input || {};
+      const { page = 1, perPage = 20, search, type, status, position, start_time, end_time, sortBy = 'created', sortOrder = 'desc' } = input || {};
 
       try {
         await pocketbaseClient.ensureAuth();
@@ -32,8 +32,8 @@ export const advertisementResolvers = {
           filterParams.push(`position = "${position}"`);
         }
 
-        if (start_date && end_date) {
-          filterParams.push(`start_time >= "${start_date}" && end_time <= "${end_date}"`);
+        if (start_time && end_time) {
+          filterParams.push(`start_time >= "${start_time}" && end_time <= "${end_time}"`);
         }
 
         if (filterParams.length > 0) {

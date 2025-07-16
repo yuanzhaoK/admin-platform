@@ -78,11 +78,11 @@ import {
 
 interface Advertisement {
   id: string;
-  name: string;
+  title: string;
   description?: string;
   type: string;
   position: string;
-  image: string;
+  image_url: string;
   link_type: string;
   link_url?: string;
   content?: string;
@@ -262,7 +262,7 @@ export default function AdvertisementsPage() {
   const stats = statsData?.adOverviewStats;
 
   const filteredAds = advertisements.filter((ad: Advertisement) => {
-    const matchesSearch = ad.name.toLowerCase().includes(
+    const matchesSearch = ad.title.toLowerCase().includes(
       searchTerm.toLowerCase(),
     );
     const matchesType = selectedType === "all" || ad.type === selectedType;
@@ -310,7 +310,7 @@ export default function AdvertisementsPage() {
   const handleEditAd = (ad: Advertisement) => {
     setEditingAd(ad);
     setFormData({
-      name: ad.name,
+      name: ad.title,
       description: ad.description || "",
       type: ad.type,
       position: ad.position,
@@ -693,7 +693,7 @@ export default function AdvertisementsPage() {
                                 <Image className="h-4 w-4 text-gray-400" />
                               </div>
                               <div>
-                                <div className="font-medium">{ad.name}</div>
+                                <div className="font-medium">{ad.title}</div>
                                 <div className="text-sm text-muted-foreground">
                                   权重: {ad.weight}
                                 </div>
