@@ -3,7 +3,7 @@
  * 负责加载和合并所有 .graphql 文件
  */
 
-import { dirname, join, fromFileUrl } from "https://deno.land/std@0.208.0/path/mod.ts";
+import { dirname, fromFileUrl, join } from "https://deno.land/std@0.208.0/path/mod.ts";
 import { buildSchema } from "https://deno.land/x/graphql_deno@v15.0.0/mod.ts";
 
 // 使用 fromFileUrl 来正确处理所有平台的文件URL
@@ -53,6 +53,7 @@ export function loadSchema(): string {
   
   // 移动端 schemas
   schemas.push(readGraphQLFile('mobile/app.graphql'));
+  schemas.push(readGraphQLFile('mobile/home.graphql'));
 
   // 过滤空内容并合并
   const combinedSchema = schemas

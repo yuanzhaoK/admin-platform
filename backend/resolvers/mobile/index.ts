@@ -1,11 +1,13 @@
 // 移动端 Resolvers 模块
 import { appResolvers } from './app.ts';
+import { homeResolvers } from './home.ts';
 import { mobileUserResolvers } from './user.ts';
 // 暂时只使用app resolvers，避免冲突
 export const mobileResolvers = {
   Query: {
     ...appResolvers.Query,
     ...mobileUserResolvers.Query,
+    ...homeResolvers.Query,
   },
   
   Mutation: {
@@ -15,4 +17,4 @@ export const mobileResolvers = {
 };
 
 // 单独导出app模块
-export { appResolvers, mobileUserResolvers }; 
+export { appResolvers, mobileUserResolvers };

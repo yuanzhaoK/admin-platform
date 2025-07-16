@@ -2,13 +2,13 @@
 // TypeScript 类型定义
 export interface Advertisement {
   id: string;
-  name: string;
+  title: string;
   description?: string;
   type: AdType;
   position: AdPosition;
   image: string;
   link_type: LinkType;
-  link_url?: string;
+  link?: string;
   link_product_id?: string;
   link_category_id?: string;
   target_type: TargetType;

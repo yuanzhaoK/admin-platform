@@ -9,14 +9,8 @@
     "server": "POCKETBASE_URL=http://47.111.142.237:8090 GRAPHQL_PORT=8082 deno run --allow-all server.ts",
     "graphql": "GRAPHQL_PORT=8082 POCKETBASE_URL=http://47.111.142.237:8090 deno run --allow-all server.ts",
     "local": "POCKETBASE_URL=http://localhost:8090 GRAPHQL_PORT=8082 deno run --allow-all server.ts",
-    "setup": "deno run --allow-all setup.ts",
-    "download-pb": "deno run --allow-all download-pocketbase.ts",
     "clean": "deno run --allow-write --allow-read clean.ts",
     "reset": "deno task clean && deno task server",
-    "create-admin": "deno run --allow-all create-admin.ts",
-    "create-orders": "deno run --allow-all create-order-collections.ts",
-    "create-test-data": "deno run --allow-all create-test-data.ts",
-    "fix-orders": "deno run --allow-all fix-orders-data.ts",
     "validate-schema": "deno run --allow-read --allow-env scripts/validate-schema.ts",
     "schema-check": "deno task validate-schema",
     "health-check": "deno run --allow-net --allow-env scripts/health-check.ts",
@@ -33,7 +27,10 @@
     "pocketbase": "npm:pocketbase@^0.26.1"
   },
   "compilerOptions": {
-    "lib": ["deno.window", "dom"],
+    "lib": [
+      "deno.window",
+      "dom"
+    ],
     "strict": true
   },
   "fmt": {
@@ -43,15 +40,35 @@
     "semiColons": true,
     "singleQuote": true,
     "proseWrap": "preserve",
-    "include": ["src/", "*.ts", "*.js"],
-    "exclude": ["pb_data/", "bin/", "node_modules/"]
+    "include": [
+      "src/",
+      "*.ts",
+      "*.js"
+    ],
+    "exclude": [
+      "pb_data/",
+      "bin/",
+      "node_modules/"
+    ]
   },
   "lint": {
-    "include": ["src/", "*.ts", "*.js"],
-    "exclude": ["pb_data/", "bin/", "node_modules/"],
+    "include": [
+      "src/",
+      "*.ts",
+      "*.js"
+    ],
+    "exclude": [
+      "pb_data/",
+      "bin/",
+      "node_modules/"
+    ],
     "rules": {
-      "tags": ["recommended"],
-      "exclude": ["no-unused-vars"]
+      "tags": [
+        "recommended"
+      ],
+      "exclude": [
+        "no-unused-vars"
+      ]
     }
   }
-} 
+}

@@ -76,12 +76,6 @@ backend/
 ├── utils/                   # 工具函数
 │   ├── client.ts            # 客户端工具
 │   └── ProductUtils.ts      # 产品工具函数
-├── services/                # 服务层
-│   ├── ProductRepository.ts # 产品仓储
-│   └── ProductService.ts    # 产品服务
-├── middlewares/             # 中间件
-│   ├── ProductController.ts # 产品控制器
-│   └── ProductRouter.ts     # 产品路由
 ├── scalars/                 # GraphQL标量类型
 │   └── index.ts             # 标量类型定义
 ├── scripts/                 # 脚本文件
