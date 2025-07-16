@@ -4,9 +4,15 @@ type AppBanner {
   title: String!
   image_url: String!
   link_url: String
-  type: String!
+  link_type: String!
   sort_order: Int!
   is_active: Boolean!
+  link_category_id: String
+  link_product_id: String
+  target_type:String
+  content:String
+  description: String
+  status: String!
   created: Date!
   updated: Date!
 }

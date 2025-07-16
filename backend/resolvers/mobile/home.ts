@@ -1,5 +1,6 @@
 import { GraphQLError } from "https://deno.land/x/graphql_deno@v15.0.0/mod.ts";
 import { pocketbaseClient } from '../../config/pocketbase.ts';
+import { HomeBanner } from '../../types/home.ts';
 
 export const homeResolvers = {
   Query: {
@@ -10,19 +11,29 @@ export const homeResolvers = {
         const pb = pocketbaseClient.getClient();
         
         // 获取轮播图
-        let banners: any[] = [];
+        let banners: HomeBanner[] = [];
         try {
-          const bannersResult = await pb.collection('home_banners').getFullList({
-            sort: 'sort_order',
-            filter: 'is_active=true',
+          const bannersResult = await pb.collection('advertisements').getFullList({
+            sort: '-end_time',
+            filter: 'type="banner"&&status="active"',
           });
           banners = bannersResult.map((banner: any) => ({
             id: banner.id,
             title: banner.title,
-            image_url: banner.image || banner.image_url,
-            link_url: banner.link || banner.link_url,
+            image_url: pb.files.getURL(banner, banner.image_url) ||'',
+            link_url: banner.link || banner.link_url || '',
+            status: banner.status || 1,
+            start_time: banner.start_time || '',
+            end_time: banner.end_time || '',
+            created: banner.created || '',
+            updated: banner.updated || '',
+            position: banner.position || 0,
             type: banner.type || 'banner',
-            sort_order: banner.sort_order,
+            sort_order: banner.sort_order || 0,
+            link_type: banner.link_type || '',
+            target_type: banner.target_type || '',
+            target_id: banner.target_id || '',
+            description: banner.description || '',
           }));
         } catch (e) {
           console.log('home_banners collection not found, using empty array');

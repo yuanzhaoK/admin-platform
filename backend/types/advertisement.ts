@@ -6,7 +6,7 @@ export interface Advertisement {
   description?: string;
   type: AdType;
   position: AdPosition;
-  image: string;
+  image_url: string;
   link_type: LinkType;
   link?: string;
   link_product_id?: string;
