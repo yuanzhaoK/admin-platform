@@ -62,6 +62,8 @@ import {
   Search,
   Target,
   Trash2,
+  TrendingUp,
+  Users,
 } from "lucide-react";
 
 // GraphQL 查询和变更
@@ -314,7 +316,7 @@ export default function AdvertisementsPage() {
       description: ad.description || "",
       type: ad.type,
       position: ad.position,
-      image: ad.image,
+      image: ad.image_url,
       link_type: ad.link_type,
       link_url: ad.link_url || "",
       content: ad.content || "",
@@ -551,6 +553,60 @@ export default function AdvertisementsPage() {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
+
+      {/* 快速导航卡片 */}
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() =>
+            window.location.href = "/dashboard/marketing/ad-groups"}
+        >
+          <CardContent className="flex items-center gap-4 py-6">
+            <div className="p-3 rounded-full bg-blue-100">
+              <Users className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <div className="font-semibold">广告组管理</div>
+              <div className="text-sm text-muted-foreground">
+                管理广告分组和批量操作
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => window.location.href = "/dashboard/marketing/ad-stats"}
+        >
+          <CardContent className="flex items-center gap-4 py-6">
+            <div className="p-3 rounded-full bg-green-100">
+              <TrendingUp className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <div className="font-semibold">广告统计</div>
+              <div className="text-sm text-muted-foreground">
+                查看详细的广告效果数据
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() =>
+            window.location.href = "/dashboard/marketing/advertisements"}
+        >
+          <CardContent className="flex items-center gap-4 py-6">
+            <div className="p-3 rounded-full bg-purple-100">
+              <Image className="h-6 w-6 text-purple-600" />
+            </div>
+            <div>
+              <div className="font-semibold">广告管理</div>
+              <div className="text-sm text-muted-foreground">
+                管理单个广告内容
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="advertisements" className="space-y-4">
@@ -796,7 +852,7 @@ export default function AdvertisementsPage() {
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
                                       确定要删除广告&quot;{ad
-                                        .name}&quot;吗？此操作无法撤销。
+                                        .title}&quot;吗？此操作无法撤销。
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
