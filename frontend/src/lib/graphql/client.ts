@@ -1,5 +1,6 @@
 import { ApolloClient, createHttpLink, InMemoryCache } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
+import type { DocumentNode } from "graphql";
 
 // GraphQL 服务器端点 - 更新为外部服务器
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL ||
@@ -12,14 +13,9 @@ const httpLink = createHttpLink({
 
 // 创建认证链接
 const authLink = setContext((_, { headers }) => {
-  // 从localStorage或其他地方获取token（如果需要）
-  // const token = localStorage.getItem('token');
-
   return {
     headers: {
       ...headers,
-      // authorization: token ? `Bearer ${token}` : "",
-      // 移除 X-Request-Source 头以避免CORS问题
     },
   };
 });
@@ -31,20 +27,41 @@ export const apolloClient = new ApolloClient({
     typePolicies: {
       Product: {
         keyFields: ["id"],
+        fields: {
+          price: {
+            read(value: number) {
+              return value;
+            },
+          },
+        },
       },
       ProductCategory: {
+        keyFields: ["id"],
+      },
+      User: {
+        keyFields: ["id"],
+      },
+      Order: {
         keyFields: ["id"],
       },
       Query: {
         fields: {
           products: {
-            // 合并分页结果
             keyArgs: ["query"],
-            merge(existing = { items: [], pagination: {} }, incoming) {
+            merge(
+              existing = { items: [], pagination: {} },
+              incoming: { items: unknown[]; pagination: unknown },
+            ) {
               return {
                 ...incoming,
-                items: [...existing.items, ...incoming.items],
+                items: [...(existing.items as unknown[]), ...incoming.items],
               };
+            },
+          },
+          product: {
+            read(existing: unknown, { args, toReference }) {
+              return existing ||
+                toReference({ __typename: "Product", id: args?.id as string });
             },
           },
         },
@@ -54,7 +71,7 @@ export const apolloClient = new ApolloClient({
   defaultOptions: {
     watchQuery: {
       errorPolicy: "all",
-      fetchPolicy: "cache-first", // 改为cache-first以提高性能
+      fetchPolicy: "cache-first",
     },
     query: {
       errorPolicy: "all",
@@ -103,4 +120,31 @@ export const handleGraphQLError = (error: unknown) => {
     success: false,
     error: "未知错误",
   };
+};
+
+// 性能优化工具
+export const prefetchQuery = async (
+  query: DocumentNode,
+  variables?: Record<string, unknown>,
+) => {
+  try {
+    await apolloClient.query({
+      query,
+      variables,
+      fetchPolicy: "cache-first",
+    });
+  } catch (error) {
+    console.error("Prefetch error:", error);
+  }
+};
+
+// 批量查询优化
+export const batchQuery = async (
+  queries: Array<{ query: DocumentNode; variables?: Record<string, unknown> }>,
+) => {
+  return Promise.all(
+    queries.map(({ query, variables }) =>
+      apolloClient.query({ query, variables })
+    ),
+  );
 };

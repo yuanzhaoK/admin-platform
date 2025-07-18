@@ -18,8 +18,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Admin Platform",
-  description: "Admin management platform based on PocketBase and Next.js",
+  title: "管理平台 - 全栈管理系统",
+  description: "基于PocketBase + GraphQL + Next.js的现代化管理平台",
+  keywords: ["管理平台", "PocketBase", "GraphQL", "Next.js", "全栈开发"],
+  authors: [{ name: "Admin Platform Team" }],
+  viewport: "width=device-width, initial-scale=1",
+  robots: "index, follow",
+  openGraph: {
+    title: "管理平台 - 全栈管理系统",
+    description: "基于PocketBase + GraphQL + Next.js的现代化管理平台",
+    type: "website",
+    locale: "zh_CN",
+  },
 };
 
 export default function RootLayout({
