@@ -1,0 +1,235 @@
+version: '3.8'
+
+services:
+  # Redis缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: admin-platform-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - admin-platform-network
+
+  # PocketBase数据库服务
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:latest
+    container_name: admin-platform-pocketbase
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    volumes:
+      - pocketbase_data:/pb_data
+      - ./backend/pb_hooks:/pb_hooks
+      - ./backend/pb_migrations:/pb_migrations
+    environment:
+      - POCKETBASE_PORT=8090
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8090/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - admin-platform-network
+    depends_on:
+      - redis
+
+  # GraphQL API服务
+  graphql-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: admin-platform-graphql
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - POCKETBASE_URL=http://pocketbase:8090
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GRAPHQL_PORT=8082
+      - NODE_ENV=production
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - admin-platform-network
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # GraphQL服务副本（负载均衡）
+  graphql-server-replica:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: admin-platform-graphql-replica
+    restart: unless-stopped
+    ports:
+      - "8083:8082"
+    environment:
+      - POCKETBASE_URL=http://pocketbase:8090
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GRAPHQL_PORT=8082
+      - NODE_ENV=production
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - admin-platform-network
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Nginx负载均衡器
+  nginx:
+    image: nginx:alpine
+    container_name: admin-platform-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - admin-platform-network
+    depends_on:
+      - graphql-server
+      - graphql-server-replica
+
+  # 前端应用
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: admin-platform-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_GRAPHQL_URL=http://nginx/graphql
+      - NEXT_PUBLIC_POCKETBASE_URL=http://nginx/pocketbase
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - admin-platform-network
+    depends_on:
+      - nginx
+
+  # Prometheus监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: admin-platform-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - admin-platform-network
+
+  # Grafana仪表板
+  grafana:
+    image: grafana/grafana:latest
+    container_name: admin-platform-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - admin-platform-network
+    depends_on:
+      - prometheus
+
+  # 日志收集 (可选)
+  elasticsearch:
+    image: elasticsearch:8.8.0
+    container_name: admin-platform-elasticsearch
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - admin-platform-network
+
+  kibana:
+    image: kibana:8.8.0
+    container_name: admin-platform-kibana
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - admin-platform-network
+    depends_on:
+      - elasticsearch
+
+volumes:
+  redis_data:
+    driver: local
+  pocketbase_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+networks:
+  admin-platform-network:
+    driver: bridge
