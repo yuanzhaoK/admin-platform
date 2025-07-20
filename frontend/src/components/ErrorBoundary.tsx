@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw, Bug, Send } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -38,9 +39,17 @@ export class ErrorBoundary extends React.Component<
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("Error caught by boundary:", error, errorInfo);
 
-    // 这里可以添加错误上报逻辑
+    // 使用新的日志系统记录错误
+    logger.logReactError(error, {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      errorBoundary: this.constructor.name,
+      errorInfo
+    });
+
+    // 原有的错误上报逻辑（作为备份）
     if (typeof window !== "undefined") {
-      // 发送到错误监控服务
       console.error("Error details:", {
         message: error.message,
         stack: error.stack,
