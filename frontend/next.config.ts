@@ -24,9 +24,6 @@ const nextConfig: NextConfig = {
     contentDispositionType: "attachment",
   },
 
-  // 启用SWC优化
-  swcMinify: true,
-
   // 输出配置
   output: isProduction ? "standalone" : undefined,
 
@@ -46,18 +43,18 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
     optimizeServerReact: true,
 
-    // 启用TurboPack
-    turbo: {
-      rules: {
-        "*.svg": {
-          loaders: ["@svgr/webpack"],
-          as: "*.js",
-        },
-      },
-    },
-
     // 启用 React 编译器
     reactCompiler: true,
+  },
+
+  // TurboPack 配置 (已从experimental移出，因为它现在是稳定功能)
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
+      },
+    },
   },
 
   // 编译器选项
@@ -68,10 +65,10 @@ const nextConfig: NextConfig = {
         exclude: ["error", "warn"],
       }
       : false,
-
-    // React 严格模式
-    reactStrictMode: true,
   },
+
+  // React 严格模式
+  reactStrictMode: true,
 
   // 头部配置
   async headers() {
@@ -156,7 +153,7 @@ const nextConfig: NextConfig = {
     // 优化打包
     webpack: (
       config,
-      { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack },
+      { dev, isServer },
     ) => {
       // 分割chunks - 更细粒度的代码分割
       config.optimization.splitChunks = {
@@ -212,12 +209,19 @@ const nextConfig: NextConfig = {
 
       // 生产环境下的优化
       if (!dev && !isServer) {
-        // Bundle 分析
+        // Bundle 分析 - 仅在 ANALYZE 模式下启用
         if (process.env.ANALYZE === "true") {
-          const BundleAnalyzerPlugin = require("@next/bundle-analyzer")({
-            enabled: true,
+          // 忽略类型检查，仅在 ANALYZE 模式下使用
+          // @ts-expect-error - bundle analyzer 可能未安装
+          import("@next/bundle-analyzer").then(
+            ({ default: BundleAnalyzerPlugin }) => {
+              config.plugins.push(new BundleAnalyzerPlugin({ enabled: true }));
+            },
+          ).catch(() => {
+            console.warn(
+              "Bundle analyzer not available - install with: npm install --save-dev @next/bundle-analyzer",
+            );
           });
-          config.plugins.push(new BundleAnalyzerPlugin());
         }
 
         // 压缩优化
