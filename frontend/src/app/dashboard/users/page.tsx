@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery } from '@apollo/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { useQuery } from "@apollo/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -21,16 +21,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,49 +38,53 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
-  Users,
-  UserPlus,
-  Search,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Shield,
-  Mail,
   Calendar,
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { GET_USERS, type User, type GetUsersData } from '@/lib/graphql/queries/users';
+  Edit,
+  Mail,
+  MoreHorizontal,
+  Search,
+  Shield,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  GET_USERS,
+  type GetUsersData,
+  type User,
+} from "@/lib/graphql/queries/users";
 
 export default function UsersPage() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   // GraphQL 查询
   const { data, loading, error, refetch } = useQuery<GetUsersData>(GET_USERS, {
-    errorPolicy: 'all',
+    errorPolicy: "all",
     onError: (error) => {
-      console.error('GraphQL 用户查询错误:', error);
+      console.error("GraphQL 用户查询错误:", error);
       toast({
-        title: '获取用户列表失败',
-        description: error.message || '请稍后重试',
-        variant: 'destructive',
+        title: "获取用户列表失败",
+        description: error.message || "请稍后重试",
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // 表单状态
   const [formData, setFormData] = useState({
-    email: '',
-    name: '',
-    role: 'user' as 'admin' | 'user',
-    password: '',
+    email: "",
+    name: "",
+    role: "user",
+    password: "",
   });
 
-  const users = data?.users || [];
+  const users = data?.users.items || [] as User[];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,28 +92,30 @@ export default function UsersPage() {
       if (editingUser) {
         // TODO: 实现 GraphQL 更新用户 mutation
         toast({
-          title: '功能开发中',
-          description: '用户更新功能正在开发中',
-          variant: 'default',
+          title: "功能开发中",
+          description: "用户更新功能正在开发中",
+          variant: "default",
         });
       } else {
         // TODO: 实现 GraphQL 创建用户 mutation
         toast({
-          title: '功能开发中',
-          description: '用户创建功能正在开发中',
-          variant: 'default',
+          title: "功能开发中",
+          description: "用户创建功能正在开发中",
+          variant: "default",
         });
       }
       setIsDialogOpen(false);
       setEditingUser(null);
-      setFormData({ email: '', name: '', role: 'user', password: '' });
+      setFormData({ email: "", name: "", role: "user", password: "" });
       refetch();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '请稍后重试';
+      const errorMessage = error instanceof Error
+        ? error.message
+        : "请稍后重试";
       toast({
-        title: editingUser ? '更新用户失败' : '创建用户失败',
+        title: editingUser ? "更新用户失败" : "创建用户失败",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
   };
@@ -118,9 +124,9 @@ export default function UsersPage() {
     setEditingUser(user);
     setFormData({
       email: user.email,
-      name: user.name || '',
-      role: user.role || 'user',
-      password: '',
+      name: user.name || "",
+      role: user.role || "user",
+      password: "",
     });
     setIsDialogOpen(true);
   };
@@ -130,31 +136,30 @@ export default function UsersPage() {
       try {
         // TODO: 实现 GraphQL 删除用户 mutation
         toast({
-          title: '功能开发中',
-          description: '用户删除功能正在开发中',
-          variant: 'default',
+          title: "功能开发中",
+          description: "用户删除功能正在开发中",
+          variant: "default",
         });
         refetch();
       } catch {
         toast({
-          title: '删除用户失败',
-          description: '请稍后重试',
-          variant: 'destructive',
+          title: "删除用户失败",
+          description: "请稍后重试",
+          variant: "destructive",
         });
       }
     }
   };
-
-  const filteredUsers = users.filter(user =>
+  const filteredUsers = users.filter((user) =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("zh-CN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -201,10 +206,17 @@ export default function UsersPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingUser(null);
-              setFormData({ email: '', name: '', role: 'user', password: '' });
-            }}>
+            <Button
+              onClick={() => {
+                setEditingUser(null);
+                setFormData({
+                  email: "",
+                  name: "",
+                  role: "user",
+                  password: "",
+                });
+              }}
+            >
               <UserPlus className="mr-2 h-4 w-4" />
               添加用户
             </Button>
@@ -212,10 +224,10 @@ export default function UsersPage() {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>
-                {editingUser ? '编辑用户' : '添加新用户'}
+                {editingUser ? "编辑用户" : "添加新用户"}
               </DialogTitle>
               <DialogDescription>
-                {editingUser ? '修改用户信息' : '创建一个新的用户账户'}
+                {editingUser ? "修改用户信息" : "创建一个新的用户账户"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -225,7 +237,8 @@ export default function UsersPage() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })}
                   required
                 />
               </div>
@@ -234,14 +247,16 @@ export default function UsersPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">角色</Label>
                 <Select
                   value={formData.role}
-                  onValueChange={(value: 'admin' | 'user') => setFormData({ ...formData, role: value })}
+                  onValueChange={(value: "admin" | "user") =>
+                    setFormData({ ...formData, role: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -259,14 +274,15 @@ export default function UsersPage() {
                     id="password"
                     type="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })}
                     required={!editingUser}
                   />
                 </div>
               )}
               <DialogFooter>
                 <Button type="submit">
-                  {editingUser ? '更新' : '创建'}
+                  {editingUser ? "更新" : "创建"}
                 </Button>
               </DialogFooter>
             </form>
@@ -293,103 +309,118 @@ export default function UsersPage() {
 
       {/* 用户表格 */}
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>用户</TableHead>
-                <TableHead>角色</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>创建时间</TableHead>
-                <TableHead className="text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.length === 0 ? (
+        {loading
+          ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600">
+              </div>
+            </div>
+          )
+          : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">
-                    {searchTerm ? '没有找到匹配的用户' : '暂无用户数据'}
-                  </TableCell>
+                  <TableHead>用户</TableHead>
+                  <TableHead>角色</TableHead>
+                  <TableHead>状态</TableHead>
+                  <TableHead>创建时间</TableHead>
+                  <TableHead className="text-right">操作</TableHead>
                 </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} alt={user.name || user.email} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
-                            {user.name?.[0] || user.email[0].toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-slate-900 dark:text-slate-100">
-                            {user.name || '未设置'}
-                          </div>
-                          <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center">
-                            <Mail className="h-3 w-3 mr-1" />
-                            {user.email}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={user.role === 'admin' ? 'default' : 'secondary'}
-                        className="flex items-center w-fit"
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length === 0
+                  ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-8 text-slate-500"
                       >
-                        <Shield className="h-3 w-3 mr-1" />
-                        {user.role === 'admin' ? '管理员' : '普通用户'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={user.verified ? 'default' : 'destructive'}
-                      >
-                        {user.verified ? '已验证' : '未验证'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(user.created)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>操作</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleEdit(user)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            编辑
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(user)}
-                            className="text-red-600"
+                        {searchTerm ? "没有找到匹配的用户" : "暂无用户数据"}
+                      </TableCell>
+                    </TableRow>
+                  )
+                  : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage
+                                src={user.avatar}
+                                alt={user.name || user.email}
+                              />
+                              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs">
+                                {user.name?.[0] || user.email[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-slate-900 dark:text-slate-100">
+                                {user.name || "未设置"}
+                              </div>
+                              <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center">
+                                <Mail className="h-3 w-3 mr-1" />
+                                {user.email}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={user.role === "admin"
+                              ? "default"
+                              : "secondary"}
+                            className="flex items-center w-fit"
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        )}
+                            <Shield className="h-3 w-3 mr-1" />
+                            {user.role === "admin" ? "管理员" : "普通用户"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={user.verified ? "default" : "destructive"}
+                          >
+                            {user.verified ? "已验证" : "未验证"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {formatDate(user.created)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>操作</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleEdit(user)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                编辑
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(user)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                删除
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+              </TableBody>
+            </Table>
+          )}
       </div>
     </div>
   );
-} 
+}
