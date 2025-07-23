@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # 主应用服务
+  admin-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+      - "3500:3500"
+    environment:
+      - DAPR_HTTP_PORT=3500
+      - DAPR_GRPC_PORT=50001
+      - POCKETBASE_URL=http://pocketbase:8090
+      - GRAPHQL_PORT=8082
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+      - pocketbase
+    networks:
+      - dapr-network
+
+  # Dapr sidecar
+  admin-platform-dapr:
+    image: daprio/daprd:latest
+    command: [
+      "./daprd",
+      "-app-id", "admin-platform",
+      "-app-port", "8082",
+      "-dapr-http-port", "3500",
+      "-dapr-grpc-port", "50001",
+      "-placement-host-address", "placement:50005",
+      "-components-path", "/components"
+    ]
+    volumes:
+      - ./components:/components
+    depends_on:
+      - admin-platform
+    network_mode: "service:admin-platform"
+
+  # PocketBase数据库
+  pocketbase:
+    image: pocketbase/pocketbase:latest
+    ports:
+      - "8090:8090"
+    volumes:
+      - pocketbase_data:/pb_data
+    environment:
+      - PHONE_VERIFICATION_ENABLED=false
+      - EMAIL_VERIFICATION_ENABLED=false
+    networks:
+      - dapr-network
+
+  # Redis消息队列和缓存
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - dapr-network
+
+  # Dapr Placement服务
+  placement:
+    image: daprio/dapr:latest
+    command: ["./placement", "-port", "50005"]
+    ports:
+      - "50005:50005"
+    networks:
+      - dapr-network
+
+  # Dapr Dashboard
+  dashboard:
+    image: daprio/dashboard:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - DAPR_HTTP_PORT=3500
+    depends_on:
+      - admin-platform
+    networks:
+      - dapr-network
+
+  # 监控 - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - dapr-network
+
+  # 监控 - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - dapr-network
+
+volumes:
+  pocketbase_data:
+  redis_data:
+  grafana_data:
+
+networks:
+  dapr-network:
+    driver: bridge

@@ -14,7 +14,12 @@
     "validate-schema": "deno run --allow-read --allow-env scripts/validate-schema.ts",
     "schema-check": "deno task validate-schema",
     "health-check": "deno run --allow-net --allow-env scripts/health-check.ts",
-    "test-env": "deno run --allow-env config/environment.ts"
+    "test-env": "deno run --allow-env config/environment.ts",
+    "test-dapr": "deno run --allow-all scripts/test/test-dapr.ts",
+    "test-dapr-performance": "deno run --allow-all scripts/test/test-dapr.ts --performance",
+    "test-dapr-integration": "deno run --allow-all scripts/test/test-dapr.ts --integration",
+    "dapr-dev": "dapr run --app-id admin-platform --app-port 8082 --dapr-http-port 3500 --components-path ./components deno run --allow-all server.ts",
+    "dapr-test": "dapr run --app-id admin-platform-test --app-port 8083 --dapr-http-port 3501 --components-path ./components deno run --allow-all scripts/test/test-dapr.ts"
   },
   "imports": {
     "@std/http": "https://deno.land/std@0.208.0/http/mod.ts",
@@ -24,7 +29,9 @@
     "@std/async": "https://deno.land/std@0.208.0/async/mod.ts",
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "graphql": "https://deno.land/x/graphql_deno@v15.0.0/mod.ts",
-    "pocketbase": "npm:pocketbase@^0.26.1"
+    "pocketbase": "npm:pocketbase@^0.26.1",
+    "redis": "https://deno.land/x/redis@v0.32.1/mod.ts",
+    "cache": "./cache/redis-cache.ts"
   },
   "compilerOptions": {
     "lib": [
