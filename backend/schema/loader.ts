@@ -105,4 +105,4 @@ export function getTypeDefs(): string {
 }
 
 // 导出用于向后兼容的类型定义
-export const typeDefs = getTypeDefs(); 
+export const typeDefs = getTypeDefs();

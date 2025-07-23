@@ -53,34 +53,34 @@ async function handleGraphQL(request: Request): Promise<Response> {
     try {
       const isHealthy = await pocketbaseClient.healthCheck();
       return new Response(
-          JSON.stringify({
-            status: isHealthy ? 'OK' : 'ERROR',
-            timestamp: new Date().toISOString(),
-            pocketbase: isHealthy ? 'connected' : 'disconnected',
-          }),
-          {
-            status: isHealthy ? 200 : 503,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders,
-            },
+        JSON.stringify({
+          status: isHealthy ? 'OK' : 'ERROR',
+          timestamp: new Date().toISOString(),
+          pocketbase: isHealthy ? 'connected' : 'disconnected',
+        }),
+        {
+          status: isHealthy ? 200 : 503,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
           },
+        },
       );
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return new Response(
-          JSON.stringify({
-            status: 'ERROR',
-            error: errorMessage,
-            timestamp: new Date().toISOString(),
-          }),
-          {
-            status: 503,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders,
-            },
+        JSON.stringify({
+          status: 'ERROR',
+          error: errorMessage,
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
           },
+        },
       );
     }
   }
@@ -111,17 +111,17 @@ async function handleGraphQL(request: Request): Promise<Response> {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('GraphQL error:', error);
       return new Response(
-          JSON.stringify({
-            error: 'Internal server error',
-            message: errorMessage,
-          }),
-          {
-            status: 500,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders,
-            },
+        JSON.stringify({
+          error: 'Internal server error',
+          message: errorMessage,
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders,
           },
+        },
       );
     }
   }
@@ -129,45 +129,45 @@ async function handleGraphQL(request: Request): Promise<Response> {
   // API 信息端点
   if (url.pathname === '/api' || url.pathname === '/api/info') {
     return new Response(
-        JSON.stringify({
-          name: 'Admin Platform GraphQL API',
-          version: '1.0.0',
-          description: 'GraphQL API wrapper for PocketBase admin platform',
-          endpoints: {
-            graphql: '/graphql',
-            health: '/health',
-            graphiql: '/graphql (GET request)',
-          },
-          pocketbase: {
-            url: Deno.env.get('POCKETBASE_URL') || 'http://localhost:8090',
-            status: 'connected',
-          },
-          timestamp: new Date().toISOString(),
-        }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders,
-          },
-        },
-    );
-  }
-
-  // 404 处理
-  return new Response(
       JSON.stringify({
-        error: 'Not Found',
-        message: `Path ${url.pathname} not found`,
-        availablePaths: ['/graphql', '/health', '/api'],
+        name: 'Admin Platform GraphQL API',
+        version: '1.0.0',
+        description: 'GraphQL API wrapper for PocketBase admin platform',
+        endpoints: {
+          graphql: '/graphql',
+          health: '/health',
+          graphiql: '/graphql (GET request)',
+        },
+        pocketbase: {
+          url: Deno.env.get('POCKETBASE_URL') || 'http://localhost:8090',
+          status: 'connected',
+        },
+        timestamp: new Date().toISOString(),
       }),
       {
-        status: 404,
+        status: 200,
         headers: {
           'Content-Type': 'application/json',
           ...corsHeaders,
         },
       },
+    );
+  }
+
+  // 404 处理
+  return new Response(
+    JSON.stringify({
+      error: 'Not Found',
+      message: `Path ${url.pathname} not found`,
+      availablePaths: ['/graphql', '/health', '/api'],
+    }),
+    {
+      status: 404,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders,
+      },
+    },
   );
 }
 
@@ -222,7 +222,7 @@ class DenoServerManager implements PocketBaseServer {
 
   // 跨平台信号处理
   private setupSignalHandlers(handleShutdown: () => Promise<void>): void {
-    const isWindows = Deno.build.os === "windows";
+    const isWindows = Deno.build.os === 'windows';
 
     if (isWindows) {
       // Windows系统只支持SIGINT和SIGBREAK
@@ -283,7 +283,6 @@ class DenoServerManager implements PocketBaseServer {
 
       // 保持进程运行
       await new Promise(() => {});
-
     } catch (error) {
       console.error('❌ Error starting server:', error);
       await this.cleanup();

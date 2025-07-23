@@ -1,8 +1,7 @@
 import { pocketbaseClient } from '../config/pocketbase.ts';
 import { scalars } from '../scalars/index.ts';
-import type {
-  Product
-} from '../types/index.ts';
+import type { Product } from '../types/index.ts';
+import { subscriptionResolvers } from './subscriptions.ts';
 
 // 管理后台 Resolvers
 import { adminResolvers } from './admin/index.ts';
@@ -71,6 +70,11 @@ export const resolvers = {
     ...mobileResolvers.Mutation,
   },
 
+  // 订阅resolvers
+  Subscription: {
+    ...subscriptionResolvers.Subscription,
+  },
+
   // 类型解析器 - 从管理后台继承
   ...(adminResolvers.ProductCategory && { ProductCategory: adminResolvers.ProductCategory }),
   
@@ -115,4 +119,4 @@ export const resolvers = {
       }
     },
   },
-}; 
+};

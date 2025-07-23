@@ -1,4 +1,5 @@
 import { pocketbaseClient } from '../../config/pocketbase.ts';
+import { eventPublisher } from '../../services/event-publisher.ts';
 import type { Product, ProductQuery, ProductStats } from '../../types/index.ts';
 
 export const productResolvers = {
@@ -169,8 +170,6 @@ export const productResolvers = {
       }
     },
 
-
-
     productsByCategory: async (_: any, { category }: { category: string }) => {
       try {
         await pocketbaseClient.ensureAuth();
@@ -290,7 +289,7 @@ export const productResolvers = {
 
   Mutation: {
     // 基础产品操作
-    createProduct: async (_: any, { input }: { input: any }) => {
+    createProduct: async (_: any, { input }: { input: any }, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -302,6 +301,15 @@ export const productResolvers = {
         };
         
         const product = await pb.collection('products').create<Product>(productData);
+        
+        // 发布产品创建事件
+        await eventPublisher.publishProductEvent({
+          type: 'product.created',
+          productId: product.id,
+          productData: product,
+          userId: context.user?.id || 'system',
+        });
+        
         return {
           ...product,
           review_status: product.review_status || 'pending'
@@ -312,11 +320,26 @@ export const productResolvers = {
       }
     },
 
-    updateProduct: async (_: any, { id, input }: { id: string; input: any }) => {
+    updateProduct: async (_: any, { id, input }: { id: string; input: any }, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
+        
+        // 获取更新前的产品数据
+        const oldProduct = await pb.collection('products').getOne<Product>(id);
+        
         const product = await pb.collection('products').update<Product>(id, input);
+        
+        // 发布产品更新事件
+        await eventPublisher.publishProductEvent({
+          type: 'product.updated',
+          productId: id,
+          productData: {
+            old: oldProduct,
+            new: product,
+          },
+          userId: context.user?.id || 'system',
+        });
         
         // 确保有必需的字段
         return {
@@ -329,11 +352,24 @@ export const productResolvers = {
       }
     },
 
-    deleteProduct: async (_: any, { id }: { id: string }) => {
+    deleteProduct: async (_: any, { id }: { id: string }, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
+        
+        // 获取要删除的产品数据
+        const product = await pb.collection('products').getOne<Product>(id);
+        
         await pb.collection('products').delete(id);
+        
+        // 发布产品删除事件
+        await eventPublisher.publishProductEvent({
+          type: 'product.deleted',
+          productId: id,
+          productData: product,
+          userId: context.user?.id || 'system',
+        });
+        
         return true;
       } catch (error) {
         console.error('Failed to delete product:', error);
@@ -341,7 +377,7 @@ export const productResolvers = {
       }
     },
 
-    duplicateProduct: async (_: any, { id }: { id: string }) => {
+    duplicateProduct: async (_: any, { id }: { id: string }, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -357,6 +393,14 @@ export const productResolvers = {
         
         const product = await pb.collection('products').create<Product>(productData);
         
+        // 发布产品创建事件
+        await eventPublisher.publishProductEvent({
+          type: 'product.created',
+          productId: product.id,
+          productData: product,
+          userId: context.user?.id || 'system',
+        });
+        
         // 确保有必需的字段
         return {
           ...product,
@@ -369,7 +413,7 @@ export const productResolvers = {
     },
 
     // 批量操作
-    batchUpdateProductStatus: async (_: any, { ids, status }: { ids: string[]; status: string }) => {
+    batchUpdateProductStatus: async (_: any, { ids, status }: { ids: string[]; status: string }, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -379,6 +423,18 @@ export const productResolvers = {
         );
         
         await Promise.all(promises);
+        
+        // 批量发布更新事件
+        for (const id of ids) {
+          const product = await pb.collection('products').getOne<Product>(id);
+          await eventPublisher.publishProductEvent({
+            type: 'product.updated',
+            productId: id,
+            productData: { status },
+            userId: context.user?.id || 'system',
+          });
+        }
+        
         return true;
       } catch (error) {
         console.error('Failed to batch update product status:', error);
@@ -386,7 +442,7 @@ export const productResolvers = {
       }
     },
 
-    batchDeleteProducts: async (_: any, { ids }: { ids: string[] }) => {
+    batchDeleteProducts: async (_: any, { ids }: { ids: string[] }, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -397,7 +453,17 @@ export const productResolvers = {
         
         for (const productId of ids) {
           try {
+            const product = await pb.collection('products').getOne<Product>(productId);
             await pb.collection('products').delete(productId);
+            
+            // 发布产品删除事件
+            await eventPublisher.publishProductEvent({
+              type: 'product.deleted',
+              productId,
+              productData: product,
+              userId: context.user?.id || 'system',
+            });
+            
             successCount++;
           } catch (error) {
             failureCount++;
@@ -418,7 +484,7 @@ export const productResolvers = {
       }
     },
 
-    batchUpdateProductPrices: async (_: any, { input }: { input: { productIds: string[]; price: number; updateType: string } }) => {
+    batchUpdateProductPrices: async (_: any, { input }: { input: { productIds: string[]; price: number; updateType: string } }, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -451,6 +517,15 @@ export const productResolvers = {
             }
             
             await pb.collection('products').update(productId, { price: newPrice });
+            
+            // 发布产品更新事件
+            await eventPublisher.publishProductEvent({
+              type: 'product.updated',
+              productId,
+              productData: { price: newPrice },
+              userId: context.user?.id || 'system',
+            });
+            
             successCount++;
           } catch (error) {
             failureCount++;
@@ -472,7 +547,7 @@ export const productResolvers = {
     },
 
     // 库存管理
-    updateProductStock: async (_: any, { input }: { input: { productId: string; quantity: number; operation: string; reason?: string } }) => {
+    updateProductStock: async (_: any, { input }: { input: { productId: string; quantity: number; operation: string; reason?: string } }, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -495,6 +570,18 @@ export const productResolvers = {
         
         const updatedProduct = await pb.collection('products').update<Product>(input.productId, { stock: newStock });
         
+        // 发布产品更新事件
+        await eventPublisher.publishProductEvent({
+          type: 'product.updated',
+          productId: input.productId,
+          productData: { 
+            stock: newStock,
+            previousStock,
+            reason: input.reason 
+          },
+          userId: context.user?.id || 'system',
+        });
+        
         return {
           success: true,
           message: `库存已从 ${previousStock} 更新为 ${newStock}`,
@@ -514,7 +601,7 @@ export const productResolvers = {
       }
     },
 
-    batchUpdateStock: async (_: any, { inputs }: { inputs: Array<{ productId: string; quantity: number; operation: string; reason?: string }> }) => {
+    batchUpdateStock: async (_: any, { inputs }: { inputs: Array<{ productId: string; quantity: number; operation: string; reason?: string }> }, context: any) => {
       const results = [];
       
       for (const input of inputs) {
@@ -539,6 +626,18 @@ export const productResolvers = {
           }
           
           const updatedProduct = await pb.collection('products').update<Product>(input.productId, { stock: newStock });
+          
+          // 发布产品更新事件
+          await eventPublisher.publishProductEvent({
+            type: 'product.updated',
+            productId: input.productId,
+            productData: { 
+              stock: newStock,
+              previousStock,
+              reason: input.reason 
+            },
+            userId: context.user?.id || 'system',
+          });
           
           results.push({
             success: true,
@@ -672,4 +771,4 @@ export const productResolvers = {
       }
     },
   }
-}; 
+};

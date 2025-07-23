@@ -1,0 +1,119 @@
+# GraphQL 订阅定义
+# 用于实时事件通知
+
+type Subscription {
+  # 产品相关订阅
+  productCreated: ProductEvent!
+  productUpdated: ProductEvent!
+  productDeleted: ProductEvent!
+  
+  # 订单相关订阅
+  orderCreated: OrderEvent!
+  orderUpdated: OrderEvent!
+  orderCompleted: OrderEvent!
+  orderCancelled: OrderEvent!
+  
+  # 用户相关订阅
+  userCreated: UserEvent!
+  userUpdated: UserEvent!
+  
+  # 营销相关订阅
+  couponUsed: MarketingEvent!
+  pointsEarned: MarketingEvent!
+  memberUpgraded: MarketingEvent!
+  
+  # 通知相关订阅
+  notificationReceived: NotificationEvent!
+  
+  # 库存相关订阅
+  stockAlert: StockAlertEvent!
+  
+  # 通用事件订阅
+  eventReceived(eventType: String!): GenericEvent!
+}
+
+# 产品事件
+type ProductEvent {
+  id: ID!
+  type: String!
+  productId: String!
+  productData: Product
+  userId: String!
+  timestamp: String!
+}
+
+# 订单事件
+type OrderEvent {
+  id: ID!
+  type: String!
+  orderId: String!
+  orderData: Order
+  userId: String!
+  timestamp: String!
+}
+
+# 用户事件
+type UserEvent {
+  id: ID!
+  type: String!
+  userId: String!
+  userData: User
+  timestamp: String!
+}
+
+# 营销事件
+type MarketingEvent {
+  id: ID!
+  type: String!
+  userId: String!
+  marketingData: JSON
+  timestamp: String!
+}
+
+# 通知事件
+type NotificationEvent {
+  id: ID!
+  type: String!
+  title: String!
+  message: String!
+  userId: String
+  data: JSON
+  timestamp: String!
+}
+
+# 库存预警事件
+type StockAlertEvent {
+  id: ID!
+  productId: String!
+  productName: String!
+  currentStock: Int!
+  threshold: Int!
+  alertType: String!
+  timestamp: String!
+}
+
+# 通用事件
+type GenericEvent {
+  id: ID!
+  type: String!
+  data: JSON
+  source: String!
+  timestamp: String!
+}
+
+# 实时统计
+type RealtimeStats {
+  totalProducts: Int!
+  totalOrders: Int!
+  totalUsers: Int!
+  activeUsers: Int!
+  revenueToday: Float!
+  ordersToday: Int!
+  lowStockProducts: Int!
+  pendingReviews: Int!
+}
+
+# 实时统计订阅
+type Subscription {
+  realtimeStats: RealtimeStats!
+}
