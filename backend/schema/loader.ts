@@ -15,7 +15,18 @@ const __dirname = dirname(fromFileUrl(import.meta.url));
 function readGraphQLFile(relativePath: string): string {
   const fullPath = join(__dirname, relativePath);
   try {
-    return Deno.readTextFileSync(fullPath);
+    let content = Deno.readTextFileSync(fullPath);
+    
+    // 如果是 TypeScript 文件，提取其中的 GraphQL schema 字符串
+    if (relativePath.endsWith('.ts')) {
+      // 匹配 export const mobileTypeDefs = `...` 中的内容
+      const match = content.match(/export\s+const\s+mobileTypeDefs\s*=\s*`([^`]*)`/);
+      if (match && match[1]) {
+        content = match[1];
+      }
+    }
+    
+    return content;
   } catch (error) {
     console.warn(`Warning: Could not read GraphQL file: ${fullPath}`, error);
     return '';
@@ -52,8 +63,11 @@ export function loadSchema(): string {
   schemas.push(readGraphQLFile('admin/trending.graphql'));
   
   // 移动端 schemas
-  schemas.push(readGraphQLFile('mobile/app.graphql'));
-  schemas.push(readGraphQLFile('mobile/home.graphql'));
+  schemas.push(readGraphQLFile('mobile/home.graphql')); // 先加载基础类型
+  schemas.push(readGraphQLFile('mobile/app.graphql'));  // 再加载应用类型
+  
+  // 订阅 schemas
+  schemas.push(readGraphQLFile('subscriptions.graphql'));
 
   // 过滤空内容并合并
   const combinedSchema = schemas

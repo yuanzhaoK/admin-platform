@@ -1,72 +1,30 @@
-# 移动端应用 GraphQL Schema
-# 移动端专用的类型定义和接口
+# 移动端APP专用GraphQL Schema
+# 专为Flutter移动应用设计的接口
 
-# ===== 移动端用户类型 =====
-type MobileUser {
+# 导入其他schema
+# import * from './member.graphql'
+# import * from './home.graphql'
+
+# 移动端商品
+type AppProduct {
   id: ID!
-  username: String!
-  email: String!
-  identity: String!
-  name: String
-  avatar: String
-  phone: String
-  points: Int!
-  growth_value: Int!
-  level: Int!
-  vip_status: String!
-  balance: Float!
-  created: Date!
-  updated: Date!
-}
-
-
-# ===== 购物车相关类型 =====
-type CartItem {
-  id: ID!
-  user_id: String!
-  product_id: String!
-  product: Product!
-  quantity: Int!
-  selected: Boolean!
-  created: Date!
-  updated: Date!
-}
-
-type Cart {
-  items: [CartItem!]!
-  total_items: Int!
-  total_amount: Float!
-  selected_amount: Float!
-}
-
-# ===== 收藏相关类型 =====
-type Favorite {
-  id: ID!
-  user_id: String!
-  product_id: String!
-  product: Product!
-  created: Date!
-}
-
-type FavoritesResponse {
-  items: [Favorite!]!
-  pagination: PaginationInfo!
-}
-
-# ===== 地址相关类型 =====
-type Address {
-  id: ID!
-  user_id: String!
   name: String!
-  phone: String!
-  province: String!
-  city: String!
-  district: String!
-  detail: String!
-  postal_code: String
-  is_default: Boolean!
-  created: Date!
-  updated: Date!
+  image: String!
+  images: [String!]!
+  price: Float!
+  originalPrice: Float!
+  discount: Float!
+  stock: Int!
+  sales: Int!
+  rating: Float!
+  reviewCount: Int!
+  isHot: Boolean!
+  isNew: Boolean!
+  isRecommended: Boolean!
+  category: AppCategory!
+  brand: Brand!
+  description: String!
+  created: String!
 }
 
 # ===== 移动端通知类型 =====
@@ -80,60 +38,108 @@ type MobileNotification {
   created: Date!
 }
 
-# ===== 优惠券相关类型 =====
-type MobileCoupon {
-  id: ID!
-  name: String!
-  code: String!
-  type: String!
-  discount_type: String!
-  discount_value: Float!
-  min_order_amount: Float
-  max_discount_amount: Float
-  start_date: Date!
-  end_date: Date!
-  usage_limit: Int
-  used_count: Int!
-  is_active: Boolean!
-  created: Date!
-  updated: Date!
+# 移动端搜索
+type AppSearchResult {
+  products: [AppProduct!]!
+  categories: [AppCategory!]!
+  brands: [Brand!]!
+  total: Int!
+  hasMore: Boolean!
 }
 
-type UserCoupon {
+# 移动端订单
+type AppOrder {
   id: ID!
-  user_id: String!
-  coupon_id: String!
-  coupon: MobileCoupon!
-  status: String!
-  used_at: Date
-  created: Date!
-  updated: Date!
+  orderNumber: String!
+  items: [AppOrderItem!]!
+  totalAmount: Float!
+  discountAmount: Float!
+  finalAmount: Float!
+  status: AppOrderStatus!
+  paymentStatus: AppPaymentStatus!
+  shippingStatus: AppShippingStatus!
+  address: Address!
+  note: String
+  created: String!
+  updated: String!
 }
 
-# ===== 移动端订单类型 =====
-type MobileOrder {
+# 订单商品
+type AppOrderItem {
   id: ID!
-  order_number: String!
-  user_id: String!
-  total_amount: Float!
-  payment_method: String!
-  order_source: String!
-  order_type: String!
-  status: String!
-  items: JSON!
-  shipping_address: JSON!
-  notes: String
-  created: Date!
-  updated: Date!
-}
-
-# ===== 输入类型 =====
-input AddToCartInput {
-  product_id: String!
+  product: AppProduct!
   quantity: Int!
+  price: Float!
+  total: Float!
 }
 
-input UpdateCartItemInput {
+# 移动端用户资料
+type AppUserProfile {
+  id: ID!
+  username: String!
+  nickname: String!
+  avatar: String!
+  phone: String!
+  email: String!
+  level: MemberLevel!
+  points: Int!
+  balance: Float!
+  couponCount: Int!
+  orderCount: Int!
+  favoriteCount: Int!
+}
+
+# 枚举类型
+enum BannerType {
+  PRODUCT
+  CATEGORY
+  URL
+}
+
+enum AppOrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum AppPaymentStatus {
+  UNPAID
+  PAID
+  PARTIAL
+  REFUNDED
+}
+
+enum AppShippingStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  RETURNED
+}
+
+# 输入类型
+input AppSearchInput {
+  keyword: String!
+  categoryId: ID
+  brandId: ID
+  minPrice: Float
+  maxPrice: Float
+  sortBy: AppSortBy
+  sortOrder: SortOrder
+  page: Int = 1
+  perPage: Int = 10
+}
+
+input AppAddToCartInput {
+  productId: ID!
+  quantity: Int! = 1
+  specifications: [AppSpecificationInput!]
+}
+
+input AppUpdateCartInput {
   quantity: Int
   selected: Boolean
 }
@@ -148,20 +154,6 @@ input CreateAddressInput {
   postal_code: String
   is_default: Boolean
 }
-
-input CreateMobileOrderInput {
-  items: [MobileOrderItemInput!]!
-  shipping_address: MobileAddressInput!
-  payment_method: String!
-  notes: String
-}
-
-input MobileOrderItemInput {
-  product_id: String!
-  quantity: Int!
-  price: Float!
-}
-
 input MobileAddressInput {
   name: String!
   phone: String!
@@ -171,77 +163,122 @@ input MobileAddressInput {
   detail: String!
   postal_code: String
 }
-
-type MobileLoginResponse {
-  token: String!
-  record: MobileUser!
+input AppCreateOrderInput {
+  items: [AppOrderItemInput!]!
+  addressId: ID!
+  couponId: ID
+  note: String
+  paymentMethod: String!
 }
 
-# ===== 移动端查询扩展 =====
+input AppOrderItemInput {
+  productId: ID!
+  quantity: Int!
+  specifications: [AppSpecificationInput!]
+}
+
+input AppSpecificationInput {
+  name: String!
+  value: String!
+}
+
+# 排序选项
+enum AppSortBy {
+  PRICE
+  SALES
+  RATING
+  CREATED
+}
+
+# 查询类型
 extend type Query {
-  """首页数据"""
+  # 首页数据
   appHomeData: AppHomeData!
-  
-  """用户信息"""
-  appUser: MobileUser!
-  
-  """购物车"""
-  appCart: Cart!
-  
-  """收藏列表"""
-  appFavorites(page: Int = 1, perPage: Int = 20): FavoritesResponse!
-  
-  """检查是否收藏"""
-  appIsFavorite(product_id: String!): Boolean!
-  
-  """地址列表"""
-  appAddresses: [Address!]!
-  
-  """默认地址"""
+
+  # 商品相关
+  appProducts(input: AppSearchInput): AppSearchResult!
+  appProduct(id: ID!): AppProduct!
+  appRelatedProducts(productId: ID!): [AppProduct!]!
+
+  # 购物车
+  appCart: CartInfo!
+
+  # 收藏夹
+  appFavorites: [Favorite!]!
+  appIsFavorite(productId: ID!): Boolean!
+
+  # 订单
+  appOrders(
+    status: AppOrderStatus
+    page: Int = 1
+    perPage: Int = 10
+  ): [AppOrder!]!
+  appOrder(id: ID!): AppOrder!
+
+  """
+  默认地址
+  """
   appDefaultAddress: Address
-  
-  """用户详细信息"""
-  appProfile: MobileUser!
-  
-  """通知列表"""
+  appAddresses: [Address!]!
+  # 用户相关
+  appProfile: AppUserProfile!
+  """
+  通知列表
+  """
   appNotifications(page: Int = 1, perPage: Int = 20): [MobileNotification!]!
-  
-  """用户优惠券"""
+  """
+  用户优惠券
+  """
   appUserCoupons: [UserCoupon!]!
 }
 
-# ===== 移动端变更扩展 =====
+# 输入类型
+input AppUpdateProfileInput {
+  nickname: String
+  avatar: String
+  phone: String
+  email: String
+}
+
+# 变更类型
 extend type Mutation {
-  """添加到购物车"""
-  appAddToCart(input: AddToCartInput!): CartItem!
-  
-  """更新购物车项"""
-  appUpdateCartItem(id: String!, input: UpdateCartItemInput!): CartItem!
-  
-  """从购物车移除"""
-  appRemoveFromCart(id: String!): Boolean!
-  
-  """清空购物车"""
+  # 购物车操作
+  appAddToCart(input: AppAddToCartInput!): CartInfo!
+  appUpdateCartItem(id: ID!, input: AppUpdateCartInput!): CartItem!
+  appRemoveFromCart(id: ID!): Boolean!
   appClearCart: Boolean!
+  appSelectAllCartItems(selected: Boolean!): Boolean!
+
+  # 收藏操作
+  appAddToFavorites(productId: ID!): Favorite!
+  appRemoveFromFavorites(productId: ID!): Boolean!
   
-  """添加到收藏"""
-  appAddToFavorites(product_id: String!): Favorite!
-  
-  """从收藏移除"""
-  appRemoveFromFavorites(product_id: String!): Boolean!
-  
-  """创建地址"""
-  appCreateAddress(input: CreateAddressInput!): Address!
-  
-  """创建订单"""
-  appCreateOrder(input: CreateMobileOrderInput!): MobileOrder!
-  
-  """标记通知已读"""
+  """
+  标记通知已读
+  """
   appMarkNotificationRead(id: String!): Boolean!
-  
-  """标记所有通知已读"""
+  """
+  标记所有通知已读
+  """
   appMarkAllNotificationsRead: Boolean!
-  
-  """移动端用户登录"""
-  mobileLogin(input: LoginInput!): MobileLoginResponse!
-} 
+  """
+  移动端用户登录
+  """
+  mobileLogin(input: LoginInput!): Member!
+
+  # 订单操作
+  appCreateOrder(input: AppCreateOrderInput!): AppOrder!
+  appCancelOrder(id: ID!): Boolean!
+  appConfirmOrder(id: ID!): Boolean!
+
+  # 支付操作
+  appPayOrder(id: ID!, paymentMethod: String!): Boolean!
+
+  # 用户操作
+  appUpdateProfile(input: AppUpdateProfileInput!): AppUserProfile!
+}
+
+# 订阅类型
+extend type Subscription {
+  appOrderStatus(orderId: ID!): AppOrder!
+}

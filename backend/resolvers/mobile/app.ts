@@ -103,29 +103,6 @@ export const appResolvers = {
       }
     },
 
-    // 地址列表
-    appAddresses: async (_parent: any, _args: any, context: any) => {
-      try {
-        const { user } = context;
-        
-        if (!user) {
-          throw new GraphQLError('用户未登录');
-        }
-
-        await pocketbaseClient.ensureAuth();
-        const pb = pocketbaseClient.getClient();
-
-        const addresses = await pb.collection('addresses').getFullList({
-          sort: '-is_default,-created',
-          filter: `user_id="${user.id}"`,
-        });
-
-        return addresses;
-      } catch (error) {
-        console.error('Error fetching app addresses:', error);
-        throw new GraphQLError('获取地址列表失败');
-      }
-    },
 
     // 默认地址
     appDefaultAddress: async (_parent: any, _args: any, context: any) => {
@@ -413,44 +390,6 @@ export const appResolvers = {
       }
     },
 
-    // 创建地址
-    appCreateAddress: async (_parent: any, args: any, context: any) => {
-      try {
-        const { user } = context;
-        const { input } = args;
-        
-        if (!user) {
-          throw new GraphQLError('用户未登录');
-        }
-
-        await pocketbaseClient.ensureAuth();
-        const pb = pocketbaseClient.getClient();
-
-        // 如果设置为默认地址，先取消其他默认地址
-        if (input.is_default) {
-          const existingAddresses = await pb.collection('addresses').getFullList({
-            filter: `user_id="${user.id}" && is_default=true`,
-          });
-
-          for (const addr of existingAddresses) {
-            await pb.collection('addresses').update(addr.id, {
-              is_default: false,
-            });
-          }
-        }
-
-        const address = await pb.collection('addresses').create({
-          ...input,
-          user_id: user.id,
-        });
-
-        return address;
-      } catch (error) {
-        console.error('Error creating app address:', error);
-        throw new GraphQLError('创建地址失败');
-      }
-    },
-
     // 创建移动端订单
     appCreateOrder: async (_parent: any, args: any, context: any) => {
       try {
@@ -545,4 +484,32 @@ export const appResolvers = {
       }
     },
   },
-}; 
+
+  Subscription: {
+    orderStatusUpdated: {
+      subscribe: (_: any, __: any, context: any) => {
+        // 这里应该实现实际的订阅逻辑
+        // 暂时返回一个模拟的异步迭代器
+        return (async function* () {
+          yield {
+            orderStatusUpdated: {
+              id: '1',
+              status: 'processing',
+              updatedAt: new Date().toISOString(),
+            },
+          };
+        })();
+      },
+    },
+  },
+};
+
+// 发布事件到RabbitMQ
+async function publishEvent(eventType: string, data: any) {
+  try {
+    // 这里应该实现实际的RabbitMQ发布逻辑
+    console.log(`📤 发布事件: ${eventType}`, data);
+  } catch (error) {
+    console.error('发布事件失败:', error);
+  }
+}

@@ -3,6 +3,7 @@ import { CacheStrategy, redisCache } from '../../cache/redis-cache.ts';
 import { pocketbaseClient } from '../../config/pocketbase.ts';
 import { Product, ProductQuery } from '../../types/product.ts';
 
+
 // 产品查询参数验证
 const productQuerySchema = z.object({
   page: z.number().min(1).default(1),
@@ -29,22 +30,20 @@ const createProductSchema = z.object({
   specifications: z.record(z.string()).optional(),
   isActive: z.boolean().default(true),
 });
-
 // 产品更新参数验证
 const updateProductSchema = createProductSchema.partial();
-
+// 产品管理解析器
 export const productResolvers = {
   Query: {
-    // 获取产品列表（带缓存）
-    products: async (_: any, { query }: { query: ProductQuery }): Promise<any> => {
+    products: async (_: any, { query }:  { query: ProductQuery }) => {
       try {
         // 验证查询参数
         const validatedQuery = productQuerySchema.parse(query);
-        
-        // 生成缓存键
+         // 生成缓存键
         const cacheKey = `products:${JSON.stringify(validatedQuery)}`;
-        
-        // 使用缓存策略获取数据
+
+        const pb = await pocketbaseClient.getClient();
+           // 使用缓存策略获取数据
         const result = await redisCache.getWithStrategy(
           'PRODUCT',
           cacheKey,
@@ -80,8 +79,8 @@ export const productResolvers = {
             
             // 构建排序
             const sort = validatedQuery.sortBy 
-              ? `${validatedQuery.sortBy} ${validatedQuery.sortOrder || 'asc'}`
-              : 'created desc';
+              ? ` ${validatedQuery.sortOrder==='asc' ? '' : '-'}${validatedQuery.sortBy}`
+              : '-created';
             
             // 获取产品列表
             const response = await pb.collection('products').getList(
@@ -109,14 +108,12 @@ export const productResolvers = {
         );
         
         return result.data;
-        
       } catch (error) {
         console.error('获取产品列表失败:', error);
-        throw new Error(`获取产品列表失败: ${error}`);
+        throw new Error('获取产品列表失败');
       }
     },
 
-    // 获取单个产品（带缓存）
     product: async (_: any, { id }: { id: string }): Promise<Product | null> => {
       try {
         const result = await redisCache.getWithStrategy(
@@ -134,9 +131,9 @@ export const productResolvers = {
         );
         
         return result.data;
-        
       } catch (error) {
         console.error('获取产品详情失败:', error);
+        throw new Error('获取产品详情失败');
         return null;
       }
     },
@@ -186,8 +183,7 @@ export const productResolvers = {
         };
       }
     },
-
-    // 获取热门产品（带缓存）
+     // 获取热门产品（带缓存）
     trendingProducts: async (_: any, { limit = 10 }: { limit?: number }): Promise<Product[]> => {
       try {
         const result = await redisCache.getWithStrategy(
@@ -225,8 +221,8 @@ export const productResolvers = {
       try {
         // 验证输入
         const validatedInput = createProductSchema.parse(input);
-        
         const pb = await pocketbaseClient.getClient();
+
         const product = await pb.collection('products').create(validatedInput);
         
         // 清除产品列表缓存
@@ -234,10 +230,9 @@ export const productResolvers = {
         await redisCache.del('STATS', 'product-stats');
         
         return product as unknown as Product;
-        
       } catch (error) {
         console.error('创建产品失败:', error);
-        throw new Error(`创建产品失败: ${error}`);
+        throw new Error('创建产品失败');
       }
     },
 
@@ -283,8 +278,7 @@ export const productResolvers = {
         return false;
       }
     },
-
-    // 批量更新库存
+// 批量更新库存
     updateProductStock: async (
       _: any,
       { updates }: { updates: Array<{ id: string; stock: number }> }

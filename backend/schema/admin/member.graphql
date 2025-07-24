@@ -31,7 +31,22 @@ type MemberLevel {
   sort_order: Int!
   is_active: Boolean!
 }
-
+# 收货地址类型
+type Address {
+  id: String!
+  user_id: String!
+  name: String!
+  phone: String!
+  province: String!
+  city: String!
+  district: String!
+  address: String!
+  postal_code: String
+  is_default: Boolean!
+  tag: String
+  created: String!
+  updated: String!
+}
 enum Gender {
   male
   female
@@ -145,14 +160,14 @@ extend type Mutation {
   updateMember(id: String!, input: MemberUpdateInput!): Member!
   deleteMember(id: String!): Boolean!
   batchDeleteMembers(ids: [String!]!): BatchOperationResult!
-  
+
   createMemberLevel(input: MemberLevelInput!): MemberLevel!
   updateMemberLevel(id: String!, input: MemberLevelUpdateInput!): MemberLevel!
   deleteMemberLevel(id: String!): Boolean!
-  
+
   adjustMemberPoints(id: String!, points: Int!, reason: String!): Member!
   adjustMemberBalance(id: String!, amount: Float!, reason: String!): Member!
-  
+
   exportMembers(input: MemberQueryInput): String!
   importMembers(csvData: String!): BatchOperationResult!
-} 
+}

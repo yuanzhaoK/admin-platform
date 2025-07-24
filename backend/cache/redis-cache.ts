@@ -3,12 +3,12 @@
  * 提供高性能的缓存解决方案，支持多种缓存策略
  */
 
-import { Redis } from 'https://deno.land/x/redis@v0.32.1/mod.ts';
+import { Redis, connect } from 'https://deno.land/x/redis@v0.32.1/mod.ts';
 
 // Redis 配置
 const REDIS_CONFIG = {
-  hostname: Deno.env.get('REDIS_HOST') || 'localhost',
-  port: parseInt(Deno.env.get('REDIS_PORT') || '6379'),
+  hostname: Deno.env.get('REDIS_HOST') || '47.111.142.237',
+  port: parseInt(Deno.env.get('REDIS_PORT') || '16379'),
   password: Deno.env.get('REDIS_PASSWORD') || undefined,
   db: parseInt(Deno.env.get('REDIS_DB') || '0'),
   maxRetriesPerRequest: 3,
@@ -65,14 +65,16 @@ let redisClient: Redis | null = null;
 async function getRedisClient(): Promise<Redis> {
   if (!redisClient) {
     try {
-      redisClient = await Redis.connect(REDIS_CONFIG);
+      // 使用 connect 函数连接 Redis
+      redisClient = await connect(REDIS_CONFIG);
       console.log('✅ Redis 连接成功');
     } catch (error) {
       console.error('❌ Redis 连接失败:', error);
       throw error;
     }
   }
-  return redisClient;
+  // 确保返回的是 Redis 实例而不是 null
+  return redisClient!;
 }
 
 // 缓存管理器
@@ -143,7 +145,7 @@ export class RedisCache {
     try {
       await this.client.del(cacheKey);
     } catch (error) {
-      console.error('删除缓存失败:', error);
+      console.error('Redis set error:', error);
     }
   }
 
@@ -159,7 +161,7 @@ export class RedisCache {
         await this.client.del(...keys);
       }
     } catch (error) {
-      console.error('批量删除缓存失败:', error);
+      console.error('Redis del error:', error);
     }
   }
 
@@ -174,7 +176,7 @@ export class RedisCache {
       const result = await this.client.exists(cacheKey);
       return result === 1;
     } catch (error) {
-      console.error('检查缓存失败:', error);
+      console.error('Redis exists error:', error);
       return false;
     }
   }

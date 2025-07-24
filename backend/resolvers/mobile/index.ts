@@ -1,20 +1,18 @@
-// 移动端 Resolvers 模块
+// 移动端解析器索引
 import { appResolvers } from './app.ts';
-import { homeResolvers } from './home.ts';
-import { mobileUserResolvers } from './user.ts';
-// 暂时只使用app resolvers，避免冲突
+import { mobileMemberResolvers } from './member.ts';
+
+// 移动端解析器合并
 export const mobileResolvers = {
   Query: {
+    ...mobileMemberResolvers.Query,
     ...appResolvers.Query,
-    ...mobileUserResolvers.Query,
-    ...homeResolvers.Query,
   },
-  
   Mutation: {
+    ...mobileMemberResolvers.Mutation,
     ...appResolvers.Mutation,
-    ...mobileUserResolvers.Mutation,
+  },
+  Subscription: {
+    ...appResolvers.Subscription,
   },
 };
-
-// 单独导出app模块
-export { appResolvers, mobileUserResolvers };

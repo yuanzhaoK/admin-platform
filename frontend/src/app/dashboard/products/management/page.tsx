@@ -289,11 +289,13 @@ export default function ProductManagementPage() {
   };
 
   const getReviewStatusBadge = (status: string) => {
+    if (!status) return <Badge variant="secondary">未审核</Badge>;
     const statusConfig = {
       "pending": { label: "待审核", variant: "outline" as const },
       "approved": { label: "已通过", variant: "default" as const },
       "rejected": { label: "已拒绝", variant: "destructive" as const },
     };
+    debugger;
     const config = statusConfig[status as keyof typeof statusConfig];
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };

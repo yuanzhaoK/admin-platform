@@ -1,0 +1,137 @@
+# 移动端会员相关类型定义
+# 注意：这些类型已经在admin/member.graphql中定义，这里只添加移动端特有的扩展
+
+extend type Query {
+  """
+  获取当前登录用户的会员信息
+  """
+  appMember: Member
+
+  """
+  获取当前用户的地址列表
+  """
+  appMemberAddresses: AddressList!
+
+  """
+  获取当前用户的购物车
+  """
+  appMemberCart: CartInfo!
+
+  """
+  获取当前用户的订单列表
+  """
+  memberOrders(query: OrderQueryInput): [Order]!
+}
+
+extend type Mutation {
+  """
+  添加收货地址
+  """
+  addAddress(input: AddressInput!): Address!
+
+  """
+  更新收货地址
+  """
+  updateAddress(id: ID!, input: AddressInput!): Address!
+
+  """
+  删除收货地址
+  """
+  appDeleteAddress(id: ID!): Boolean!
+
+  """
+  更新购物车
+  """
+  appUpdateCart(input: AppUpdateCartInput!): CartInfo!
+}
+
+"""
+地址列表
+"""
+type AddressList {
+  addresses: [Address!]!
+  total: Int!
+}
+
+"""
+购物车信息
+"""
+type CartInfo {
+  items: [CartItem!]!
+  total: Float!
+  itemCount: Int!
+}
+
+"""
+购物车项
+"""
+type CartItem {
+  id: ID!
+  user_id: String!
+  product_id: String!
+  quantity: Int!
+  price: Float!
+  total: Float!
+}
+
+"""
+地址输入
+"""
+input AddressInput {
+  name: String!
+  phone: String!
+  province: String!
+  city: String!
+  district: String!
+  address: String!
+  isDefault: Boolean
+}
+
+type FavoritesResponse {
+  items: [Favorite!]!
+  pagination: PaginationInfo!
+}
+# ===== 收藏相关类型 =====
+type Favorite {
+  id: ID!
+  user_id: String!
+  product_id: String!
+  product: Product!
+  created: Date!
+}
+
+type UserCoupon {
+  id: ID!
+  user_id: String!
+  coupon_id: String!
+  coupon: MobileCoupon!
+  status: String!
+  used_at: Date
+  created: Date!
+  updated: Date!
+}
+
+# ===== 输入类型 =====
+input AddToCartInput {
+  product_id: String!
+  quantity: Int!
+}
+
+# ===== 优惠券相关类型 =====
+type MobileCoupon {
+  id: ID!
+  name: String!
+  code: String!
+  type: String!
+  discount_type: String!
+  discount_value: Float!
+  min_order_amount: Float
+  max_discount_amount: Float
+  start_date: Date!
+  end_date: Date!
+  usage_limit: Int
+  used_count: Int!
+  is_active: Boolean!
+  created: Date!
+  updated: Date!
+}

@@ -15,12 +15,17 @@ interface PocketBaseServer {
 
 // 验证并构建 GraphQL schema
 console.log('🔍 验证 GraphQL Schema...');
-if (!validateSchema()) {
+const isValid = await validateSchema();
+if (!isValid) {
   console.error('❌ GraphQL Schema 验证失败！');
   Deno.exit(1);
 }
 
-const typeDefs = getTypeDefs();
+const typeDefs = await getTypeDefs();
+console.log('=== Schema TypeDefs Preview ===');
+console.log(typeDefs.substring(0, 1000) + '...');
+console.log('==============================');
+
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers,

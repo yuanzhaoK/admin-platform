@@ -1,7 +1,7 @@
 # GraphQL 订阅定义
 # 用于实时事件通知
 
-type Subscription {
+extend type Subscription {
   # 产品相关订阅
   productCreated: ProductEvent!
   productUpdated: ProductEvent!
@@ -30,6 +30,9 @@ type Subscription {
   
   # 通用事件订阅
   eventReceived(eventType: String!): GenericEvent!
+  
+  # 实时统计订阅
+  realtimeStats: RealtimeStats!
 }
 
 # 产品事件
@@ -111,9 +114,4 @@ type RealtimeStats {
   ordersToday: Int!
   lowStockProducts: Int!
   pendingReviews: Int!
-}
-
-# 实时统计订阅
-type Subscription {
-  realtimeStats: RealtimeStats!
 }

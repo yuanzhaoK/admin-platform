@@ -52,7 +52,7 @@ type Product {
   service_guarantee: [String!]
   sales_count: Int
   view_count: Int
-  review_status: ReviewStatus!
+  review_status: ReviewStatus
   attributes: JSON
   created: Date!
   updated: Date!
@@ -253,6 +253,9 @@ extend type Query {
   
   """产品搜索建议"""
   productSearchSuggestions(query: String!): [String!]!
+
+  trendingProducts(limit: Int = 10): [Product!]!
+  
 }
 
 # ===== 变更扩展 =====
