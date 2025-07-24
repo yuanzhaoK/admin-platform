@@ -1,16 +1,16 @@
 // TypeScript 类型定义
 export interface TrendingItem {
   id: string;
-  name: string;
+  product_name: string;
   description?: string;
   type: TrendingType;
-  item_id: string;
+  product_id: string;
   item_data: Record<string, any>;
   category?: string;
   tags: string[];
   score: number;
   manual_score?: number;
-  auto_score: number;
+  auto_score?: number;
   rank: number;
   status: TrendingStatus;
   start_time?: string;
@@ -36,7 +36,7 @@ export interface TrendingCategory {
 
 export interface TrendingStats {
   id: string;
-  item_id: string;
+  product_id: string;
   date: string;
   view_count: number;
   click_count: number;
@@ -53,7 +53,13 @@ export type TrendingType =
   | 'brand'
   | 'keyword'
   | 'content'
-  | 'topic';
+  | 'topic'
+  | 'views'
+  | 'search'
+  | 'sales'
+  | 'manual'
+  | 'rating'
+  | 'auto';
 
 export type TrendingStatus = 
   | 'active'
@@ -94,7 +100,7 @@ export interface TrendingItemInput {
   name: string;
   description?: string;
   type: TrendingType;
-  item_id: string;
+  product_id: string;
   category?: string;
   tags?: string[];
   manual_score?: number;
@@ -107,7 +113,7 @@ export interface TrendingItemUpdateInput {
   name?: string;
   description?: string;
   type?: TrendingType;
-  item_id?: string;
+  product_id?: string;
   category?: string;
   tags?: string[];
   manual_score?: number;
@@ -141,7 +147,7 @@ export interface TrendingCategoryUpdateInput {
 }
 
 export interface TrendingStatsQueryInput {
-  item_id?: string;
+  product_id?: string;
   start_date: string;
   end_date: string;
   page?: number;

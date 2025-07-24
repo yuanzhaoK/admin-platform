@@ -28,8 +28,8 @@ type PaginationInfo {
   total: Int!
   totalItems: Int!
   totalPages: Int!
-  hasNext: Boolean!
-  hasPrev: Boolean!
+  hasNext: Boolean
+  hasPrev: Boolean
 }
 
 type OperationResult {
@@ -48,20 +48,28 @@ type BatchOperationResult {
 
 # ===== 根查询和变更 =====
 type Query {
-  """系统健康检查"""
+  """
+  系统健康检查
+  """
   health: String!
-  
-  """获取系统信息"""
+
+  """
+  获取系统信息
+  """
   systemInfo: SystemInfo
 }
 
 type Mutation {
-  """占位符mutation"""
+  """
+  占位符mutation
+  """
   _: Boolean
 }
 
 type Subscription {
-  """占位符subscription"""
+  """
+  占位符subscription
+  """
   _: Boolean
 }
 
@@ -71,4 +79,4 @@ type SystemInfo {
   environment: String!
   uptime: String!
   timestamp: String!
-} 
+}

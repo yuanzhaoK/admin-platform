@@ -89,7 +89,7 @@ export const trendingResolvers = {
       parent: any,
       { input }: { input?: any }
     ): Promise<{ items: any[]; pagination: PaginationInfo }> => {
-      const { page = 1, perPage = 20, search, type, status, sortBy = 'created', sortOrder = 'desc' } = input || {};
+      const { page = 1, perPage = 20, search, type, status, sortBy = 'name', sortOrder = 'desc' } = input || {};
 
       try {
         await pocketbaseClient.ensureAuth();
@@ -299,7 +299,7 @@ export const trendingResolvers = {
 
     calculateTrendingScore: async (
       parent: any,
-      { item_id, type }: { item_id: string; type: string }
+      { product_id, type }: { product_id: string; type: string }
     ): Promise<number> => {
       try {
         await pocketbaseClient.ensureAuth();
@@ -483,14 +483,14 @@ export const trendingResolvers = {
 
     addToTrending: async (
       parent: any,
-      { item_id, type, category }: { item_id: string; type: string; category: string }
+      { product_id, type, category }: { product_id: string; type: string; category: string }
     ): Promise<any> => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
         
         const input = {
-          item_id,
+          product_id,
           type,
           category,
           status: 'active',

@@ -75,13 +75,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       href: "/dashboard/marketing",
       icon: Zap,
       children: [
-        { name: "会员管理", href: "/dashboard/marketing/members" },
         { name: "优惠券管理", href: "/dashboard/marketing/coupons" },
         { name: "积分管理", href: "/dashboard/marketing/points" },
         { name: "商品推荐", href: "/dashboard/marketing/recommendations" },
         { name: "广告管理", href: "/dashboard/marketing/advertisements" },
         { name: "热门管理", href: "/dashboard/marketing/trending" },
       ],
+    },
+    {
+      name: "会员管理",
+      href: "/dashboard/members",
+      icon: Users,
     },
     { name: t("nav.users"), href: "/dashboard/users", icon: Users },
     { name: "CRUD 演示", href: "/dashboard/crud-demo", icon: Zap },

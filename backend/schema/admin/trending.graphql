@@ -2,22 +2,22 @@
 
 type TrendingItem {
   id: String!
-  name: String!
+  product_name: String!
   description: String
   type: TrendingType!
-  item_id: String!
-  item_data: JSON!
+  product_id: String!
+  item_data: JSON
   category: String
   tags: [String!]
   score: Float!
   manual_score: Float
-  auto_score: Float!
+  auto_score: Float
   rank: Int!
   status: TrendingStatus!
   start_time: String
   end_time: String
-  created: String!
-  updated: String!
+  created: String
+  updated: String
 }
 
 type TrendingRule {
@@ -25,19 +25,19 @@ type TrendingRule {
   name: String!
   description: String
   type: TrendingType!
-  display_count: Int!
-  update_frequency: UpdateFrequency!
-  calculation_method: CalculationMethod!
-  weight_config: JSON!
-  is_active: Boolean!
-  sort_order: Int!
-  created: String!
-  updated: String!
+  display_count: Int
+  update_frequency: UpdateFrequency
+  calculation_method: CalculationMethod
+  weight_config: JSON
+  is_active: Boolean
+  sort_order: Int
+  created: String
+  updated: String
 }
 
 type TrendingStats {
   id: String!
-  item_id: String!
+  product_id: String!
   date: String!
   view_count: Int!
   click_count: Int!
@@ -55,6 +55,12 @@ enum TrendingType {
   keyword
   content
   topic
+  views
+  search
+  sales
+  manual
+  rating
+  auto
 }
 
 enum TrendingStatus {
@@ -127,7 +133,7 @@ input TrendingItemInput {
   name: String!
   description: String
   type: TrendingType!
-  item_id: String!
+  product_id: String!
   category: String
   tags: [String!]
   manual_score: Float
@@ -140,7 +146,7 @@ input TrendingItemUpdateInput {
   name: String
   description: String
   type: TrendingType
-  item_id: String
+  product_id: String
   category: String
   tags: [String!]
   manual_score: Float
@@ -150,7 +156,7 @@ input TrendingItemUpdateInput {
 }
 
 input TrendingRuleInput {
-  name: String!
+  name: String
   description: String
   type: TrendingType!
   display_count: Int!
@@ -174,7 +180,7 @@ input TrendingRuleUpdateInput {
 }
 
 input TrendingStatsQueryInput {
-  item_id: String
+  product_id: String
   start_date: String!
   end_date: String!
   page: Int
@@ -188,7 +194,7 @@ extend type Query {
   trendingRule(id: String!): TrendingRule
   trendingStats(input: TrendingStatsQueryInput): TrendingStatsResponse!
   trendingOverviewStats: TrendingOverviewStats!
-  calculateTrendingScore(item_id: String!, type: TrendingType!): Float!
+  calculateTrendingScore(product_id: String!, type: TrendingType!): Float!
 }
 
 extend type Mutation {
@@ -204,6 +210,6 @@ extend type Mutation {
   refreshTrendingScores(category_id: String): Boolean!
   updateTrendingRanks(category_id: String): Boolean!
   
-  addToTrending(item_id: String!, type: TrendingType!, category: String): TrendingItem!
+  addToTrending(product_id: String!, type: TrendingType!, category: String): TrendingItem!
   removeFromTrending(id: String!): Boolean!
 } 

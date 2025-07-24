@@ -6,10 +6,10 @@ export const GET_TRENDING_ITEMS = gql`
     trendingItems(input: $input) {
       items {
         id
-        name
+        product_name
         description
         type
-        item_id
+        product_id
         item_data
         category
         tags
@@ -41,7 +41,7 @@ export const GET_TRENDING_ITEM = gql`
       name
       description
       type
-      item_id
+      product_id
       item_data
       category
       tags
@@ -112,7 +112,7 @@ export const GET_TRENDING_STATS = gql`
     trendingStats(input: $input) {
       items {
         id
-        item_id
+        product_id
         date
         view_count
         click_count
@@ -159,8 +159,8 @@ export const GET_TRENDING_OVERVIEW_STATS = gql`
 
 // 计算热门分数
 export const CALCULATE_TRENDING_SCORE = gql`
-  query CalculateTrendingScore($item_id: String!, $type: TrendingType!) {
-    calculateTrendingScore(item_id: $item_id, type: $type)
+  query CalculateTrendingScore($product_id: String!, $type: TrendingType!) {
+    calculateTrendingScore(product_id: $product_id, type: $type)
   }
 `;
 
@@ -172,7 +172,7 @@ export const CREATE_TRENDING_ITEM = gql`
       name
       description
       type
-      item_id
+      product_id
       item_data
       category
       tags
@@ -197,7 +197,7 @@ export const UPDATE_TRENDING_ITEM = gql`
       name
       description
       type
-      item_id
+      product_id
       item_data
       category
       tags
@@ -297,12 +297,12 @@ export const UPDATE_TRENDING_RANKS = gql`
 
 // 添加到热门
 export const ADD_TO_TRENDING = gql`
-  mutation AddToTrending($item_id: String!, $type: TrendingType!, $category: String!) {
-    addToTrending(item_id: $item_id, type: $type, category: $category) {
+  mutation AddToTrending($product_id: String!, $type: TrendingType!, $category: String!) {
+    addToTrending(product_id: $product_id, type: $type, category: $category) {
       id
       name
       type
-      item_id
+      product_id
       category
       score
       rank

@@ -80,7 +80,7 @@ interface TrendingFormData {
   name: string;
   description: string;
   type: string;
-  item_id: string;
+  product_id: string;
   category: string;
   tags: string[];
   manual_score?: number;
@@ -113,7 +113,7 @@ export default function TrendingPage() {
     name: "",
     description: "",
     type: "product",
-    item_id: "",
+    product_id: "",
     category: "",
     tags: [],
     status: "active",
@@ -144,16 +144,20 @@ export default function TrendingPage() {
       },
     });
 
-  const { data: rulesData, loading: rulesLoading, refetch: refetchRules } =
-    useQuery(GET_TRENDING_RULES, {
-      variables: {
-        input: {
-          page: 1,
-          perPage: 20,
-        },
+  const {
+    data: rulesData,
+    loading: rulesLoading,
+    refetch: refetchRules,
+    ...rest
+  } = useQuery<TrendingRulesResponse>(GET_TRENDING_RULES, {
+    variables: {
+      input: {
+        page: 1,
+        perPage: 20,
       },
-    });
-
+    },
+  });
+  console.log("Trending Rules Data:", rulesData, rest);
   const { data: statsData, loading: statsLoading } = useQuery(
     GET_TRENDING_OVERVIEW_STATS,
   );
@@ -166,7 +170,6 @@ export default function TrendingPage() {
   const [updateTrendingRule] = useMutation(UPDATE_TRENDING_RULE);
   const [deleteTrendingRule] = useMutation(DELETE_TRENDING_RULE);
   const [refreshTrendingScores] = useMutation(REFRESH_TRENDING_SCORES);
-
   const handleCreateTrending = async () => {
     try {
       await createTrendingItem({
@@ -186,7 +189,7 @@ export default function TrendingPage() {
         name: "",
         description: "",
         type: "product",
-        item_id: "",
+        product_id: "",
         category: "",
         tags: [],
         status: "active",
@@ -330,7 +333,7 @@ export default function TrendingPage() {
       name: item.name || "",
       description: item.description || "",
       type: item.type || "product",
-      item_id: item.item_id || "",
+      product_id: item.product_id || "",
       category: item.category || "",
       tags: item.tags || [],
       manual_score: item.manual_score,
@@ -491,16 +494,16 @@ export default function TrendingPage() {
                         </Select>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="item_id" className="text-right">
+                        <Label htmlFor="product_id" className="text-right">
                           项目ID
                         </Label>
                         <Input
-                          id="item_id"
-                          value={formData.item_id}
+                          id="product_id"
+                          value={formData.product_id}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              item_id: e.target.value,
+                              product_id: e.target.value,
                             })}
                           className="col-span-3"
                         />
@@ -659,7 +662,7 @@ export default function TrendingPage() {
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">
-                            {item.name}
+                            {item.product_name}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline">
