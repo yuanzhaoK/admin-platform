@@ -17,29 +17,6 @@
       "outputCapture": "std"
     },
     {
-      "name": "🌐 Debug Proxy Server",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}/backend",
-      "runtimeExecutable": "deno",
-      "runtimeArgs": [
-        "run",
-        "--inspect-wait",
-        "--allow-all",
-        "--watch-hmr"
-      ],
-      "program": "proxy-server.ts",
-      "env": {
-        "POCKETBASE_URL": "http://localhost:8090",
-        "GRAPHQL_PORT": "8082",
-        "POCKETBASE_ADMIN_EMAIL": "ahukpyu@outlook.com",
-        "POCKETBASE_ADMIN_PASSWORD": "kpyu1512..@"
-      },
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "outputCapture": "std"
-    },
-    {
       "name": "💻 Debug Frontend (Next.js)",
       "type": "node",
       "request": "launch",
