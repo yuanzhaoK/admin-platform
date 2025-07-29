@@ -11,6 +11,7 @@ type PointsRecord implements BaseEntity {
   # 基础信息
   userId: String!
   username: String!
+  user: Member
   
   # 积分信息
   type: PointsType!
@@ -27,6 +28,8 @@ type PointsRecord implements BaseEntity {
   ruleId: String
   exchangeId: String
   relatedId: String
+  order: Order
+  rule: PointsRule
   
   # 时间信息
   earnedAt: Date

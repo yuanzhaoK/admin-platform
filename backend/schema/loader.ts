@@ -67,6 +67,7 @@ export function loadSchema(): string {
   }
 
   // 管理后台 schemas - 只加载实际存在的文件
+  // 注意: admin/points.graphql 已被会员模块的 member/points.graphql 替代，避免重复定义
   console.log('📂 加载管理后台schema...');
   const adminSchemas = [
     'admin/user.graphql',
@@ -79,6 +80,7 @@ export function loadSchema(): string {
     'admin/setting.graphql',
     'admin/advertisement.graphql',
     'admin/coupon.graphql',
+    // 'admin/points.graphql', // 已被会员模块替代
     'admin/recommendation.graphql',
     'admin/trending.graphql',
   ];

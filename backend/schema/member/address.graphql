@@ -1,6 +1,13 @@
 # 地址管理 GraphQL Schema
 # 包含收货地址、地址验证、区域管理等相关定义
 
+# ========================= 基础类型 =========================
+
+type Coordinates {
+  longitude: Float!
+  latitude: Float!
+}
+
 # ========================= 地址核心类型 =========================
 
 enum AddressVerificationStatus {
@@ -48,6 +55,7 @@ type Address implements BaseEntity {
   
   # 基础信息
   userId: String!
+  user: Member
   
   # 联系人信息
   name: String!
@@ -91,6 +99,10 @@ type Address implements BaseEntity {
   # 地址来源
   source: AddressSource!
   sourceDetails: String
+  
+  # 计算字段
+  fullAddress: String!
+  coordinates: Coordinates
   
   # 扩展字段
   customFields: JSON

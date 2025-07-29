@@ -8,8 +8,8 @@ scalar Upload
 
 # ===== 基础枚举 =====
 enum SortOrder {
-  asc
-  desc
+  ASC
+  DESC
 }
 
 enum Status {
@@ -36,7 +36,7 @@ type PaginationInput {
   page: Int = 1
   perPage: Int = 10
   sortBy: String
-  sortOrder: SortOrder = asc
+  sortOrder: SortOrder = ASC
 }
 
 type OperationResult {

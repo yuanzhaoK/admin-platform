@@ -18,14 +18,12 @@ async function readSchemaFile(path: string): Promise<string> {
 // 获取所有schema文件
 export async function getTypeDefs(): Promise<string> {
   const schemas: string[] = [];
-  
+   // 公共schema
+  const commonBaseSchema = await readSchemaFile(join(Deno.cwd(), 'schema', 'common','base.graphql'));
+  schemas.push(commonBaseSchema);
   // 基础schema - 使用会员模块的基础定义
   const baseSchema = await readSchemaFile(join(Deno.cwd(), 'schema', 'member', 'base.graphql'));
   schemas.push(baseSchema);
-  
-  // 公共schema
-  const commonBaseSchema = await readSchemaFile(join(Deno.cwd(), 'schema', 'common', 'base.graphql'));
-  schemas.push(commonBaseSchema);
   
   // 会员模块schema - 按依赖顺序加载
   const memberSchemas = [

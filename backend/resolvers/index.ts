@@ -9,6 +9,9 @@ import { adminResolvers } from './admin/index.ts';
 // 移动端 Resolvers  
 import { mobileResolvers } from './mobile/index.ts';
 
+// 会员模块 Resolvers
+import { memberModuleResolvers } from './member/index.ts';
+
 // 合并所有resolvers
 export const resolvers = {
   // 标量类型
@@ -54,20 +57,38 @@ export const resolvers = {
   },
 
   SortOrder: {
-    asc: 'asc',
-    desc: 'desc',
+    ASC: 'asc',
+    DESC: 'desc',
   },
 
-  // 查询resolvers - 合并管理后台和移动端
+  // 会员模块枚举解析器
+  ...memberModuleResolvers.Gender && { Gender: memberModuleResolvers.Gender },
+  ...memberModuleResolvers.MembershipStatus && { MembershipStatus: memberModuleResolvers.MembershipStatus },
+  ...memberModuleResolvers.PointsType && { PointsType: memberModuleResolvers.PointsType },
+  ...memberModuleResolvers.ExchangeType && { ExchangeType: memberModuleResolvers.ExchangeType },
+  ...memberModuleResolvers.ExchangeStatus && { ExchangeStatus: memberModuleResolvers.ExchangeStatus },
+  ...memberModuleResolvers.ExchangeRecordStatus && { ExchangeRecordStatus: memberModuleResolvers.ExchangeRecordStatus },
+  ...memberModuleResolvers.LoginType && { LoginType: memberModuleResolvers.LoginType },
+  ...memberModuleResolvers.ThirdPartyPlatform && { ThirdPartyPlatform: memberModuleResolvers.ThirdPartyPlatform },
+  ...memberModuleResolvers.VerificationStatus && { VerificationStatus: memberModuleResolvers.VerificationStatus },
+  ...memberModuleResolvers.TagType && { TagType: memberModuleResolvers.TagType },
+  ...memberModuleResolvers.NotificationType && { NotificationType: memberModuleResolvers.NotificationType },
+  ...memberModuleResolvers.ProfileVisibility && { ProfileVisibility: memberModuleResolvers.ProfileVisibility },
+  ...memberModuleResolvers.MemberRiskLevel && { MemberRiskLevel: memberModuleResolvers.MemberRiskLevel },
+  ...memberModuleResolvers.IdentityVerificationType && { IdentityVerificationType: memberModuleResolvers.IdentityVerificationType },
+
+  // 查询resolvers - 合并管理后台、移动端和会员模块
   Query: {
     ...adminResolvers.Query,
     ...mobileResolvers.Query,
+    // ...memberModuleResolvers.Query,
   },
 
-  // 变更resolvers - 合并管理后台和移动端
+  // 变更resolvers - 合并管理后台、移动端和会员模块
   Mutation: {
     ...adminResolvers.Mutation,
     ...mobileResolvers.Mutation,
+    // ...memberModuleResolvers.Mutation,
   },
 
   // 订阅resolvers
@@ -77,6 +98,14 @@ export const resolvers = {
 
   // 类型解析器 - 从管理后台继承
   ...(adminResolvers.ProductCategory && { ProductCategory: adminResolvers.ProductCategory }),
+  
+  // 会员模块类型解析器
+  ...memberModuleResolvers.Member && { Member: memberModuleResolvers.Member },
+  ...memberModuleResolvers.MemberLevel && { MemberLevel: memberModuleResolvers.MemberLevel },
+  ...memberModuleResolvers.PointsRecord && { PointsRecord: memberModuleResolvers.PointsRecord },
+  ...memberModuleResolvers.Address && { Address: memberModuleResolvers.Address },
+  ...memberModuleResolvers.MemberTag && { MemberTag: memberModuleResolvers.MemberTag },
+  ...memberModuleResolvers.MemberTagRelation && { MemberTagRelation: memberModuleResolvers.MemberTagRelation },
   
   // Product 关联字段解析器
   Product: {

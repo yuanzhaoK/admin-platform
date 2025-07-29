@@ -11,8 +11,8 @@ import { userResolvers } from './user.ts';
 // 营销管理模块 resolvers
 import { advertisementResolvers } from './advertisement.ts';
 import { couponResolvers } from './coupon.ts';
-import { memberResolvers } from './member.ts';
-import { pointsResolvers } from './points.ts';
+// import { memberResolvers } from './member.ts';
+// import { pointsResolvers } from './points.ts';
 import { recommendationResolvers } from './recommendation.ts';
 import { trendingResolvers } from './trending.ts';
 
@@ -29,9 +29,9 @@ export const adminResolvers = {
     ...settingResolvers.Query,
     ...userResolvers.Query,
     // 营销管理模块查询
-    ...memberResolvers.Query,
+    // ...memberResolvers.Query,
     ...couponResolvers.Query,
-    ...pointsResolvers.Query,
+    // ...pointsResolvers.Query,
     ...recommendationResolvers.Query,
     ...advertisementResolvers.Query,
     ...trendingResolvers.Query,
@@ -47,9 +47,9 @@ export const adminResolvers = {
     ...settingResolvers.Mutation,
     ...userResolvers.Mutation,
     // 营销管理模块变更
-    ...memberResolvers.Mutation,
+    // ...memberResolvers.Mutation,
     ...couponResolvers.Mutation,
-    ...pointsResolvers.Mutation,
+    // ...pointsResolvers.Mutation,
     ...recommendationResolvers.Mutation,
     ...advertisementResolvers.Mutation,
     ...trendingResolvers.Mutation,
