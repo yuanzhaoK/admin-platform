@@ -19,13 +19,29 @@ async function readSchemaFile(path: string): Promise<string> {
 export async function getTypeDefs(): Promise<string> {
   const schemas: string[] = [];
   
-  // 基础schema
-  const baseSchema = await readSchemaFile(join(Deno.cwd(), 'schema', 'base.graphql'));
+  // 基础schema - 使用会员模块的基础定义
+  const baseSchema = await readSchemaFile(join(Deno.cwd(), 'schema', 'member', 'base.graphql'));
   schemas.push(baseSchema);
   
   // 公共schema
-  const authSchema = await readSchemaFile(join(Deno.cwd(), 'schema', 'common', 'auth.graphql'));
-  schemas.push(authSchema);
+  const commonBaseSchema = await readSchemaFile(join(Deno.cwd(), 'schema', 'common', 'base.graphql'));
+  schemas.push(commonBaseSchema);
+  
+  // 会员模块schema - 按依赖顺序加载
+  const memberSchemas = [
+    'level.graphql',    // 会员等级（member.graphql 依赖）
+    'points.graphql',   // 积分系统（member.graphql 依赖）
+    'tags.graphql',     // 会员标签（member.graphql 依赖）
+    'address.graphql',  // 地址管理（独立模块）
+    'member.graphql',   // 会员核心（依赖上述所有模块）
+  ];
+  
+  for (const schema of memberSchemas) {
+    const content = await readSchemaFile(join(Deno.cwd(), 'schema', 'member', schema));
+    if (content) {
+      schemas.push(content);
+    }
+  }
   
   // 管理后台schema
   const adminSchemas = [
@@ -37,9 +53,7 @@ export async function getTypeDefs(): Promise<string> {
     'refund.graphql',
     'setting.graphql',
     'user.graphql',
-    'member.graphql',
     'coupon.graphql',
-    'points.graphql',
     'recommendation.graphql',
     'advertisement.graphql',
     'trending.graphql',
@@ -55,7 +69,6 @@ export async function getTypeDefs(): Promise<string> {
   // 移动端schema - 只包含移动端特有的类型
   const mobileSchemas = [
     'home.graphql',    // 先加载基础类型
-    'member.graphql',  // 再加载会员相关类型
     'app.graphql',     // 最后加载应用类型
   ];
   
@@ -93,7 +106,23 @@ export async function validateSchema(): Promise<boolean> {
       return false;
     }
     
-    console.log('✅ Schema验证通过');
+    // 检查会员模块的关键类型
+    const requiredTypes = [
+      'type Member',
+      'type MemberLevel', 
+      'type PointsRecord',
+      'type Address',
+      'type MemberTag'
+    ];
+    
+    for (const requiredType of requiredTypes) {
+      if (!typeDefs.includes(requiredType)) {
+        console.error(`❌ 缺少必要的类型定义: ${requiredType}`);
+        return false;
+      }
+    }
+    
+    console.log('✅ Schema验证通过，包含所有会员模块类型');
     return true;
   } catch (error) {
     console.error('❌ Schema验证失败:', error);

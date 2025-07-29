@@ -1,0 +1,618 @@
+# 地址管理 GraphQL Schema
+# 包含收货地址、地址验证、区域管理等相关定义
+
+# ========================= 地址核心类型 =========================
+
+enum AddressVerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum AddressVerificationMethod {
+  AUTO
+  MANUAL
+  THIRD_PARTY
+}
+
+enum AddressSource {
+  MANUAL
+  LOCATION
+  IMPORT
+  THIRD_PARTY
+}
+
+enum AddressUsageType {
+  ORDER
+  SHIPPING
+  BILLING
+  OTHER
+}
+
+enum AddressUsageResult {
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+enum AddressTemplateType {
+  SYSTEM
+  CUSTOM
+  POPULAR
+}
+
+type Address implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  userId: String!
+  
+  # 联系人信息
+  name: String!
+  phone: String!
+  email: String
+  
+  # 地址信息
+  province: String!
+  city: String!
+  district: String!
+  street: String
+  address: String!
+  detailAddress: String
+  postalCode: String
+  
+  # 地理位置
+  longitude: Float
+  latitude: Float
+  locationAccuracy: Float
+  
+  # 地址标签
+  tag: String
+  tagColor: String
+  
+  # 地址状态
+  isDefault: Boolean!
+  isActive: Boolean!
+  isVerified: Boolean!
+  
+  # 验证信息
+  verificationStatus: AddressVerificationStatus!
+  verificationMethod: AddressVerificationMethod
+  verificationTime: Date
+  verificationDetails: String
+  
+  # 使用统计
+  usageCount: Int!
+  lastUsedAt: Date
+  orderCount: Int!
+  
+  # 地址来源
+  source: AddressSource!
+  sourceDetails: String
+  
+  # 扩展字段
+  customFields: JSON
+  metadata: JSON
+}
+
+type AddressTemplate implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  name: String!
+  description: String
+  
+  # 模板内容
+  template: JSON!
+  
+  # 模板类型
+  type: AddressTemplateType!
+  category: String!
+  
+  # 使用统计
+  usageCount: Int!
+  popularityScore: Float!
+  
+  # 状态
+  isActive: Boolean!
+  isPublic: Boolean!
+  
+  # 创建者
+  createdBy: String
+  
+  # 扩展字段
+  metadata: JSON
+}
+
+type AddressValidationDetail {
+  provinceValid: Boolean!
+  cityValid: Boolean!
+  districtValid: Boolean!
+  streetValid: Boolean
+  postalCodeValid: Boolean
+  coordinatesValid: Boolean
+}
+
+type AddressValidationSuggestion {
+  field: String!
+  originalValue: String!
+  suggestedValue: String!
+  confidence: Float!
+  reason: String!
+}
+
+type AddressValidationResult {
+  isValid: Boolean!
+  confidence: Float!
+  details: AddressValidationDetail!
+  suggestions: [AddressValidationSuggestion!]
+  standardizedAddress: JSON
+  errors: [String!]!
+  warnings: [String!]!
+  validationMethod: String!
+  validationTime: Date!
+  provider: String
+}
+
+type Region implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  code: String!
+  name: String!
+  fullName: String!
+  shortName: String
+  englishName: String
+  
+  # 层级信息
+  level: Int!
+  parentId: String
+  parentPath: String!
+  
+  # 地理信息
+  longitude: Float
+  latitude: Float
+  boundaryData: JSON
+  
+  # 状态信息
+  isActive: Boolean!
+  isHot: Boolean!
+  
+  # 排序
+  sortOrder: Int!
+  
+  # 扩展信息
+  metadata: JSON
+}
+
+type RegionTree {
+  id: ID!
+  code: String!
+  name: String!
+  fullName: String!
+  level: Int!
+  parentId: String
+  isActive: Boolean!
+  isHot: Boolean!
+  children: [RegionTree!]
+  hasChildren: Boolean!
+  childrenCount: Int!
+}
+
+type AddressUsageRecord implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  addressId: String!
+  userId: String!
+  
+  # 使用信息
+  usageType: AddressUsageType!
+  orderId: String
+  
+  # 使用时的地址快照
+  addressSnapshot: JSON!
+  
+  # 使用结果
+  result: AddressUsageResult!
+  resultDetails: String
+  
+  # 扩展字段
+  metadata: JSON
+}
+
+# ========================= 分页响应类型 =========================
+
+type AddressesResponse {
+  items: [Address!]!
+  pagination: PaginationInfo!
+  stats: AddressesStats
+  regions: [AddressRegionStat!]
+}
+
+type AddressesStats {
+  totalAddresses: Int!
+  defaultAddresses: Int!
+  verifiedAddresses: Int!
+  totalUsers: Int!
+  averageAddressesPerUser: Float!
+}
+
+type AddressRegionStat {
+  region: String!
+  count: Int!
+  percentage: Float!
+}
+
+type AddressTemplatesResponse {
+  items: [AddressTemplate!]!
+  pagination: PaginationInfo!
+  stats: AddressTemplatesStats
+  categories: [AddressTemplateCategoryStat!]
+}
+
+type AddressTemplatesStats {
+  totalTemplates: Int!
+  systemTemplates: Int!
+  customTemplates: Int!
+  popularTemplates: Int!
+  totalUsage: Int!
+}
+
+type AddressTemplateCategoryStat {
+  category: String!
+  count: Int!
+  totalUsage: Int!
+}
+
+type RegionsResponse {
+  items: [Region!]!
+  pagination: PaginationInfo!
+  stats: RegionsStats
+  tree: [RegionTree!]
+}
+
+type RegionsStats {
+  totalRegions: Int!
+  activeRegions: Int!
+  hotRegions: Int!
+  maxLevel: Int!
+}
+
+type AddressUsageRecordsResponse {
+  items: [AddressUsageRecord!]!
+  pagination: PaginationInfo!
+  stats: AddressUsageRecordsStats
+}
+
+type AddressUsageRecordsStats {
+  totalRecords: Int!
+  successfulUsage: Int!
+  failedUsage: Int!
+  averageUsagePerAddress: Float!
+}
+
+# ========================= 统计类型 =========================
+
+type AddressStatsResponse {
+  overview: AddressOverview!
+  regionDistribution: [AddressRegionDistribution!]!
+  tagDistribution: [AddressTagDistribution!]!
+  usageAnalysis: [AddressUsageAnalysis!]!
+  qualityMetrics: AddressQualityMetrics!
+}
+
+type AddressOverview {
+  totalAddresses: Int!
+  totalUsers: Int!
+  verifiedAddresses: Int!
+  defaultAddresses: Int!
+  averageAddressesPerUser: Float!
+  totalUsage: Int!
+}
+
+type AddressRegionDistribution {
+  province: String!
+  city: String
+  district: String
+  addressCount: Int!
+  userCount: Int!
+  percentage: Float!
+  usageCount: Int!
+}
+
+type AddressTagDistribution {
+  tag: String!
+  count: Int!
+  percentage: Float!
+  usageRate: Float!
+}
+
+type AddressUsageAnalysis {
+  date: Date!
+  newAddresses: Int!
+  totalUsage: Int!
+  uniqueUsers: Int!
+  verificationRate: Float!
+}
+
+type AddressQualityMetrics {
+  verificationRate: Float!
+  standardFormatRate: Float!
+  duplicateRate: Float!
+  coordinateAccuracy: Float!
+  userSatisfactionScore: Float!
+}
+
+type AddressImportResult {
+  success: Boolean!
+  total: Int!
+  successful: Int!
+  failed: Int!
+  duplicates: Int!
+  
+  errors: [AddressImportError!]!
+  summary: AddressImportSummary!
+  validationResults: [AddressValidationResult!]
+}
+
+type AddressImportError {
+  row: Int!
+  address: JSON!
+  error: String!
+  suggestions: [String!]
+}
+
+type AddressImportSummary {
+  newAddresses: Int!
+  updatedAddresses: Int!
+  skippedAddresses: Int!
+  validatedAddresses: Int!
+}
+
+# ========================= 输入类型 =========================
+
+input NearbyLocationInput {
+  longitude: Float!
+  latitude: Float!
+  radius: Int!
+}
+
+input AddressQueryInput {
+  userId: [String!]
+  name: String
+  phone: String
+  province: [String!]
+  city: [String!]
+  district: [String!]
+  tag: [String!]
+  isDefault: Boolean
+  isActive: Boolean
+  isVerified: Boolean
+  verificationStatus: AddressVerificationStatus
+  usageCountMin: Int
+  usageCountMax: Int
+  lastUsedDateRange: DateRangeInput
+  source: AddressSource
+  nearbyLocation: NearbyLocationInput
+  includeUser: Boolean
+  includeUsageStats: Boolean
+  includeValidationInfo: Boolean
+  pagination: PaginationInput
+}
+
+input AddressTemplateQueryInput {
+  search: String
+  name: String
+  type: AddressTemplateType
+  category: [String!]
+  isActive: Boolean
+  isPublic: Boolean
+  createdBy: String
+  usageCountMin: Int
+  usageCountMax: Int
+  popularityScoreMin: Float
+  popularityScoreMax: Float
+  pagination: PaginationInput
+}
+
+input RegionQueryInput {
+  search: String
+  code: String
+  name: String
+  level: [Int!]
+  parentId: String
+  isActive: Boolean
+  isHot: Boolean
+  includeChildren: Boolean
+  includeParents: Boolean
+  maxDepth: Int
+  pagination: PaginationInput
+}
+
+input AddressUsageRecordQueryInput {
+  addressId: [String!]
+  userId: [String!]
+  usageType: AddressUsageType
+  orderId: String
+  result: AddressUsageResult
+  dateRange: DateRangeInput
+  includeAddress: Boolean
+  includeUser: Boolean
+  includeOrder: Boolean
+  pagination: PaginationInput
+}
+
+input AddressCreateInput {
+  name: String!
+  phone: String!
+  email: String
+  province: String!
+  city: String!
+  district: String!
+  street: String
+  address: String!
+  detailAddress: String
+  postalCode: String
+  longitude: Float
+  latitude: Float
+  tag: String
+  tagColor: String
+  isDefault: Boolean
+  isActive: Boolean
+  source: AddressSource
+  sourceDetails: String
+  customFields: JSON
+  metadata: JSON
+}
+
+input AddressUpdateInput {
+  name: String
+  phone: String
+  email: String
+  province: String
+  city: String
+  district: String
+  street: String
+  address: String
+  detailAddress: String
+  postalCode: String
+  longitude: Float
+  latitude: Float
+  tag: String
+  tagColor: String
+  isDefault: Boolean
+  isActive: Boolean
+  customFields: JSON
+  metadata: JSON
+}
+
+input AddressValidationInput {
+  province: String!
+  city: String!
+  district: String!
+  street: String
+  address: String!
+  postalCode: String
+  longitude: Float
+  latitude: Float
+  validateCoordinates: Boolean
+  validatePostalCode: Boolean
+  validateStructure: Boolean
+  getSuggestions: Boolean
+  standardize: Boolean
+}
+
+input AddressTemplateCreateInput {
+  name: String!
+  description: String
+  template: JSON!
+  type: AddressTemplateType!
+  category: String!
+  isActive: Boolean
+  isPublic: Boolean
+  metadata: JSON
+}
+
+input AddressTemplateUpdateInput {
+  name: String
+  description: String
+  template: JSON
+  type: AddressTemplateType
+  category: String
+  isActive: Boolean
+  isPublic: Boolean
+  metadata: JSON
+}
+
+input AddressImportOptionsInput {
+  skipDuplicates: Boolean
+  validateAddresses: Boolean
+  setAsDefault: Boolean
+  source: String
+}
+
+input AddressImportInput {
+  addresses: [JSON!]!
+  options: AddressImportOptionsInput
+}
+
+# ========================= Query & Mutation =========================
+
+extend type Query {
+  # 地址查询
+  addresses(query: AddressQueryInput!): AddressesResponse!
+  address(id: ID!): Address
+  userAddresses(userId: String!): [Address!]!
+  defaultAddress(userId: String!): Address
+  
+  # 地址模板查询
+  addressTemplates(query: AddressTemplateQueryInput!): AddressTemplatesResponse!
+  addressTemplate(id: ID!): AddressTemplate
+  popularTemplates(limit: Int): [AddressTemplate!]!
+  
+  # 地区查询
+  regions(query: RegionQueryInput!): RegionsResponse!
+  region(id: ID!): Region
+  regionByCode(code: String!): Region
+  regionTree(parentId: String, maxDepth: Int): [RegionTree!]!
+  searchRegions(keyword: String!): [Region!]!
+  
+  # 地址使用记录查询
+  addressUsageRecords(query: AddressUsageRecordQueryInput!): AddressUsageRecordsResponse!
+  addressUsageStats(addressId: String!): JSON
+  
+  # 统计分析
+  addressStats(dateRange: DateRangeInput): AddressStatsResponse!
+  regionStats(regionId: String): JSON
+  userAddressProfile(userId: String!): JSON
+  
+  # 地址搜索
+  searchAddresses(query: String!, options: JSON): [Address!]!
+  searchNearbyAddresses(longitude: Float!, latitude: Float!, radius: Int!): [Address!]!
+  findSimilarAddresses(addressId: String!, threshold: Float): [Address!]!
+}
+
+extend type Mutation {
+  # 地址CRUD
+  createAddress(userId: String!, input: AddressCreateInput!): Address!
+  updateAddress(id: ID!, input: AddressUpdateInput!): Address!
+  deleteAddress(id: ID!): Boolean!
+  
+  # 默认地址管理
+  setDefaultAddress(userId: String!, addressId: String!): Boolean!
+  clearDefaultAddress(userId: String!): Boolean!
+  
+  # 地址验证
+  validateAddress(input: AddressValidationInput!): AddressValidationResult!
+  batchValidateAddresses(inputs: [AddressValidationInput!]!): [AddressValidationResult!]!
+  standardizeAddress(address: JSON!): JSON!
+  
+  # 地址模板管理
+  createAddressTemplate(input: AddressTemplateCreateInput!): AddressTemplate!
+  updateAddressTemplate(id: ID!, input: AddressTemplateUpdateInput!): AddressTemplate!
+  deleteAddressTemplate(id: ID!): Boolean!
+  
+  # 地址使用记录
+  recordAddressUsage(addressId: String!, usageType: AddressUsageType!, options: JSON): AddressUsageRecord!
+  
+  # 批量操作
+  batchCreateAddresses(addresses: [JSON!]!): JSON!
+  batchUpdateAddresses(updates: [JSON!]!): JSON!
+  batchDeleteAddresses(ids: [ID!]!): JSON!
+  
+  # 导入导出
+  importAddresses(input: AddressImportInput!): AddressImportResult!
+  
+  # 地址清理
+  cleanupDuplicateAddresses(userId: String): JSON!
+  cleanupInvalidAddresses: JSON!
+  updateAddressCoordinates(addressId: String!): Boolean!
+}

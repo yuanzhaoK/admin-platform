@@ -1,6 +1,5 @@
 # 认证 GraphQL Schema
 # 用户认证相关的类型定义
-
 # ===== 认证枚举 =====
 enum AuthProvider {
   email

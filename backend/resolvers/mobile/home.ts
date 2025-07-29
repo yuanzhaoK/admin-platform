@@ -5,7 +5,7 @@ import { HomeBanner } from '../../types/home.ts';
 export const homeResolvers = {
   Query: {
      // 首页数据
-     appHomeData: async (_parent: any, _args: any, context: any) => {
+    appHomeData: async (_parent: any, _args: any, context: any) => {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();

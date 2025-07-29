@@ -1,0 +1,480 @@
+# 会员等级 GraphQL Schema
+# 包含会员等级、权益、升级规则、保级规则等相关定义
+
+# ========================= 会员等级核心类型 =========================
+
+enum LevelBenefitType {
+  DISCOUNT
+  FREE_SHIPPING
+  PRIVILEGE
+  SERVICE
+  POINTS
+  CUSTOM
+}
+
+enum LevelUpgradeConditionType {
+  POINTS
+  AMOUNT
+  ORDERS
+  DURATION
+  CUSTOM
+}
+
+enum LevelUpgradeConditionOperator {
+  GTE
+  GT
+  EQ
+  BETWEEN
+}
+
+enum LevelMaintenancePeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum LevelUpgradeType {
+  AUTO
+  MANUAL
+  ADMIN
+}
+
+enum LevelDowngradeType {
+  AUTO
+  MAINTENANCE
+  ADMIN
+}
+
+enum LevelMaintenanceStatus {
+  SAFE
+  WARNING
+  DANGER
+  EXPIRED
+}
+
+type LevelBenefit {
+  id: ID!
+  type: LevelBenefitType!
+  name: String!
+  description: String!
+  value: Float
+  condition: String
+  icon: String
+  isActive: Boolean!
+}
+
+type LevelUpgradeCondition {
+  type: LevelUpgradeConditionType!
+  operator: LevelUpgradeConditionOperator!
+  value: Float!
+  valueMax: Float
+  description: String!
+  weight: Float
+}
+
+type LevelMaintenanceRule {
+  enabled: Boolean!
+  period: LevelMaintenancePeriod!
+  conditions: [LevelUpgradeCondition!]!
+  downgradeToLevelId: String
+  gracePeriod: Int
+  notificationDays: [Int!]
+}
+
+type MemberLevel implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  name: String!
+  displayName: String!
+  description: String
+  slogan: String
+  
+  # 视觉设计
+  icon: String
+  color: String!
+  backgroundColor: String
+  badgeImage: String
+  
+  # 等级设置
+  level: Int!
+  sortOrder: Int!
+  isActive: Boolean!
+  isDefault: Boolean!
+  
+  # 升级条件
+  upgradeConditions: [LevelUpgradeCondition!]!
+  pointsRequired: Int!
+  
+  # 等级权益
+  benefits: [LevelBenefit!]!
+  discountRate: Float!
+  pointsRate: Float!
+  freeShippingThreshold: Float!
+  
+  # 保级规则
+  maintenanceRule: LevelMaintenanceRule!
+  
+  # 统计信息
+  memberCount: Int!
+  averageOrderValue: Float!
+  totalRevenue: Float!
+  
+  # 业务规则
+  maxValidityDays: Int
+  allowDowngrade: Boolean!
+  autoUpgrade: Boolean!
+  
+  # 扩展字段
+  customBenefits: JSON
+  businessRules: JSON
+  metadata: JSON
+}
+
+type LevelUpgradeCheckCondition {
+  condition: LevelUpgradeCondition!
+  currentValue: Float!
+  requiredValue: Float!
+  satisfied: Boolean!
+  progress: Float!
+}
+
+type LevelUpgradeNextMilestone {
+  levelId: String!
+  levelName: String!
+  requirements: [LevelUpgradeRequirement!]!
+}
+
+type LevelUpgradeRequirement {
+  type: String!
+  description: String!
+  currentValue: Float!
+  requiredValue: Float!
+  remaining: Float!
+}
+
+type LevelUpgradeCheckResult {
+  canUpgrade: Boolean!
+  targetLevelId: String
+  targetLevel: MemberLevel
+  currentConditions: [LevelUpgradeCheckCondition!]!
+  nextMilestone: LevelUpgradeNextMilestone
+}
+
+type LevelUpgradeHistoryCondition {
+  type: String!
+  value: Float!
+  satisfied: Boolean!
+}
+
+type LevelUpgradeHistorySnapshot {
+  points: Int!
+  totalOrders: Int!
+  totalAmount: Float!
+}
+
+type LevelUpgradeHistory implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  memberId: String!
+  username: String!
+  fromLevelId: String!
+  fromLevelName: String!
+  toLevelId: String!
+  toLevelName: String!
+  upgradeType: LevelUpgradeType!
+  reason: String!
+  conditions: [LevelUpgradeHistoryCondition!]!
+  operatorId: String
+  operatorName: String
+  upgradeTime: Date!
+  
+  # 升级前后的数据快照
+  beforeSnapshot: LevelUpgradeHistorySnapshot!
+  afterSnapshot: LevelUpgradeHistorySnapshot!
+}
+
+type LevelMaintenanceCheckCondition {
+  condition: LevelUpgradeCondition!
+  currentValue: Float!
+  requiredValue: Float!
+  satisfied: Boolean!
+  timeRemaining: Int!
+}
+
+type LevelMaintenanceCheckResult {
+  needsAttention: Boolean!
+  currentLevel: MemberLevel!
+  maintenanceStatus: LevelMaintenanceStatus!
+  nextCheckDate: Date!
+  conditions: [LevelMaintenanceCheckCondition!]!
+  recommendations: [String!]
+  possibleDowngradeLevel: MemberLevel
+}
+
+# ========================= 分页响应类型 =========================
+
+type MemberLevelsResponse {
+  items: [MemberLevel!]!
+  pagination: PaginationInfo!
+  stats: MemberLevelsStats
+}
+
+type MemberLevelsStats {
+  totalLevels: Int!
+  activeLevels: Int!
+  totalMembers: Int!
+  averageLevel: Float!
+}
+
+type LevelUpgradeHistoriesResponse {
+  items: [LevelUpgradeHistory!]!
+  pagination: PaginationInfo!
+  stats: LevelUpgradeHistoriesStats
+}
+
+type LevelUpgradeHistoriesStats {
+  totalUpgrades: Int!
+  autoUpgrades: Int!
+  manualUpgrades: Int!
+  adminUpgrades: Int!
+}
+
+# ========================= 统计类型 =========================
+
+type MemberLevelStatsResponse {
+  overview: MemberLevelOverview!
+  distribution: [MemberLevelDistribution!]!
+  upgradeTrend: [LevelUpgradeTrend!]!
+  benefitUsage: [LevelBenefitUsage!]!
+  revenueImpact: [LevelRevenueImpact!]!
+}
+
+type MemberLevelOverview {
+  totalLevels: Int!
+  activeLevels: Int!
+  totalMembers: Int!
+  averageUpgradeTime: Float!
+}
+
+type MemberLevelDistribution {
+  levelId: String!
+  levelName: String!
+  memberCount: Int!
+  percentage: Float!
+  averageOrderValue: Float!
+  totalRevenue: Float!
+}
+
+type LevelUpgradeTrend {
+  date: Date!
+  upgrades: Int!
+  downgrades: Int!
+  netChange: Int!
+}
+
+type LevelBenefitUsage {
+  benefitType: String!
+  benefitName: String!
+  usageCount: Int!
+  savings: Float!
+}
+
+type LevelRevenueImpact {
+  levelId: String!
+  levelName: String!
+  revenue: Float!
+  orderCount: Int!
+  avgOrderValue: Float!
+  discountAmount: Float!
+  netRevenue: Float!
+}
+
+# ========================= 输入类型 =========================
+
+input MemberLevelQueryInput {
+  search: String
+  name: String
+  level: Int
+  levelMin: Int
+  levelMax: Int
+  isActive: Boolean
+  isDefault: Boolean
+  pointsRequiredMin: Int
+  pointsRequiredMax: Int
+  discountRateMin: Float
+  discountRateMax: Float
+  memberCountMin: Int
+  memberCountMax: Int
+  includeBenefits: Boolean
+  includeStats: Boolean
+  includeMemberCount: Boolean
+  pagination: PaginationInput
+}
+
+input LevelUpgradeHistoryQueryInput {
+  memberId: String
+  fromLevelId: String
+  toLevelId: String
+  upgradeType: LevelUpgradeType
+  dateRange: DateRangeInput
+  operatorId: String
+  pagination: PaginationInput
+}
+
+input LevelBenefitInput {
+  type: LevelBenefitType!
+  name: String!
+  description: String!
+  value: Float
+  condition: String
+  icon: String
+  isActive: Boolean
+}
+
+input LevelUpgradeConditionInput {
+  type: LevelUpgradeConditionType!
+  operator: LevelUpgradeConditionOperator!
+  value: Float!
+  valueMax: Float
+  description: String!
+  weight: Float
+}
+
+input LevelMaintenanceRuleInput {
+  enabled: Boolean!
+  period: LevelMaintenancePeriod!
+  conditions: [LevelUpgradeConditionInput!]!
+  downgradeToLevelId: String
+  gracePeriod: Int
+  notificationDays: [Int!]
+}
+
+input MemberLevelCreateInput {
+  name: String!
+  displayName: String!
+  description: String
+  slogan: String
+  icon: String
+  color: String!
+  backgroundColor: String
+  badgeImage: String
+  level: Int!
+  sortOrder: Int!
+  isActive: Boolean
+  isDefault: Boolean
+  upgradeConditions: [LevelUpgradeConditionInput!]!
+  pointsRequired: Int!
+  benefits: [LevelBenefitInput!]
+  discountRate: Float!
+  pointsRate: Float
+  freeShippingThreshold: Float
+  maintenanceRule: LevelMaintenanceRuleInput
+  maxValidityDays: Int
+  allowDowngrade: Boolean
+  autoUpgrade: Boolean
+  customBenefits: JSON
+  businessRules: JSON
+}
+
+input MemberLevelUpdateInput {
+  name: String
+  displayName: String
+  description: String
+  slogan: String
+  icon: String
+  color: String
+  backgroundColor: String
+  badgeImage: String
+  level: Int
+  sortOrder: Int
+  isActive: Boolean
+  isDefault: Boolean
+  upgradeConditions: [LevelUpgradeConditionInput!]
+  pointsRequired: Int
+  benefits: [LevelBenefitInput!]
+  discountRate: Float
+  pointsRate: Float
+  freeShippingThreshold: Float
+  maintenanceRule: LevelMaintenanceRuleInput
+  maxValidityDays: Int
+  allowDowngrade: Boolean
+  autoUpgrade: Boolean
+  customBenefits: JSON
+  businessRules: JSON
+}
+
+input LevelBenefitCreateInput {
+  levelId: String!
+  benefit: LevelBenefitInput!
+}
+
+input LevelBenefitUpdateInput {
+  levelId: String!
+  benefitId: String!
+  benefit: LevelBenefitInput!
+}
+
+# ========================= Query & Mutation =========================
+
+extend type Query {
+  # 会员等级查询
+  memberLevels(query: MemberLevelQueryInput!): MemberLevelsResponse!
+  memberLevel(id: ID!): MemberLevel
+  memberLevelByName(name: String!): MemberLevel
+  memberLevelByLevel(level: Int!): MemberLevel
+  allMemberLevels: [MemberLevel!]!
+  activeMemberLevels: [MemberLevel!]!
+  defaultMemberLevel: MemberLevel
+  
+  # 升级逻辑
+  checkUpgradeEligibility(memberId: String!): LevelUpgradeCheckResult!
+  batchUpgradeCheck: [JSON!]!
+  
+  # 保级逻辑
+  checkMaintenance(memberId: String!): LevelMaintenanceCheckResult!
+  processMaintenance: [JSON!]!
+  
+  # 升级历史
+  levelUpgradeHistories(query: LevelUpgradeHistoryQueryInput!): LevelUpgradeHistoriesResponse!
+  memberUpgradeHistory(memberId: String!): [LevelUpgradeHistory!]!
+  
+  # 统计分析
+  memberLevelStats(dateRange: DateRangeInput): MemberLevelStatsResponse!
+  levelPerformance(levelId: String!): JSON
+  
+  # 权益管理
+  levelBenefits(levelId: String!): [LevelBenefit!]!
+}
+
+extend type Mutation {
+  # 基础CRUD
+  createMemberLevel(input: MemberLevelCreateInput!): MemberLevel!
+  updateMemberLevel(id: ID!, input: MemberLevelUpdateInput!): MemberLevel!
+  deleteMemberLevel(id: ID!): Boolean!
+  
+  # 等级管理
+  activateMemberLevel(id: ID!): Boolean!
+  deactivateMemberLevel(id: ID!): Boolean!
+  setDefaultMemberLevel(id: ID!): Boolean!
+  reorderMemberLevels(levelIds: [ID!]!): Boolean!
+  
+  # 升级逻辑
+  upgradeToLevel(memberId: String!, levelId: String!, reason: String): Boolean!
+  autoUpgradeCheck(memberId: String!): Boolean!
+  
+  # 权益管理
+  addBenefit(input: LevelBenefitCreateInput!): LevelBenefit!
+  updateBenefit(input: LevelBenefitUpdateInput!): LevelBenefit!
+  removeBenefit(levelId: String!, benefitId: String!): Boolean!
+  
+  # 业务逻辑
+  calculateDiscount(memberId: String!, originalPrice: Float!): Float!
+  calculatePointsRate(memberId: String!): Float!
+  checkFreeShipping(memberId: String!, orderAmount: Float!): Boolean!
+  validateBenefitUsage(memberId: String!, benefitType: String!): Boolean!
+} 

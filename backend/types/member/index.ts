@@ -32,7 +32,7 @@ export type {
 // 枚举类型别名
 export {
   Gender,
-  MemberStatus,
+  MembershipStatus,
   PointsType,
   ExchangeType,
   ExchangeStatus,
@@ -189,10 +189,10 @@ export type {
  */
 export function isMember(obj: any): boolean {
   return obj && 
-         typeof obj.id === 'string' && 
-         typeof obj.profile === 'object' &&
-         typeof obj.level === 'object' &&
-         typeof obj.points === 'number';
+        typeof obj.id === 'string' && 
+        typeof obj.profile === 'object' &&
+        typeof obj.level === 'object' &&
+        typeof obj.points === 'number';
 }
 
 /**
@@ -200,10 +200,10 @@ export function isMember(obj: any): boolean {
  */
 export function isMemberLevel(obj: any): boolean {
   return obj && 
-         typeof obj.id === 'string' && 
-         typeof obj.name === 'string' &&
-         typeof obj.pointsRequired === 'number' &&
-         typeof obj.discountRate === 'number';
+        typeof obj.id === 'string' && 
+        typeof obj.name === 'string' &&
+        typeof obj.pointsRequired === 'number' &&
+        typeof obj.discountRate === 'number';
 }
 
 /**
@@ -211,10 +211,10 @@ export function isMemberLevel(obj: any): boolean {
  */
 export function isPointsRecord(obj: any): boolean {
   return obj && 
-         typeof obj.id === 'string' && 
-         typeof obj.userId === 'string' &&
-         typeof obj.points === 'number' &&
-         typeof obj.type === 'string';
+        typeof obj.id === 'string' && 
+        typeof obj.userId === 'string' &&
+        typeof obj.points === 'number' &&
+        typeof obj.type === 'string';
 }
 
 /**
@@ -222,11 +222,11 @@ export function isPointsRecord(obj: any): boolean {
  */
 export function isAddress(obj: any): boolean {
   return obj && 
-         typeof obj.id === 'string' && 
-         typeof obj.userId === 'string' &&
-         typeof obj.name === 'string' &&
-         typeof obj.phone === 'string' &&
-         typeof obj.address === 'string';
+        typeof obj.id === 'string' && 
+        typeof obj.userId === 'string' &&
+        typeof obj.name === 'string' &&
+        typeof obj.phone === 'string' &&
+        typeof obj.address === 'string';
 }
 
 /**
@@ -234,9 +234,9 @@ export function isAddress(obj: any): boolean {
  */
 export function isMemberTag(obj: any): boolean {
   return obj && 
-         typeof obj.id === 'string' && 
-         typeof obj.name === 'string' &&
-         typeof obj.type === 'string';
+        typeof obj.id === 'string' && 
+        typeof obj.name === 'string' &&
+        typeof obj.type === 'string';
 }
 
 // ========================= 枚举值数组 =========================

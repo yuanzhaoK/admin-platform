@@ -1,0 +1,576 @@
+# 会员标签 GraphQL Schema
+# 包含会员标签、分组、行为标记、自动规则等相关定义
+
+# ========================= 会员标签核心类型 =========================
+
+enum TagRuleType {
+  BEHAVIOR
+  DEMOGRAPHIC
+  TRANSACTION
+  CUSTOM
+}
+
+enum TagAssignedBy {
+  SYSTEM
+  ADMIN
+  API
+  IMPORT
+}
+
+enum TagRecommendationType {
+  PRODUCT
+  OFFER
+  CONTENT
+  SERVICE
+}
+
+enum TagRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TagRuleConditionOperator {
+  EQ
+  NE
+  GT
+  GTE
+  LT
+  LTE
+  IN
+  NIN
+  LIKE
+  BETWEEN
+  EXISTS
+}
+
+type TagRule {
+  id: ID!
+  type: TagRuleType!
+  condition: String!
+  params: JSON!
+  description: String!
+  isActive: Boolean!
+}
+
+type MemberTag implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  name: String!
+  displayName: String!
+  description: String
+  
+  # 标签类型和分类
+  type: TagType!
+  category: String!
+  subcategory: String
+  
+  # 视觉设计
+  color: String!
+  backgroundColor: String
+  icon: String
+  
+  # 标签属性
+  priority: Int!
+  isSystem: Boolean!
+  isAutoAssigned: Boolean!
+  isVisible: Boolean!
+  isActive: Boolean!
+  
+  # 自动标记规则
+  autoRules: [TagRule!]!
+  
+  # 统计信息
+  memberCount: Int!
+  usageCount: Int!
+  
+  # 业务价值
+  businessValue: Float
+  conversionRate: Float
+  averageOrderValue: Float
+  
+  # 生命周期
+  validityPeriod: Int
+  lastUpdated: Date!
+  
+  # 扩展字段
+  metadata: JSON
+  customProperties: JSON
+}
+
+type MemberTagRelation implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  memberId: String!
+  tagId: String!
+  tag: MemberTag!
+  
+  # 分配信息
+  assignedBy: TagAssignedBy!
+  assignedByUserId: String
+  assignedReason: String
+  assignedSource: String
+  
+  # 时间信息
+  assignedAt: Date!
+  expiresAt: Date
+  lastUpdated: Date!
+  
+  # 标签值（用于参数化标签）
+  value: String
+  properties: JSON
+  
+  # 状态
+  isActive: Boolean!
+  confidence: Float
+}
+
+type TagGroup implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  name: String!
+  displayName: String!
+  description: String
+  color: String!
+  icon: String
+  
+  # 分组属性
+  priority: Int!
+  isSystem: Boolean!
+  isActive: Boolean!
+  
+  # 标签列表
+  tags: [MemberTag!]!
+  tagCount: Int!
+  
+  # 业务规则
+  maxTagsPerMember: Int
+  exclusiveMode: Boolean
+  
+  # 统计信息
+  memberCount: Int!
+  
+  # 扩展字段
+  metadata: JSON
+}
+
+# ========================= 分页响应类型 =========================
+
+type MemberTagsResponse {
+  items: [MemberTag!]!
+  pagination: PaginationInfo!
+  stats: MemberTagsStats
+  categories: [MemberTagCategory!]
+}
+
+type MemberTagsStats {
+  totalTags: Int!
+  systemTags: Int!
+  customTags: Int!
+  autoAssignedTags: Int!
+  totalMembers: Int!
+  averageTagsPerMember: Float!
+}
+
+type MemberTagCategory {
+  category: String!
+  count: Int!
+  subcategories: [MemberTagSubcategory!]
+}
+
+type MemberTagSubcategory {
+  subcategory: String!
+  count: Int!
+}
+
+type MemberTagRelationsResponse {
+  items: [MemberTagRelation!]!
+  pagination: PaginationInfo!
+  stats: MemberTagRelationsStats
+}
+
+type MemberTagRelationsStats {
+  totalRelations: Int!
+  activeRelations: Int!
+  systemAssigned: Int!
+  manualAssigned: Int!
+  averageConfidence: Float!
+}
+
+type TagGroupsResponse {
+  items: [TagGroup!]!
+  pagination: PaginationInfo!
+  stats: TagGroupsStats
+}
+
+type TagGroupsStats {
+  totalGroups: Int!
+  systemGroups: Int!
+  customGroups: Int!
+  totalTags: Int!
+  averageTagsPerGroup: Float!
+}
+
+# ========================= 分析类型 =========================
+
+type TagAnalysisResponse {
+  overview: TagAnalysisOverview!
+  categoryDistribution: [TagCategoryDistribution!]!
+  tagPerformance: [TagPerformance!]!
+  memberSegmentation: [TagMemberSegmentation!]!
+  trendAnalysis: [TagTrendAnalysis!]!
+  recommendations: [TagRecommendation!]!
+}
+
+type TagAnalysisOverview {
+  totalTags: Int!
+  totalRelations: Int!
+  averageTagsPerMember: Float!
+  mostUsedTags: [TagUsageItem!]!
+}
+
+type TagUsageItem {
+  tagId: String!
+  tagName: String!
+  memberCount: Int!
+  usageRate: Float!
+}
+
+type TagCategoryDistribution {
+  category: String!
+  tagCount: Int!
+  memberCount: Int!
+  percentage: Float!
+}
+
+type TagPerformance {
+  tagId: String!
+  tagName: String!
+  memberCount: Int!
+  conversionRate: Float!
+  averageOrderValue: Float!
+  businessValue: Float!
+  roi: Float!
+}
+
+type TagMemberSegmentation {
+  segment: String!
+  description: String!
+  memberCount: Int!
+  tags: [String!]!
+  characteristics: JSON!
+}
+
+type TagTrendAnalysis {
+  date: Date!
+  newTags: Int!
+  newRelations: Int!
+  expiredRelations: Int!
+  netGrowth: Int!
+}
+
+type TagRecommendation {
+  type: String!
+  description: String!
+  priority: String!
+  impact: String!
+  data: JSON!
+}
+
+type MemberTagProfile {
+  memberId: String!
+  totalTags: Int!
+  activeTags: Int!
+  
+  tagsByCategory: [TagsByCategory!]!
+  behaviorTags: [MemberTagRelation!]!
+  demographicTags: [MemberTagRelation!]!
+  transactionTags: [MemberTagRelation!]!
+  customTags: [MemberTagRelation!]!
+  
+  segmentInfo: TagSegmentInfo!
+  recommendations: [TagMemberRecommendation!]!
+  riskFactors: [TagRiskFactor!]!
+}
+
+type TagsByCategory {
+  category: String!
+  tags: [TagByCategoryItem!]!
+}
+
+type TagByCategoryItem {
+  tagId: String!
+  tagName: String!
+  value: String
+  confidence: Float!
+  assignedAt: Date!
+  expiresAt: Date
+}
+
+type TagSegmentInfo {
+  primarySegment: String!
+  secondarySegments: [String!]!
+  confidence: Float!
+}
+
+type TagMemberRecommendation {
+  type: TagRecommendationType!
+  title: String!
+  description: String!
+  priority: Float!
+  basedOnTags: [String!]!
+}
+
+type TagRiskFactor {
+  factor: String!
+  level: TagRiskLevel!
+  description: String!
+  relatedTags: [String!]!
+}
+
+type TagSuggestion {
+  tag: MemberTag!
+  confidence: Float!
+  reason: String!
+}
+
+type TagMemberSuggestion {
+  memberId: String!
+  confidence: Float!
+  reason: String!
+}
+
+type TagSimilarMember {
+  memberId: String!
+  similarity: Float!
+  commonTags: [String!]!
+}
+
+type TagRuleTestResult {
+  matches: Boolean!
+  confidence: Float!
+  details: JSON!
+}
+
+type TagProcessResult {
+  processed: Int!
+  assigned: Int!
+  removed: Int!
+}
+
+# ========================= 输入类型 =========================
+
+input MemberTagQueryInput {
+  search: String
+  name: String
+  type: [TagType!]
+  category: [String!]
+  subcategory: String
+  isSystem: Boolean
+  isAutoAssigned: Boolean
+  isVisible: Boolean
+  isActive: Boolean
+  memberCountMin: Int
+  memberCountMax: Int
+  businessValueMin: Float
+  businessValueMax: Float
+  includeRules: Boolean
+  includeStats: Boolean
+  includeMemberCount: Boolean
+  pagination: PaginationInput
+}
+
+input MemberTagRelationQueryInput {
+  memberId: String
+  tagId: [String!]
+  tagType: [TagType!]
+  tagCategory: [String!]
+  assignedBy: TagAssignedBy
+  assignedByUserId: String
+  assignedDateRange: DateRangeInput
+  expiresDateRange: DateRangeInput
+  isActive: Boolean
+  confidenceMin: Float
+  confidenceMax: Float
+  hasValue: Boolean
+  includeTag: Boolean
+  includeMember: Boolean
+  pagination: PaginationInput
+}
+
+input TagGroupQueryInput {
+  search: String
+  name: String
+  isSystem: Boolean
+  isActive: Boolean
+  memberCountMin: Int
+  memberCountMax: Int
+  includeTags: Boolean
+  includeStats: Boolean
+  pagination: PaginationInput
+}
+
+input TagRuleInput {
+  type: TagRuleType!
+  condition: String!
+  params: JSON!
+  description: String!
+  isActive: Boolean!
+}
+
+input MemberTagCreateInput {
+  name: String!
+  displayName: String!
+  description: String
+  type: TagType!
+  category: String!
+  subcategory: String
+  color: String!
+  backgroundColor: String
+  icon: String
+  priority: Int
+  isSystem: Boolean
+  isAutoAssigned: Boolean
+  isVisible: Boolean
+  isActive: Boolean
+  autoRules: [TagRuleInput!]
+  businessValue: Float
+  validityPeriod: Int
+  metadata: JSON
+  customProperties: JSON
+}
+
+input MemberTagUpdateInput {
+  name: String
+  displayName: String
+  description: String
+  type: TagType
+  category: String
+  subcategory: String
+  color: String
+  backgroundColor: String
+  icon: String
+  priority: Int
+  isAutoAssigned: Boolean
+  isVisible: Boolean
+  isActive: Boolean
+  autoRules: [TagRuleInput!]
+  businessValue: Float
+  validityPeriod: Int
+  metadata: JSON
+  customProperties: JSON
+}
+
+input MemberTagAssignInput {
+  memberIds: [String!]!
+  tagIds: [String!]!
+  assignedReason: String
+  assignedSource: String
+  value: String
+  properties: JSON
+  expiresAt: Date
+  confidence: Float
+}
+
+input TagGroupCreateInput {
+  name: String!
+  displayName: String!
+  description: String
+  color: String!
+  icon: String
+  priority: Int
+  isSystem: Boolean
+  isActive: Boolean
+  maxTagsPerMember: Int
+  exclusiveMode: Boolean
+  metadata: JSON
+}
+
+input TagGroupUpdateInput {
+  name: String
+  displayName: String
+  description: String
+  color: String
+  icon: String
+  priority: Int
+  isActive: Boolean
+  maxTagsPerMember: Int
+  exclusiveMode: Boolean
+  metadata: JSON
+}
+
+input TagBatchOperationInput {
+  memberIds: [String!]!
+  tagIds: [String!]!
+  options: JSON
+}
+
+# ========================= Query & Mutation =========================
+
+extend type Query {
+  # 标签CRUD
+  memberTags(query: MemberTagQueryInput!): MemberTagsResponse!
+  memberTag(id: ID!): MemberTag
+  memberTagByName(name: String!): MemberTag
+  
+  # 标签分组CRUD
+  tagGroups(query: TagGroupQueryInput!): TagGroupsResponse!
+  tagGroup(id: ID!): TagGroup
+  
+  # 标签关联管理
+  memberTagRelations(query: MemberTagRelationQueryInput!): MemberTagRelationsResponse!
+  
+  # 会员标签操作
+  getMemberTags(memberId: String!): [MemberTagRelation!]!
+  getMemberTagsByCategory(memberId: String!, category: String!): [MemberTagRelation!]!
+  
+  # 分析和洞察
+  tagAnalysis(dateRange: DateRangeInput): TagAnalysisResponse!
+  memberTagProfile(memberId: String!): MemberTagProfile!
+  tagPerformance(tagId: String!): JSON
+  tagSegmentAnalysis: JSON
+  
+  # 推荐和建议
+  suggestTagsForMember(memberId: String!): [TagSuggestion!]!
+  suggestMembersForTag(tagId: String!): [TagMemberSuggestion!]!
+  findSimilarMembers(memberId: String!, limit: Int): [TagSimilarMember!]!
+  
+  # 规则测试
+  testTagRule(rule: TagRuleInput!, memberId: String!): TagRuleTestResult!
+}
+
+extend type Mutation {
+  # 标签CRUD
+  createMemberTag(input: MemberTagCreateInput!): MemberTag!
+  updateMemberTag(id: ID!, input: MemberTagUpdateInput!): MemberTag!
+  deleteMemberTag(id: ID!): Boolean!
+  
+  # 标签分组CRUD
+  createTagGroup(input: TagGroupCreateInput!): TagGroup!
+  updateTagGroup(id: ID!, input: TagGroupUpdateInput!): TagGroup!
+  deleteTagGroup(id: ID!): Boolean!
+  
+  # 标签关联管理
+  assignTags(input: MemberTagAssignInput!): [MemberTagRelation!]!
+  removeTags(memberIds: [String!]!, tagIds: [String!]!): Boolean!
+  
+  # 会员标签操作
+  addTagToMember(memberId: String!, tagId: String!, options: JSON): MemberTagRelation!
+  removeTagFromMember(memberId: String!, tagId: String!): Boolean!
+  
+  # 标签规则引擎
+  evaluateTagRules(memberId: String!): [MemberTagRelation!]!
+  processAutoTagging: TagProcessResult!
+  
+  # 批量操作
+  batchAssignTags(input: TagBatchOperationInput!): JSON!
+  batchRemoveTags(memberIds: [String!]!, tagIds: [String!]!): JSON!
+  batchUpdateTagRelations(relations: [JSON!]!): JSON!
+} 

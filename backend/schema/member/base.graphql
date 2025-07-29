@@ -1,0 +1,290 @@
+# 会员模块基础 GraphQL Schema
+# 包含所有基础枚举、类型和通用定义
+
+scalar Date
+scalar JSON
+scalar Upload
+
+# ========================= 基础枚举 =========================
+
+enum Gender {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  PENDING
+}
+
+enum PointsType {
+  # 获得积分
+  EARNED_REGISTRATION
+  EARNED_LOGIN
+  EARNED_ORDER
+  EARNED_REVIEW
+  EARNED_REFERRAL
+  EARNED_ACTIVITY
+  EARNED_CHECKIN
+  EARNED_SHARE
+  EARNED_ADMIN
+  
+  # 消费积分
+  SPENT_EXCHANGE
+  SPENT_ORDER
+  SPENT_DEDUCTION
+  
+  # 其他
+  EXPIRED
+  FROZEN
+  UNFROZEN
+  ADMIN_ADJUST
+}
+
+enum ExchangeType {
+  BALANCE
+  COUPON
+  PRODUCT
+  PRIVILEGE
+  DISCOUNT
+}
+
+enum ExchangeStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  EXPIRED
+}
+
+enum ExchangeRecordStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  FAILED
+  REFUNDED
+}
+
+enum LoginType {
+  WECHAT
+  PHONE
+  EMAIL
+  USERNAME
+  THIRD_PARTY
+}
+
+enum ThirdPartyPlatform {
+  WECHAT
+  ALIPAY
+  QQ
+  WEIBO
+  APPLE
+  GOOGLE
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum TagType {
+  SYSTEM
+  CUSTOM
+  BEHAVIOR
+  PREFERENCE
+  DEMOGRAPHIC
+}
+
+enum NotificationType {
+  SYSTEM
+  ORDER
+  POINTS
+  LEVEL
+  PROMOTION
+  SOCIAL
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+# ========================= 基础类型 =========================
+
+interface BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+}
+
+type PaginationInfo {
+  page: Int!
+  perPage: Int!
+  totalItems: Int!
+  totalPages: Int!
+  hasNext: Boolean!
+  hasPrev: Boolean!
+}
+
+type BatchOperationResult {
+  success: Boolean!
+  successCount: Int!
+  failureCount: Int!
+  totalCount: Int!
+  message: String!
+  errors: [String!]!
+  details: JSON
+}
+
+# 通用操作结果类型 (解决 OperationResult 缺失问题)
+type OperationResult {
+  success: Boolean!
+  message: String!
+  errors: [String!]
+  data: JSON
+}
+
+type StatsData {
+  label: String!
+  value: Int!
+  percentage: Float
+  trend: String
+  change: Float
+}
+
+type Location {
+  province: String!
+  city: String!
+  district: String!
+  address: String!
+  longitude: Float
+  latitude: Float
+  postalCode: String
+}
+
+type ContactInfo {
+  name: String!
+  phone: String!
+  email: String
+  wechat: String
+}
+
+type FileInfo {
+  id: ID!
+  filename: String!
+  originalName: String!
+  mimetype: String!
+  size: Int!
+  url: String!
+  thumbnailUrl: String
+  path: String!
+  uploaded: Date!
+}
+
+type AuditLog {
+  id: ID!
+  userId: String!
+  username: String!
+  action: String!
+  resource: String!
+  resourceId: String!
+  changes: JSON
+  ip: String!
+  userAgent: String!
+  timestamp: Date!
+}
+
+# ========================= 移动端相关类型 =========================
+
+type CartInfo {
+  totalItems: Int!
+  totalAmount: Float!
+  items: [CartItem!]!
+}
+
+type CartItem {
+  id: ID!
+  productId: String!
+  productName: String!
+  quantity: Int!
+  price: Float!
+  totalPrice: Float!
+  imageUrl: String
+}
+
+type Favorite {
+  id: ID!
+  userId: String!
+  productId: String!
+  productName: String!
+  imageUrl: String
+  price: Float!
+  created: Date!
+}
+
+type UserCoupon {
+  id: ID!
+  userId: String!
+  couponId: String!
+  couponName: String!
+  discountType: String!
+  discountValue: Float!
+  minAmount: Float
+  expiresAt: Date
+  isUsed: Boolean!
+  usedAt: Date
+}
+
+# ========================= 输入类型 =========================
+
+input PaginationInput {
+  page: Int = 1
+  perPage: Int = 20
+  sortBy: String
+  sortOrder: SortOrder = DESC
+}
+
+input DateRangeInput {
+  startDate: Date!
+  endDate: Date!
+}
+
+input LocationInput {
+  province: String!
+  city: String!
+  district: String!
+  address: String!
+  longitude: Float
+  latitude: Float
+  postalCode: String
+}
+
+input ContactInfoInput {
+  name: String!
+  phone: String!
+  email: String
+  wechat: String
+}
+
+# ========================= 基础 Query/Mutation/Subscription =========================
+
+type Query {
+  # 健康检查
+  health: String!
+}
+
+type Mutation {
+  # 基础操作
+  ping: String!
+}
+
+type Subscription {
+  # 基础订阅
+  heartbeat: String!
+}
+

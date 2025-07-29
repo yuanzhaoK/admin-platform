@@ -1,0 +1,549 @@
+# 会员核心 GraphQL Schema
+# 包含会员基本信息、偏好设置、认证、统计等相关定义
+
+# ========================= 会员核心类型 =========================
+
+enum ProfileVisibility {
+  PUBLIC
+  FRIENDS
+  PRIVATE
+}
+
+enum MemberRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum IdentityVerificationType {
+  NONE
+  PHONE
+  EMAIL
+  IDENTITY
+  ENTERPRISE
+}
+
+type NotificationSettings {
+  email: Boolean!
+  sms: Boolean!
+  push: Boolean!
+  wechat: Boolean!
+  orderUpdates: Boolean!
+  promotions: Boolean!
+  pointsUpdates: Boolean!
+  systemMessages: Boolean!
+}
+
+type PrivacySettings {
+  profileVisibility: ProfileVisibility!
+  showLocation: Boolean!
+  showBirthday: Boolean!
+  showPhone: Boolean!
+  showEmail: Boolean!
+  allowSearch: Boolean!
+  allowRecommendation: Boolean!
+}
+
+type MarketingSettings {
+  emailMarketing: Boolean!
+  smsMarketing: Boolean!
+  pushMarketing: Boolean!
+  personalizedRecommendations: Boolean!
+  behaviorTracking: Boolean!
+}
+
+type MemberPreferences {
+  language: String!
+  timezone: String!
+  currency: String!
+  notifications: NotificationSettings!
+  privacy: PrivacySettings!
+  marketing: MarketingSettings!
+}
+
+type MemberStats {
+  totalOrders: Int!
+  totalAmount: Float!
+  totalSavings: Float!
+  averageOrderValue: Float!
+  favoriteCategories: [String!]!
+  loyaltyScore: Float!
+  engagementScore: Float!
+  lastOrderDate: Date
+  membershipDuration: Int!
+}
+
+type IdentityCardInfo {
+  number: String!
+  name: String!
+  verified: Boolean!
+  verifiedAt: Date
+}
+
+type EnterpriseInfo {
+  companyName: String!
+  businessLicense: String!
+  taxNumber: String!
+  verified: Boolean!
+  verifiedAt: Date
+}
+
+type MemberVerification {
+  status: VerificationStatus!
+  type: IdentityVerificationType!
+  identityCard: IdentityCardInfo
+  enterprise: EnterpriseInfo
+  documents: [FileInfo!]
+  verifiedAt: Date
+  verifiedBy: String
+  rejectReason: String
+}
+
+type ThirdPartyBinding {
+  platform: String!
+  platformUserId: String!
+  platformUsername: String
+  avatar: String
+  accessToken: String
+  refreshToken: String
+  expiresAt: Date
+  bindTime: Date!
+  lastSyncTime: Date
+  isActive: Boolean!
+}
+
+type MemberProfile {
+  username: String!
+  email: String!
+  phone: String
+  avatar: String
+  realName: String
+  nickname: String
+  gender: Gender!
+  birthday: Date
+  bio: String
+  location: Location
+  preferences: MemberPreferences!
+}
+
+type Member implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  profile: MemberProfile!
+  
+  # 等级和积分
+  level: MemberLevel!
+  levelId: String!
+  points: Int!
+  frozenPoints: Int!
+  totalEarnedPoints: Int!
+  totalSpentPoints: Int!
+  balance: Float!
+  frozenBalance: Float!
+  
+  # 状态
+  status: MembershipStatus!
+  isVerified: Boolean!
+  verification: MemberVerification!
+  
+  # 统计数据
+  stats: MemberStats!
+  
+  # 时间信息
+  registerTime: Date!
+  lastLoginTime: Date
+  lastActiveTime: Date
+  levelUpgradeTime: Date
+  
+  # 第三方绑定
+  wechatOpenid: String
+  wechatUnionid: String
+  thirdPartyBindings: [ThirdPartyBinding!]!
+  
+  # 标签和分组
+  tags: [MemberTag!]!
+  groups: [String!]!
+  segment: String
+  
+  # 风控信息
+  riskLevel: MemberRiskLevel!
+  trustScore: Float!
+  blacklistReason: String
+  
+  # 扩展字段
+  customFields: JSON
+  metadata: JSON
+}
+
+# ========================= 分页响应类型 =========================
+
+type MembersResponse {
+  items: [Member!]!
+  pagination: PaginationInfo!
+  stats: MembersStats
+}
+
+type MembersStats {
+  totalActive: Int!
+  totalInactive: Int!
+  totalBanned: Int!
+  totalNewThisMonth: Int!
+  averageLevel: Float!
+  totalPoints: Int!
+  totalBalance: Float!
+}
+
+type MemberDetailResponse {
+  member: Member!
+  recentOrders: [JSON!]
+  recentPoints: [PointsRecord!]
+  loginHistory: [JSON!]
+  behaviorData: [JSON!]
+  recommendations: [JSON!]
+}
+
+# ========================= 统计类型 =========================
+
+type MemberStatsResponse {
+  overview: MemberOverview!
+  levelDistribution: [MemberLevelDistribution!]!
+  genderDistribution: [MemberGenderDistribution!]!
+  ageDistribution: [MemberAgeDistribution!]!
+  locationDistribution: [MemberLocationDistribution!]!
+  registrationTrend: [MemberRegistrationTrend!]!
+  activityTrend: [MemberActivityTrend!]!
+  segmentAnalysis: [MemberSegmentAnalysis!]!
+}
+
+type MemberOverview {
+  total: Int!
+  active: Int!
+  inactive: Int!
+  banned: Int!
+  newThisMonth: Int!
+  retentionRate: Float!
+}
+
+type MemberGenderDistribution {
+  gender: Gender!
+  count: Int!
+  percentage: Float!
+}
+
+type MemberAgeDistribution {
+  ageGroup: String!
+  count: Int!
+  percentage: Float!
+}
+
+type MemberLocationDistribution {
+  province: String!
+  city: String
+  count: Int!
+  percentage: Float!
+}
+
+type MemberRegistrationTrend {
+  date: Date!
+  count: Int!
+  cumulative: Int!
+}
+
+type MemberActivityTrend {
+  date: Date!
+  activeUsers: Int!
+  loginCount: Int!
+  orderCount: Int!
+}
+
+type MemberSegmentAnalysis {
+  segment: String!
+  count: Int!
+  avgOrderValue: Float!
+  totalRevenue: Float!
+  retentionRate: Float!
+}
+
+type MemberExportData {
+  id: String!
+  username: String!
+  email: String!
+  phone: String
+  realName: String
+  gender: String!
+  birthday: Date
+  levelName: String!
+  points: Int!
+  balance: Float!
+  totalOrders: Int!
+  totalAmount: Float!
+  status: String!
+  registerTime: Date!
+  lastLoginTime: Date
+  isVerified: Boolean!
+  province: String
+  city: String
+  tags: String!
+}
+
+type MemberImportResult {
+  success: Boolean!
+  total: Int!
+  successful: Int!
+  failed: Int!
+  duplicates: Int!
+  errors: [MemberImportError!]!
+  warnings: [MemberImportWarning!]!
+  summary: MemberImportSummary!
+}
+
+type MemberImportError {
+  row: Int!
+  field: String!
+  message: String!
+  data: JSON!
+}
+
+type MemberImportWarning {
+  row: Int!
+  field: String!
+  message: String!
+  data: JSON!
+}
+
+type MemberImportSummary {
+  newMembers: Int!
+  updatedMembers: Int!
+  skippedMembers: Int!
+}
+
+# ========================= 输入类型 =========================
+
+input MemberQueryInput {
+  # 基础搜索
+  search: String
+  username: String
+  email: String
+  phone: String
+  realName: String
+  
+  # 状态筛选
+  status: [MembershipStatus!]
+  isVerified: Boolean
+  riskLevel: MemberRiskLevel
+  
+  # 等级筛选
+  levelId: [String!]
+  levelName: String
+  pointsMin: Int
+  pointsMax: Int
+  
+  # 时间筛选
+  registerDateRange: DateRangeInput
+  lastLoginDateRange: DateRangeInput
+  
+  # 地理位置筛选
+  province: String
+  city: String
+  
+  # 统计筛选
+  totalOrdersMin: Int
+  totalOrdersMax: Int
+  totalAmountMin: Float
+  totalAmountMax: Float
+  
+  # 标签筛选
+  tags: [String!]
+  groups: [String!]
+  segment: String
+  
+  # 高级筛选
+  hasOrders: Boolean
+  hasReviews: Boolean
+  isActive: Boolean
+  
+  # 包含关联数据
+  includeLevel: Boolean
+  includeTags: Boolean
+  includeStats: Boolean
+  includeVerification: Boolean
+  
+  pagination: PaginationInput
+}
+
+input NotificationSettingsInput {
+  email: Boolean
+  sms: Boolean
+  push: Boolean
+  wechat: Boolean
+  orderUpdates: Boolean
+  promotions: Boolean
+  pointsUpdates: Boolean
+  systemMessages: Boolean
+}
+
+input PrivacySettingsInput {
+  profileVisibility: ProfileVisibility
+  showLocation: Boolean
+  showBirthday: Boolean
+  showPhone: Boolean
+  showEmail: Boolean
+  allowSearch: Boolean
+  allowRecommendation: Boolean
+}
+
+input MarketingSettingsInput {
+  emailMarketing: Boolean
+  smsMarketing: Boolean
+  pushMarketing: Boolean
+  personalizedRecommendations: Boolean
+  behaviorTracking: Boolean
+}
+
+input MemberPreferencesInput {
+  language: String
+  timezone: String
+  currency: String
+  notifications: NotificationSettingsInput
+  privacy: PrivacySettingsInput
+  marketing: MarketingSettingsInput
+}
+
+input MemberCreateInput {
+  username: String!
+  email: String!
+  phone: String
+  password: String
+  realName: String
+  nickname: String
+  gender: Gender
+  birthday: Date
+  avatar: String
+  levelId: String
+  initialPoints: Int
+  initialBalance: Float
+  status: MembershipStatus
+  wechatOpenid: String
+  wechatUnionid: String
+  referrerId: String
+  source: String
+  customFields: JSON
+}
+
+input MemberUpdateInput {
+  username: String
+  email: String
+  phone: String
+  realName: String
+  nickname: String
+  gender: Gender
+  birthday: Date
+  avatar: String
+  bio: String
+  levelId: String
+  status: MembershipStatus
+  preferences: MemberPreferencesInput
+  customFields: JSON
+}
+
+input ProfileUpdateInput {
+  nickname: String
+  avatar: String
+  bio: String
+  gender: Gender
+  birthday: Date
+  location: LocationInput
+  preferences: MemberPreferencesInput
+}
+
+input PasswordChangeInput {
+  currentPassword: String!
+  newPassword: String!
+  confirmPassword: String!
+}
+
+input PhoneBindingInput {
+  phone: String!
+  verificationCode: String!
+  action: String!
+}
+
+input EmailBindingInput {
+  email: String!
+  verificationCode: String!
+  action: String!
+}
+
+input IdentityVerificationInput {
+  realName: String!
+  identityCard: String!
+  frontImage: String!
+  backImage: String!
+  handheldImage: String
+}
+
+input EnterpriseVerificationInput {
+  companyName: String!
+  businessLicense: String!
+  taxNumber: String!
+  legalPerson: String!
+  contactName: String!
+  contactPhone: String!
+  contactEmail: String!
+  businessLicenseImage: String!
+  additionalDocuments: [String!]
+}
+
+# ========================= Query & Mutation =========================
+
+extend type Query {
+  # 基础查询
+  members(query: MemberQueryInput!): MembersResponse!
+  member(id: ID!): Member
+  memberByUsername(username: String!): Member
+  memberByEmail(email: String!): Member
+  memberByPhone(phone: String!): Member
+  memberDetail(id: ID!): MemberDetailResponse!
+  
+  # 搜索
+  searchMembers(keyword: String!): [Member!]!
+  
+  # 统计
+  memberStats(dateRange: DateRangeInput): MemberStatsResponse!
+  memberSegmentAnalysis: JSON
+}
+
+extend type Mutation {
+  # 基础CRUD
+  createMember(input: MemberCreateInput!): Member!
+  updateMember(id: ID!, input: MemberUpdateInput!): Member!
+  deleteMember(id: ID!): Boolean!
+  
+  # 资料管理
+  updateProfile(id: ID!, input: ProfileUpdateInput!): Member!
+  changeMemberPassword(id: ID!, input: PasswordChangeInput!): Boolean!
+  
+  # 绑定操作
+  bindPhone(id: ID!, input: PhoneBindingInput!): Boolean!
+  bindEmail(id: ID!, input: EmailBindingInput!): Boolean!
+  
+  # 认证操作
+  verifyIdentity(id: ID!, input: IdentityVerificationInput!): Boolean!
+  verifyEnterprise(id: ID!, input: EnterpriseVerificationInput!): Boolean!
+  
+  # 状态管理
+  activateMember(id: ID!): Boolean!
+  deactivateMember(id: ID!): Boolean!
+  banMember(id: ID!, reason: String!): Boolean!
+  unbanMember(id: ID!): Boolean!
+  
+  # 批量操作
+  batchUpdateMembers(ids: [ID!]!, input: MemberUpdateInput!): JSON!
+  batchDeleteMembers(ids: [ID!]!): JSON!
+  
+  # 导入导出
+  importMembers(data: [JSON!]!): MemberImportResult!
+} 

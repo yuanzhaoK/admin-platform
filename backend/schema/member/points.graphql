@@ -1,0 +1,696 @@
+# 积分系统 GraphQL Schema
+# 包含积分记录、规则、兑换、统计等相关定义
+
+# ========================= 积分核心类型 =========================
+
+type PointsRecord implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  userId: String!
+  username: String!
+  
+  # 积分信息
+  type: PointsType!
+  points: Int!
+  balance: Int!
+  
+  # 描述信息
+  reason: String!
+  description: String
+  
+  # 关联信息
+  orderId: String
+  productId: String
+  ruleId: String
+  exchangeId: String
+  relatedId: String
+  
+  # 时间信息
+  earnedAt: Date
+  spentAt: Date
+  expiredAt: Date
+  
+  # 状态信息
+  status: String!
+  isReversible: Boolean!
+  
+  # 来源信息
+  source: String!
+  operatorId: String
+  operatorName: String
+  
+  # 扩展信息
+  metadata: JSON
+  tags: [String!]
+}
+
+type PointsRuleCondition {
+  id: ID!
+  field: String!
+  operator: String!
+  value: JSON!
+  valueMax: JSON
+  description: String!
+  weight: Float
+}
+
+type PointsRule implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  name: String!
+  displayName: String!
+  description: String
+  
+  # 规则类型
+  type: PointsType!
+  category: String!
+  
+  # 积分设置
+  points: Int!
+  pointsMax: Int
+  
+  # 条件设置
+  conditions: [PointsRuleCondition!]!
+  
+  # 限制设置
+  dailyLimit: Int
+  weeklyLimit: Int
+  monthlyLimit: Int
+  totalLimit: Int
+  userDailyLimit: Int
+  userTotalLimit: Int
+  
+  # 时间设置
+  startTime: Date
+  endTime: Date
+  validDays: [Int!]
+  validHours: [Int!]
+  
+  # 状态设置
+  isActive: Boolean!
+  priority: Int!
+  weight: Float
+  
+  # 高级设置
+  formula: String
+  multiplier: Float
+  excludeUsers: [String!]
+  includeUsers: [String!]
+  
+  # 统计信息
+  usageCount: Int!
+  totalPointsGranted: Int!
+  lastUsedAt: Date
+  
+  # 扩展信息
+  customConfig: JSON
+  metadata: JSON
+}
+
+type PointsExchangeCondition {
+  id: ID!
+  type: String!
+  operator: String!
+  value: JSON!
+  description: String!
+  errorMessage: String
+}
+
+type PointsExchange implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  name: String!
+  displayName: String!
+  description: String
+  subtitle: String
+  
+  # 商品信息
+  image: String
+  images: [String!]
+  category: String!
+  tags: [String!]
+  
+  # 积分设置
+  pointsRequired: Int!
+  originalPrice: Float
+  
+  # 兑换类型和奖励
+  exchangeType: ExchangeType!
+  rewardValue: Float
+  rewardUnit: String
+  rewardProductId: String
+  rewardCouponId: String
+  rewardConfig: JSON
+  
+  # 库存管理
+  stock: Int
+  unlimitedStock: Boolean!
+  virtualStock: Int
+  dailyStock: Int
+  userDailyLimit: Int
+  userTotalLimit: Int
+  
+  # 状态管理
+  status: ExchangeStatus!
+  
+  # 时间设置
+  startTime: Date
+  endTime: Date
+  
+  # 兑换条件
+  conditions: [PointsExchangeCondition!]
+  
+  # 排序和显示
+  sortOrder: Int!
+  isHot: Boolean!
+  isNew: Boolean!
+  isRecommended: Boolean!
+  
+  # 统计信息
+  usedCount: Int!
+  totalPointsSpent: Int!
+  conversionRate: Float
+  rating: Float
+  reviewCount: Int
+  
+  # 扩展信息
+  customConfig: JSON
+  metadata: JSON
+}
+
+type PointsExchangeRecord implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  # 基础信息
+  userId: String!
+  username: String!
+  exchangeId: String!
+  exchange: PointsExchange
+  
+  # 兑换信息
+  pointsCost: Int!
+  quantity: Int!
+  totalPointsCost: Int!
+  
+  # 奖励信息
+  rewardType: ExchangeType!
+  rewardValue: Float
+  rewardDescription: String
+  
+  # 状态信息
+  status: ExchangeRecordStatus!
+  
+  # 处理信息
+  processedAt: Date
+  processedBy: String
+  failureReason: String
+  
+  # 发货信息（实物商品）
+  shippingAddress: String
+  trackingNumber: String
+  shippedAt: Date
+  deliveredAt: Date
+  
+  # 扩展信息
+  notes: String
+  metadata: JSON
+}
+
+type PointsExpiryNotification implements BaseEntity {
+  id: ID!
+  created: Date!
+  updated: Date!
+  
+  userId: String!
+  username: String!
+  expiringPoints: Int!
+  expiryDate: Date!
+  notificationSent: Boolean!
+  notificationSentAt: Date
+  remindBefore: Int!
+  status: String!
+}
+
+# ========================= 分页响应类型 =========================
+
+type PointsRecordsResponse {
+  items: [PointsRecord!]!
+  pagination: PaginationInfo!
+  stats: PointsRecordsStats
+}
+
+type PointsRecordsStats {
+  totalPoints: Int!
+  earnedPoints: Int!
+  spentPoints: Int!
+  expiredPoints: Int!
+  balancePoints: Int!
+}
+
+type PointsRulesResponse {
+  items: [PointsRule!]!
+  pagination: PaginationInfo!
+  stats: PointsRulesStats
+}
+
+type PointsRulesStats {
+  totalRules: Int!
+  activeRules: Int!
+  totalUsage: Int!
+  totalPointsGranted: Int!
+}
+
+type PointsExchangesResponse {
+  items: [PointsExchange!]!
+  pagination: PaginationInfo!
+  stats: PointsExchangesStats
+  categories: [PointsExchangeCategory!]
+}
+
+type PointsExchangesStats {
+  totalExchanges: Int!
+  activeExchanges: Int!
+  totalStock: Int!
+  totalExchanged: Int!
+}
+
+type PointsExchangeCategory {
+  category: String!
+  count: Int!
+  totalStock: Int!
+}
+
+type PointsExchangeRecordsResponse {
+  items: [PointsExchangeRecord!]!
+  pagination: PaginationInfo!
+  stats: PointsExchangeRecordsStats
+}
+
+type PointsExchangeRecordsStats {
+  totalRecords: Int!
+  completedRecords: Int!
+  pendingRecords: Int!
+  totalPointsSpent: Int!
+}
+
+# ========================= 统计类型 =========================
+
+type PointsStatsResponse {
+  overview: PointsOverview!
+  typeDistribution: [PointsTypeDistribution!]!
+  rulePerformance: [PointsRulePerformance!]!
+  exchangeStats: [PointsExchangeStats!]!
+  trendAnalysis: [PointsTrendAnalysis!]!
+  userSegmentation: [PointsUserSegmentation!]!
+}
+
+type PointsOverview {
+  totalUsers: Int!
+  totalPoints: Int!
+  totalEarned: Int!
+  totalSpent: Int!
+  totalExpired: Int!
+  totalFrozen: Int!
+  averageBalance: Float!
+}
+
+type PointsTypeDistribution {
+  type: PointsType!
+  count: Int!
+  points: Int!
+  percentage: Float!
+}
+
+type PointsRulePerformance {
+  ruleId: String!
+  ruleName: String!
+  usageCount: Int!
+  totalPoints: Int!
+  averagePoints: Float!
+  lastUsed: Date!
+}
+
+type PointsExchangeStats {
+  exchangeId: String!
+  exchangeName: String!
+  totalExchanged: Int!
+  totalPointsSpent: Int!
+  conversionRate: Float!
+  revenue: Float!
+}
+
+type PointsTrendAnalysis {
+  date: Date!
+  earned: Int!
+  spent: Int!
+  expired: Int!
+  balance: Int!
+  activeUsers: Int!
+}
+
+type PointsUserSegmentation {
+  segment: String!
+  userCount: Int!
+  averageBalance: Float!
+  averageEarned: Float!
+  averageSpent: Float!
+  engagementRate: Float!
+}
+
+type UserPointsOverview {
+  userId: String!
+  username: String!
+  currentBalance: Int!
+  totalEarned: Int!
+  totalSpent: Int!
+  totalExpired: Int!
+  
+  recentRecords: [PointsRecord!]!
+  upcomingExpiry: [PointsUpcomingExpiry!]!
+  availableExchanges: [PointsExchange!]!
+  recommendedExchanges: [PointsExchange!]!
+  statistics: UserPointsStatistics!
+}
+
+type PointsUpcomingExpiry {
+  points: Int!
+  expiryDate: Date!
+  daysRemaining: Int!
+}
+
+type UserPointsStatistics {
+  thisMonthEarned: Int!
+  thisMonthSpent: Int!
+  averageMonthlyEarned: Float!
+  totalOrders: Int!
+  averagePointsPerOrder: Float!
+  membershipDuration: Int!
+}
+
+# ========================= 输入类型 =========================
+
+input PointsRecordQueryInput {
+  userId: [String!]
+  username: String
+  type: [PointsType!]
+  pointsMin: Int
+  pointsMax: Int
+  status: String
+  dateRange: DateRangeInput
+  earnedDateRange: DateRangeInput
+  expiredDateRange: DateRangeInput
+  orderId: String
+  ruleId: String
+  exchangeId: String
+  source: String
+  operatorId: String
+  tags: [String!]
+  includeUser: Boolean
+  includeRule: Boolean
+  includeExchange: Boolean
+  pagination: PaginationInput
+}
+
+input PointsRuleQueryInput {
+  search: String
+  name: String
+  type: [PointsType!]
+  category: String
+  isActive: Boolean
+  pointsMin: Int
+  pointsMax: Int
+  startTimeRange: DateRangeInput
+  endTimeRange: DateRangeInput
+  usageCountMin: Int
+  usageCountMax: Int
+  includeConditions: Boolean
+  includeStats: Boolean
+  pagination: PaginationInput
+}
+
+input PointsExchangeQueryInput {
+  search: String
+  name: String
+  category: [String!]
+  exchangeType: [ExchangeType!]
+  status: [ExchangeStatus!]
+  pointsRequiredMin: Int
+  pointsRequiredMax: Int
+  hasStock: Boolean
+  isHot: Boolean
+  isNew: Boolean
+  isRecommended: Boolean
+  startTimeRange: DateRangeInput
+  endTimeRange: DateRangeInput
+  includeConditions: Boolean
+  includeStats: Boolean
+  pagination: PaginationInput
+}
+
+input PointsExchangeRecordQueryInput {
+  userId: [String!]
+  username: String
+  exchangeId: [String!]
+  status: [ExchangeRecordStatus!]
+  rewardType: [ExchangeType!]
+  dateRange: DateRangeInput
+  processedDateRange: DateRangeInput
+  pointsCostMin: Int
+  pointsCostMax: Int
+  includeUser: Boolean
+  includeExchange: Boolean
+  pagination: PaginationInput
+}
+
+input PointsAdjustmentInput {
+  userId: String!
+  points: Int!
+  type: PointsType!
+  reason: String!
+  description: String
+  expiredAt: Date
+  orderId: String
+  relatedId: String
+  metadata: JSON
+}
+
+input PointsRuleConditionInput {
+  field: String!
+  operator: String!
+  value: JSON!
+  valueMax: JSON
+  description: String!
+  weight: Float
+}
+
+input PointsRuleCreateInput {
+  name: String!
+  displayName: String!
+  description: String
+  type: PointsType!
+  category: String!
+  points: Int!
+  pointsMax: Int
+  conditions: [PointsRuleConditionInput!]
+  dailyLimit: Int
+  weeklyLimit: Int
+  monthlyLimit: Int
+  totalLimit: Int
+  userDailyLimit: Int
+  userTotalLimit: Int
+  startTime: Date
+  endTime: Date
+  validDays: [Int!]
+  validHours: [Int!]
+  isActive: Boolean
+  priority: Int
+  weight: Float
+  formula: String
+  multiplier: Float
+  excludeUsers: [String!]
+  includeUsers: [String!]
+  customConfig: JSON
+  metadata: JSON
+}
+
+input PointsRuleUpdateInput {
+  name: String
+  displayName: String
+  description: String
+  type: PointsType
+  category: String
+  points: Int
+  pointsMax: Int
+  conditions: [PointsRuleConditionInput!]
+  dailyLimit: Int
+  weeklyLimit: Int
+  monthlyLimit: Int
+  totalLimit: Int
+  userDailyLimit: Int
+  userTotalLimit: Int
+  startTime: Date
+  endTime: Date
+  validDays: [Int!]
+  validHours: [Int!]
+  isActive: Boolean
+  priority: Int
+  weight: Float
+  formula: String
+  multiplier: Float
+  excludeUsers: [String!]
+  includeUsers: [String!]
+  customConfig: JSON
+  metadata: JSON
+}
+
+input PointsExchangeConditionInput {
+  type: String!
+  operator: String!
+  value: JSON!
+  description: String!
+  errorMessage: String
+}
+
+input PointsExchangeCreateInput {
+  name: String!
+  displayName: String!
+  description: String
+  subtitle: String
+  image: String
+  images: [String!]
+  category: String!
+  tags: [String!]
+  pointsRequired: Int!
+  originalPrice: Float
+  exchangeType: ExchangeType!
+  rewardValue: Float
+  rewardUnit: String
+  rewardProductId: String
+  rewardCouponId: String
+  rewardConfig: JSON
+  stock: Int
+  unlimitedStock: Boolean
+  virtualStock: Int
+  dailyStock: Int
+  userDailyLimit: Int
+  userTotalLimit: Int
+  status: ExchangeStatus
+  startTime: Date
+  endTime: Date
+  conditions: [PointsExchangeConditionInput!]
+  sortOrder: Int
+  isHot: Boolean
+  isNew: Boolean
+  isRecommended: Boolean
+  customConfig: JSON
+  metadata: JSON
+}
+
+input PointsExchangeUpdateInput {
+  name: String
+  displayName: String
+  description: String
+  subtitle: String
+  image: String
+  images: [String!]
+  category: String
+  tags: [String!]
+  pointsRequired: Int
+  originalPrice: Float
+  exchangeType: ExchangeType
+  rewardValue: Float
+  rewardUnit: String
+  rewardProductId: String
+  rewardCouponId: String
+  rewardConfig: JSON
+  stock: Int
+  unlimitedStock: Boolean
+  virtualStock: Int
+  dailyStock: Int
+  userDailyLimit: Int
+  userTotalLimit: Int
+  status: ExchangeStatus
+  startTime: Date
+  endTime: Date
+  conditions: [PointsExchangeConditionInput!]
+  sortOrder: Int
+  isHot: Boolean
+  isNew: Boolean
+  isRecommended: Boolean
+  customConfig: JSON
+  metadata: JSON
+}
+
+input PointsExchangeInput {
+  exchangeId: String!
+  quantity: Int
+  shippingAddress: String
+  notes: String
+}
+
+# ========================= Query & Mutation =========================
+
+extend type Query {
+  # 积分记录查询
+  pointsRecords(query: PointsRecordQueryInput!): PointsRecordsResponse!
+  pointsRecord(id: ID!): PointsRecord
+  userPointsOverview(userId: String!): UserPointsOverview!
+  
+  # 积分规则查询
+  pointsRules(query: PointsRuleQueryInput!): PointsRulesResponse!
+  pointsRule(id: ID!): PointsRule
+  
+  # 积分兑换商品查询
+  pointsExchanges(query: PointsExchangeQueryInput!): PointsExchangesResponse!
+  pointsExchange(id: ID!): PointsExchange
+  
+  # 积分兑换记录查询
+  pointsExchangeRecords(query: PointsExchangeRecordQueryInput!): PointsExchangeRecordsResponse!
+  userExchangeRecords(userId: String!): [PointsExchangeRecord!]!
+  
+  # 统计分析
+  pointsStats(dateRange: DateRangeInput): PointsStatsResponse!
+  rulePerformance(ruleId: String!, dateRange: DateRangeInput): JSON
+  exchangePerformance(exchangeId: String!, dateRange: DateRangeInput): JSON
+  expiringPoints(userId: String!, days: Int): [PointsUpcomingExpiry!]!
+}
+
+extend type Mutation {
+  # 积分操作
+  adjustPoints(input: PointsAdjustmentInput!): PointsRecord!
+  batchAdjustPoints(inputs: [PointsAdjustmentInput!]!): [PointsRecord!]!
+  freezePoints(userId: String!, points: Int!, reason: String!): Boolean!
+  unfreezePoints(userId: String!, points: Int!, reason: String!): Boolean!
+  
+  # 积分规则管理
+  createPointsRule(input: PointsRuleCreateInput!): PointsRule!
+  updatePointsRule(id: ID!, input: PointsRuleUpdateInput!): PointsRule!
+  deletePointsRule(id: ID!): Boolean!
+  
+  # 积分兑换商品管理
+  createPointsExchange(input: PointsExchangeCreateInput!): PointsExchange!
+  updatePointsExchange(id: ID!, input: PointsExchangeUpdateInput!): PointsExchange!
+  deletePointsExchange(id: ID!): Boolean!
+  
+  # 积分兑换操作
+  exchangePoints(userId: String!, input: PointsExchangeInput!): PointsExchangeRecord!
+  processExchangeRecord(recordId: String!, status: ExchangeRecordStatus!, reason: String): PointsExchangeRecord!
+  
+  # 积分计算
+  calculatePointsByRule(userId: String!, ruleId: String!, context: JSON): Int!
+  evaluateAllRules(userId: String!, action: String!, context: JSON): [PointsRecord!]!
+  
+  # 到期管理
+  processExpiringPoints: JSON!
+}
