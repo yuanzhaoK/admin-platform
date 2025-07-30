@@ -80,7 +80,7 @@ export default function PointsRuleTemplateModal({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    category: "",
+    category: "none",
     is_public: true,
     // 模板数据字段
     rule_name: "",
@@ -102,7 +102,7 @@ export default function PointsRuleTemplateModal({
       setFormData({
         name: template.name,
         description: template.description || "",
-        category: template.category || "",
+        category: template.category || "none",
         is_public: template.is_public,
         rule_name: (templateData.name as string) || "",
         rule_description: (templateData.description as string) || "",
@@ -118,7 +118,7 @@ export default function PointsRuleTemplateModal({
       setFormData({
         name: "",
         description: "",
-        category: "",
+        category: "none",
         is_public: true,
         rule_name: initialData.name,
         rule_description: initialData.description,
@@ -133,7 +133,7 @@ export default function PointsRuleTemplateModal({
       setFormData({
         name: "",
         description: "",
-        category: "",
+        category: "none",
         is_public: true,
         rule_name: "",
         rule_description: "",
@@ -166,7 +166,9 @@ export default function PointsRuleTemplateModal({
         name: formData.name,
         description: formData.description || undefined,
         template_data: templateData,
-        category: formData.category || undefined,
+        category: formData.category && formData.category !== "none"
+          ? formData.category
+          : undefined,
         is_public: formData.is_public,
       };
 
@@ -250,7 +252,7 @@ export default function PointsRuleTemplateModal({
                     <SelectValue placeholder="选择分类" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">不分类</SelectItem>
+                    <SelectItem value="none">不分类</SelectItem>
                     {TEMPLATE_CATEGORIES.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
                         {cat.label}
