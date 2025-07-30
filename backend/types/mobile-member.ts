@@ -8,7 +8,7 @@ export interface MobileMember {
   phone: string;
   avatar?: string;
   nickname: string;
-  gender?: 'male' | 'female' | 'other';
+  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
   birthday?: string;
   level: MemberLevel;
   points: number;
@@ -74,7 +74,7 @@ export interface RegisterInput {
   confirmPassword: string;
   nickname?: string;
   avatar?: string;
-  gender?: 'male' | 'female' | 'other';
+  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
   birthday?: string;
   referralCode?: string;
 }
@@ -96,7 +96,7 @@ export interface LoginInput {
 export interface UpdateMemberInput {
   nickname?: string;
   avatar?: string;
-  gender?: 'male' | 'female' | 'other';
+  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
   birthday?: string;
   phone?: string;
   email?: string;

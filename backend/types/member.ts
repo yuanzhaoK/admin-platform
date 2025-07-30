@@ -7,7 +7,7 @@ export interface Member {
   phone?: string;
   avatar?: string;
   real_name?: string;
-  gender?: 'male' | 'female' | 'unknown';
+  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
   birthday?: string;
   level: MemberLevel;
   points: number;
@@ -38,7 +38,7 @@ export interface MemberQueryInput {
   search?: string;
   status?: 'active' | 'inactive' | 'banned';
   level_id?: string;
-  gender?: 'male' | 'female' | 'unknown';
+  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
   register_date_start?: string;
   register_date_end?: string;
   sortBy?: string;
@@ -50,7 +50,7 @@ export interface MemberInput {
   email: string;
   phone?: string;
   real_name?: string;
-  gender?: 'male' | 'female' | 'unknown';
+  gender?: 'MALE' | 'FEMALE' | 'UNKNOWN';
   birthday?: string;
   level_id: string;
   points?: number;

@@ -8,7 +8,7 @@ import {
   PaginationInput, 
   PaginatedResponse, 
   Gender, 
-  MemberStatus, 
+  MembershipStatus, 
   VerificationStatus,
   ContactInfo,
   Location,
@@ -161,7 +161,7 @@ export interface Member extends BaseEntity {
   frozenBalance: number;
   
   // 状态
-  status: MemberStatus;
+  status: MembershipStatus;
   isVerified: boolean;
   verification: MemberVerification;
   
@@ -208,7 +208,7 @@ export interface MemberQueryInput extends PaginationInput {
   realName?: string;
   
   // 状态筛选
-  status?: MemberStatus | MemberStatus[];
+  status?: MembershipStatus | MembershipStatus[];
   isVerified?: boolean;
   riskLevel?: 'low' | 'medium' | 'high';
   
@@ -281,7 +281,7 @@ export interface MemberCreateInput {
   levelId?: string;
   initialPoints?: number;
   initialBalance?: number;
-  status?: MemberStatus;
+  status?: MembershipStatus;
   wechatOpenid?: string;
   wechatUnionid?: string;
   referrerId?: string;
@@ -303,7 +303,7 @@ export interface MemberUpdateInput {
   avatar?: string;
   bio?: string;
   levelId?: string;
-  status?: MemberStatus;
+  status?: MembershipStatus;
   preferences?: Partial<MemberPreferences>;
   customFields?: Record<string, any>;
 }
@@ -542,8 +542,8 @@ export interface MemberLevelUpgradedEvent {
 export interface MemberStatusChangedEvent {
   memberId: string;
   username: string;
-  fromStatus: MemberStatus;
-  toStatus: MemberStatus;
+  fromStatus: MembershipStatus;
+  toStatus: MembershipStatus;
   reason?: string;
   operatorId?: string;
   timestamp: string;

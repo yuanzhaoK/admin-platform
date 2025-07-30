@@ -12,9 +12,9 @@ import { memberTagResolvers } from './tags.ts';
 // 枚举解析器
 const enumResolvers = {
   Gender: {
-    MALE: 'male',
-    FEMALE: 'female',
-    UNKNOWN: 'unknown',
+    MALE: 'MALE',
+    FEMALE: 'FEMALE',
+    UNKNOWN: 'UNKNOWN',
   },
 
   MembershipStatus: {

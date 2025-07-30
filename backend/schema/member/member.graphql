@@ -129,7 +129,13 @@ type MemberProfile {
 type Member {
   id: ID!
   # 基础信息
-  profile: MemberProfile!
+  avatar: String
+  nickname: String
+  real_name: String
+  gender: Gender!
+  birthday: Date
+  bio: String
+  profile: MemberProfile
   # 等级和积分
   level: MemberLevel!
   level_id: String!
@@ -172,6 +178,7 @@ type Member {
   # 扩展字段
   custom_fields: JSON
   metadata: JSON
+  preferences: JSON
 }
 
 # ========================= 分页响应类型 =========================

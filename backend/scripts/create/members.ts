@@ -228,7 +228,7 @@ async function createMembersCollection() {
         type: 'select',
         required: false,
         maxSelect: 1,
-        values: ['male', 'female', 'unknown']
+        values: ['MALE', 'FEMALE', 'UNKNOWN']
       },
       {
         name: 'birthday',
@@ -1877,7 +1877,7 @@ async function insertTestMembers() {
         phone: '13800138001',
         real_name: '张三',
         nickname: '小张',
-        gender: 'male',
+        gender: 'MALE',
         birthday: '1990-05-15',
         level_id: bronzeLevel?.id,
         points: 1250,
@@ -1906,7 +1906,7 @@ async function insertTestMembers() {
         phone: '13800138002',
         real_name: '李美',
         nickname: '美美',
-        gender: 'female',
+        gender: 'FEMALE',
         birthday: '1992-08-22',
         level_id: bronzeLevel?.id,
         points: 2850,
@@ -1935,7 +1935,7 @@ async function insertTestMembers() {
         phone: '13800138003',
         real_name: '王强',
         nickname: '阿强',
-        gender: 'male',
+        gender: 'MALE',
         birthday: '1988-03-10',
         level_id: bronzeLevel?.id,
         points: 680,
