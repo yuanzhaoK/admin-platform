@@ -30,6 +30,7 @@
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "graphql": "https://deno.land/x/graphql_deno@v15.0.0/mod.ts",
     "pocketbase": "npm:pocketbase@^0.26.1",
+    "elasticsearch": "npm:@elastic/elasticsearch@^8.13.0",
     "redis": "https://deno.land/x/redis@v0.32.1/mod.ts",
     "cache": "./cache/redis-cache.ts"
   },
