@@ -322,7 +322,10 @@ async function generateMockMembers() {
             behaviorTracking: randomBoolean(0.7)
           }
         },
-        location: location
+        location: location,
+        emailVisibility: false,
+        password: 'password123',
+        passwordConfirm: 'password123'
       };
 
       members.push(member);

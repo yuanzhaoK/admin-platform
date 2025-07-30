@@ -127,34 +127,7 @@ export const appResolvers = {
       }
     },
 
-    // 移动端用户信息
-    appProfile: async (_parent: any, _args: any, context: any) => {
-      try {
-        const { user } = context;
-        
-        if (!user) {
-          throw new GraphQLError('用户未登录');
-        }
 
-        await pocketbaseClient.ensureAuth();
-        const pb = pocketbaseClient.getClient();
-
-        const userProfile = await pb.collection('users').getOne(user.id);
-        
-        return {
-          ...userProfile,
-          identity: userProfile.email || userProfile.username,
-          points: userProfile.points || 0,
-          growth_value: userProfile.growth_value || 0,
-          level: userProfile.level || 1,
-          vip_status: userProfile.vip_status || 'normal',
-          balance: userProfile.balance || 0,
-        };
-      } catch (error) {
-        console.error('Error fetching app profile:', error);
-        throw new GraphQLError('获取用户信息失败');
-      }
-    },
 
     // 用户优惠券
     appUserCoupons: async (_parent: any, _args: any, context: any) => {

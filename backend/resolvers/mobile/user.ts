@@ -1,5 +1,7 @@
+import { GraphQLError } from "https://deno.land/x/graphql_deno@v15.0.0/mod.ts";
+
+import type { Member } from '../../types/member/member.ts';
 import { pocketbaseClient } from '../../config/pocketbase.ts';
-import type { User } from '../../types/index.ts';
 
 export const mobileUserResolvers = {
   Query: {
@@ -7,10 +9,38 @@ export const mobileUserResolvers = {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
-        return await pb.collection('users').getOne<User>(id);
+        return await pb.collection('members').getOne<Member>(id);
       } catch (error) {
         console.error('Failed to fetch user:', error);
         return null;
+      }
+    },
+    // 移动端用户信息
+    appProfile: async (_parent: any, _args: any, context: any) => {
+      try {
+        const { user } = context;
+        
+        if (!user) {
+          throw new GraphQLError('用户未登录');
+        }
+
+        await pocketbaseClient.ensureAuth();
+        const pb = pocketbaseClient.getClient();
+
+        const userProfile = await pb.collection('members').getOne(user.id);
+        
+        return {
+          ...userProfile,
+          identity: userProfile.email || userProfile.username,
+          points: userProfile.points || 0,
+          growth_value: userProfile.growth_value || 0,
+          level: userProfile.level || 1,
+          vip_status: userProfile.vip_status || 'normal',
+          balance: userProfile.balance || 0,
+        };
+      } catch (error) {
+        console.error('Error fetching app profile:', error);
+        throw new GraphQLError('获取用户信息失败');
       }
     },
   },
@@ -20,7 +50,7 @@ export const mobileUserResolvers = {
       try {
         console.log('🔐 Attempting login with:', input.identity);
         const pb = pocketbaseClient.getClient();
-        const authData = await pb.collection('users').authWithPassword(
+        const authData = await pb.collection('members').authWithPassword(
           input.identity,
           input.password,
         );

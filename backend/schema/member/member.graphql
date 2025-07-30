@@ -126,55 +126,51 @@ type MemberProfile {
   preferences: MemberPreferences!
 }
 
-type Member implements BaseEntity {
+type Member {
   id: ID!
-  created: Date!
-  updated: Date!
-  
   # 基础信息
   profile: MemberProfile!
-  
   # 等级和积分
   level: MemberLevel!
-  levelId: String!
+  level_id: String!
   points: Int!
-  frozenPoints: Int!
-  totalEarnedPoints: Int!
-  totalSpentPoints: Int!
+  frozen_points: Int!
+  total_earned_points: Int!
+  total_spent_points: Int!
   balance: Float!
-  frozenBalance: Float!
-  
+  frozen_balance: Float!
+
   # 状态
   status: MembershipStatus!
-  isVerified: Boolean!
+  is_verified: Boolean!
   verification: MemberVerification!
-  
+
   # 统计数据
   stats: MemberStats!
-  
+
   # 时间信息
-  registerTime: Date!
-  lastLoginTime: Date
-  lastActiveTime: Date
-  levelUpgradeTime: Date
-  
+  register_time: Date!
+  last_login_time: Date
+  last_active_time: Date
+  level_upgrade_time: Date
+
   # 第三方绑定
-  wechatOpenid: String
-  wechatUnionid: String
-  thirdPartyBindings: [ThirdPartyBinding!]!
-  
+  wechat_openid: String
+  wechat_unionid: String
+  third_party_bindings: [ThirdPartyBinding!]!
+
   # 标签和分组
   tags: [MemberTag!]!
   groups: [String!]!
   segment: String
-  
+
   # 风控信息
-  riskLevel: MemberRiskLevel!
-  trustScore: Float!
-  blacklistReason: String
-  
+  risk_level: MemberRiskLevel!
+  trust_score: Float!
+  blacklist_reason: String
+
   # 扩展字段
-  customFields: JSON
+  custom_fields: JSON
   metadata: JSON
 }
 
@@ -329,48 +325,48 @@ input MemberQueryInput {
   email: String
   phone: String
   realName: String
-  
+
   # 状态筛选
   status: [MembershipStatus!]
   isVerified: Boolean
   riskLevel: MemberRiskLevel
-  
+
   # 等级筛选
   levelId: [String!]
   levelName: String
   pointsMin: Int
   pointsMax: Int
-  
+
   # 时间筛选
   registerDateRange: DateRangeInput
   lastLoginDateRange: DateRangeInput
-  
+
   # 地理位置筛选
   province: String
   city: String
-  
+
   # 统计筛选
   totalOrdersMin: Int
   totalOrdersMax: Int
   totalAmountMin: Float
   totalAmountMax: Float
-  
+
   # 标签筛选
   tags: [String!]
   groups: [String!]
   segment: String
-  
+
   # 高级筛选
   hasOrders: Boolean
   hasReviews: Boolean
   isActive: Boolean
-  
+
   # 包含关联数据
   includeLevel: Boolean
   includeTags: Boolean
   includeStats: Boolean
   includeVerification: Boolean
-  
+
   pagination: PaginationInput
 }
 
@@ -507,10 +503,10 @@ extend type Query {
   memberByEmail(email: String!): Member
   memberByPhone(phone: String!): Member
   memberDetail(id: ID!): MemberDetailResponse!
-  
+
   # 搜索
   searchMembers(keyword: String!): [Member!]!
-  
+
   # 统计
   memberStats(dateRange: DateRangeInput): MemberStatsResponse!
   memberSegmentAnalysis: JSON
@@ -521,29 +517,29 @@ extend type Mutation {
   createMember(input: MemberCreateInput!): Member!
   updateMember(id: ID!, input: MemberUpdateInput!): Member!
   deleteMember(id: ID!): Boolean!
-  
+
   # 资料管理
   updateProfile(id: ID!, input: ProfileUpdateInput!): Member!
   changeMemberPassword(id: ID!, input: PasswordChangeInput!): Boolean!
-  
+
   # 绑定操作
   bindPhone(id: ID!, input: PhoneBindingInput!): Boolean!
   bindEmail(id: ID!, input: EmailBindingInput!): Boolean!
-  
+
   # 认证操作
   verifyIdentity(id: ID!, input: IdentityVerificationInput!): Boolean!
   verifyEnterprise(id: ID!, input: EnterpriseVerificationInput!): Boolean!
-  
+
   # 状态管理
   activateMember(id: ID!): Boolean!
   deactivateMember(id: ID!): Boolean!
   banMember(id: ID!, reason: String!): Boolean!
   unbanMember(id: ID!): Boolean!
-  
+
   # 批量操作
   batchUpdateMembers(ids: [ID!]!, input: MemberUpdateInput!): JSON!
   batchDeleteMembers(ids: [ID!]!): JSON!
-  
+
   # 导入导出
   importMembers(data: [JSON!]!): MemberImportResult!
-} 
+}

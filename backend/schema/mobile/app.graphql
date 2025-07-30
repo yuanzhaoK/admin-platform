@@ -89,6 +89,11 @@ type AppUserProfile {
   favoriteCount: Int!
 }
 
+type MobileLoginResponse {
+  token: String!
+  record: Member!
+}
+
 # 枚举类型
 enum BannerType {
   PRODUCT
@@ -264,7 +269,7 @@ extend type Mutation {
   """
   移动端用户登录
   """
-  mobileLogin(input: LoginInput!): Member!
+  mobileLogin(input: LoginInput!): MobileLoginResponse!
 
   # 订单操作
   appCreateOrder(input: AppCreateOrderInput!): AppOrder!

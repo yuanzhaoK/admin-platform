@@ -18,10 +18,10 @@ const enumResolvers = {
   },
 
   MembershipStatus: {
-    ACTIVE: 'active',
-    INACTIVE: 'inactive',
-    BANNED: 'banned',
-    PENDING: 'pending',
+    ACTIVE: 'ACTIVE',
+    INACTIVE: 'INACTIVE',
+    BANNED: 'BANNED',
+    PENDING: 'PENDING',
   },
 
   PointsType: {

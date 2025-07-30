@@ -18,10 +18,10 @@ export enum Gender {
  * 会员状态枚举
  */
 export enum MembershipStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  BANNED = 'banned',
-  PENDING = 'pending'
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  BANNED = 'BANNED',
+  PENDING = 'PENDING'
 }
 
 /**

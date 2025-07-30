@@ -674,7 +674,7 @@ async function createRegionsCollection() {
 async function createMembersCollection() {
   const collection = {
     name: 'members',
-    type: 'base',
+    type: 'auth',
     listRule: null,
     viewRule: null,
     createRule: "", // 临时允许创建，用于插入测试数据
@@ -699,6 +699,11 @@ async function createMembersCollection() {
         type: 'text',
         required: false,
         options: { max: 20 }
+      },
+      {
+        name: 'emailVisibility',
+        type: 'bool',
+        required: false
       },
       {
         name: 'avatar',
@@ -2678,7 +2683,10 @@ async function insertTestMembers() {
           city: '深圳市',
           district: '南山区',
           postalCode: '518000'
-        }
+        },
+        emailVisibility: false,
+        password: 'password123',
+        passwordConfirm: 'password123'
       },
       {
         username: 'demo_user_002',
@@ -2750,14 +2758,17 @@ async function insertTestMembers() {
             pushMarketing: false,
             personalizedRecommendations: true,
             behaviorTracking: false
-          }
+          },
         },
         location: {
           province: '北京市',
           city: '北京市',
           district: '朝阳区',
           postalCode: '100000'
-        }
+        },
+        emailVisibility: false,
+        password: 'password123',
+        passwordConfirm: 'password123'
       },
       {
         username: 'demo_user_003',
@@ -2851,7 +2862,10 @@ async function insertTestMembers() {
           city: '上海市',
           district: '浦东新区',
           postalCode: '200000'
-        }
+        },
+        emailVisibility: false,
+        password: 'password123',
+        passwordConfirm: 'password123'
       }
     ];
 
