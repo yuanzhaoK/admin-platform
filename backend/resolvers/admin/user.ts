@@ -1,4 +1,5 @@
 import { pocketbaseClient } from '../../config/pocketbase.ts';
+import { AuthContext } from '../../middleware/auth-middleware.ts';
 import type { User } from '../../types/index.ts';
 
 export const userResolvers = {
@@ -96,7 +97,7 @@ export const userResolvers = {
             const created = new Date(u.created);
             const now = new Date();
             return created.getMonth() === now.getMonth() && 
-                   created.getFullYear() === now.getFullYear();
+                  created.getFullYear() === now.getFullYear();
           }).length
         };
         
@@ -118,7 +119,7 @@ export const userResolvers = {
     },
 
     // 搜索用户
-    searchUsers: async (_: any, { keyword, limit }: { keyword: string; limit: number }) => {
+    async searchUsers (_: any, { keyword, limit }: { keyword: string; limit: number }, context: AuthContext) {
       try {
         await pocketbaseClient.ensureAuth();
         const pb = pocketbaseClient.getClient();
@@ -139,7 +140,7 @@ export const userResolvers = {
 
   Mutation: {
     // 认证变更
-    login: async (_: any, { input }: { input: { identity: string; password: string } }) => {
+    login: async (_: any, { input }: { input: { identity: string; password: string } }, context: AuthContext) => {
       try {
         console.log('🔐 Attempting login with:', input.identity);
         const pb = pocketbaseClient.getClient();

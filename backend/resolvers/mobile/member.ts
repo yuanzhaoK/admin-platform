@@ -1,3 +1,5 @@
+import { GraphQLError } from "https://deno.land/x/graphql_deno@v15.0.0/mod.ts";
+
 import { pocketbaseClient } from '../../config/pocketbase.ts';
 
 // 移动端会员解析器
@@ -108,6 +110,22 @@ export const mobileMemberResolvers = {
     //     throw new Error('获取订单列表失败');
     //   }
     // },
+    appProfile: async (_parent: any, _args: any, context: any) => {
+      try {
+        // 自动从 context 获取用户信息并以该用户身份认证
+        await pocketbaseClient.authenticateFromContext(context, true);
+        const pb = pocketbaseClient.getClient();
+        const currentUser = pocketbaseClient.getCurrentAuthUser();
+        const member = await pb.collection('members').getOne(currentUser.id);
+        return {
+          ...member,
+          avatar: pb.files.getURL(member, member.avatar) || '',
+        };
+      } catch (error) {
+        console.error('获取会员信息失败:', error);
+        throw new Error('获取会员信息失败');
+      }
+    }
   },
 
   Mutation: {
@@ -120,14 +138,15 @@ export const mobileMemberResolvers = {
           input.password,
         );
         console.log('✅ Login successful:', authData.record.email);
-        if (!pb.authStore.isValid || !pb.authStore.token) {
-          console.error('❌ Invalid response from PocketBase:', authData, pb.authStore);
-          throw new Error('Invalid response from authentication service');
-        }
-        return {
+  
+        const user = {
           token: pb.authStore.token,
-          record: authData.record
+          record: {
+            ...authData.record,
+            avatar: pb.files.getURL(authData.record, authData.record.avatar) || '',
+          }
         }
+        return user;
       } catch (error) {
         console.error('登录失败:', error);
         throw new Error('登录失败');

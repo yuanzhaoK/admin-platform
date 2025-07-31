@@ -3,6 +3,7 @@ import { makeExecutableSchema } from 'https://deno.land/x/graphql_tools@0.0.2/mo
 import { pocketbaseClient } from './config/pocketbase.ts';
 import { resolvers } from './resolvers/index.ts';
 import { getTypeDefs, validateSchema } from './schema/index.ts';
+import { AuthMiddleware } from './middleware/auth-middleware.ts';
 
 // Deno 版本的 PocketBase 直接启动服务器
 import { config } from './config/server.ts';
@@ -96,10 +97,7 @@ async function handleGraphQL(request: Request): Promise<Response> {
       const graphQLResponse = await GraphQLHTTP<Request>({
         schema,
         graphiql: true, // 启用 GraphiQL 界面
-        context: (_request: Request) => ({
-          request: _request,
-          pocketbase: pocketbaseClient,
-        }),
+        context: (_request: Request) => AuthMiddleware.createAuthContext(_request),
       })(request);
 
       // 添加 CORS 头
