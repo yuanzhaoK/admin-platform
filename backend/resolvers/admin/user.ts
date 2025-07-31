@@ -1,5 +1,6 @@
 import { pocketbaseClient } from '../../config/pocketbase.ts';
 import { AuthContext } from '../../middleware/auth-middleware.ts';
+import { authService } from '../../services/auth-service.ts';
 import type { User } from '../../types/index.ts';
 
 export const userResolvers = {
@@ -143,35 +144,27 @@ export const userResolvers = {
     login: async (_: any, { input }: { input: { identity: string; password: string } }, context: AuthContext) => {
       try {
         console.log('🔐 Attempting login with:', input.identity);
-        const pb = pocketbaseClient.getClient();
-        const authData = await pb.collection('_superusers').authWithPassword(
-          input.identity,
-          input.password,
-        );
 
-        console.log('✅ Login successful:', authData.record.email);
-
-        if (!pb.authStore.isValid || !pb.authStore.token) {
-          console.error('❌ Invalid response from PocketBase:', authData);
-          throw new Error('Invalid response from authentication service');
+        const authResult = await authService.login({
+          identity: input.identity,
+          password: input.password,
+          deviceInfo: {
+            deviceId: context.deviceInfo.deviceId || `web_${Date.now()}`,
+            deviceType: 'desktop',
+            ip: context.deviceInfo.ip,
+            userAgent: context.deviceInfo.userAgent,
+          },
+        });
+        if (authResult.success) {
+          return {
+            token: authResult.accessToken,
+            refreshToken: authResult.refreshToken,
+            record: authResult.user,
+          };
+        } else {
+          return null;
         }
 
-        return {
-          token: pb.authStore.token,
-          record: {
-            id: authData.record.id,
-            email: authData.record.email,
-            name: authData.record.name || '',
-            avatar: authData.record.avatar || '',
-            role: pb.authStore.isSuperuser ? 'admin' : 'user', // 超级用户角色
-            created: authData.record.created,
-            updated: authData.record.updated,
-            collectionId: authData.record.collectionId,
-            collectionName: authData.record.collectionName,
-            emailVisibility: authData.record.emailVisibility || false,
-            verified: authData.record.verified || true
-          }
-        };
       } catch (error) {
         console.error('Failed to login:', error);
         return null;
