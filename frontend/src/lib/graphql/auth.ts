@@ -1,6 +1,6 @@
-import { apolloClient } from './client';
-import { LOGIN_MUTATION, LOGOUT_MUTATION } from './queries';
-import type { User } from '../pocketbase';
+import { apolloClient } from "./client";
+import { LOGIN_MUTATION, LOGOUT_MUTATION } from "./queries";
+import type { User } from "../pocketbase";
 
 interface LoginInput {
   identity: string;
@@ -9,8 +9,19 @@ interface LoginInput {
 
 interface LoginResponse {
   login: {
+    success: boolean;
     token: string;
-    record: User;
+    refresh_token: string;
+    expires_in: number;
+    user: {
+      id: string;
+      email: string;
+      permissions: string[];
+      role: string;
+      status: string;
+      username: string;
+      record: User;
+    };
   };
 }
 
@@ -21,77 +32,78 @@ interface LogoutResponse {
 export const graphqlAuthHelpers = {
   async login(email: string, password: string) {
     try {
-      console.log('GraphQL: 尝试登录:', email);
-      
+      console.log("GraphQL: 尝试登录:", email);
+
       const { data } = await apolloClient.mutate<LoginResponse>({
         mutation: LOGIN_MUTATION,
         variables: {
-          input: { identity: email, password } as LoginInput
-        }
+          input: { identity: email, password } as LoginInput,
+        },
       });
+      if (data?.login.success) {
+        console.log("GraphQL: 登录成功:", data.login.user.email);
 
-      if (data?.login) {
-        console.log('GraphQL: 登录成功:', data.login.record.email);
-        
         // 保存 token 到 localStorage
         if (data.login.token) {
-          localStorage.setItem('graphql-auth-token', data.login.token);
+          localStorage.setItem("graphql-auth-token", data.login.token);
         }
-        
+
         return {
           success: true,
-          user: data.login.record,
-          token: data.login.token
+          user: data.login.user,
+          token: data.login.token,
+          refresh_token: data.login.refresh_token,
+          expires_in: data.login.expires_in,
         };
       } else {
-        console.error('GraphQL: 登录响应数据不完整');
+        console.error("GraphQL: 登录响应数据不完整");
         return {
           success: false,
-          error: '登录响应数据不完整'
+          error: "登录响应数据不完整",
         };
       }
     } catch (error: unknown) {
-      console.error('GraphQL: 登录失败:', error);
+      console.error("GraphQL: 登录失败:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : '登录失败'
+        error: error instanceof Error ? error.message : "登录失败",
       };
     }
   },
 
   async logout() {
     try {
-      console.log('GraphQL: 尝试登出');
-      
+      console.log("GraphQL: 尝试登出");
+
       const { data } = await apolloClient.mutate<LogoutResponse>({
-        mutation: LOGOUT_MUTATION
+        mutation: LOGOUT_MUTATION,
       });
 
       // 清除本地存储的 token
-      localStorage.removeItem('graphql-auth-token');
-      
+      localStorage.removeItem("graphql-auth-token");
+
       // 重置 Apollo Client 缓存
       await apolloClient.resetStore();
-      
-      console.log('GraphQL: 登出成功');
+
+      console.log("GraphQL: 登出成功");
       return data?.logout || true;
     } catch (error: unknown) {
-      console.error('GraphQL: 登出失败:', error);
+      console.error("GraphQL: 登出失败:", error);
       // 即使服务器端登出失败，也清除本地数据
-      localStorage.removeItem('graphql-auth-token');
+      localStorage.removeItem("graphql-auth-token");
       await apolloClient.resetStore();
       return false;
     }
   },
 
   getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('graphql-auth-token');
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("graphql-auth-token");
     }
     return null;
   },
 
   isAuthenticated(): boolean {
     return !!this.getToken();
-  }
-}; 
+  },
+};

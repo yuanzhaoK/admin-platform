@@ -26,14 +26,24 @@ enum SessionStatus {
   suspended
 }
 
+type AuthUser {
+    id: ID!
+    email: String!
+    permissions: [String!]!
+    role: String!
+    status: String!
+    username: String
+    record: JSON!
+}
+
 # ===== 认证类型 =====
 type AuthResponse {
+  success: Boolean!
   token: String!
   refresh_token: String!
   expires_in: Int!
-  token_type: String!
-  record: User!
-  permissions: [String!]!
+  token_type: String
+  user: AuthUser!
   session_id: String!
 }
 

@@ -5,13 +5,14 @@
 
 import { sessionManager, SessionData, JWTPayload } from './session-manager.ts';
 import { pocketbaseClient } from '../config/pocketbase.ts';
+import { User } from '../types/user.ts';
 export interface AuthenticatedUser{
   status: string;
   id: string;
   email: string;
   role: 'admin' | 'member';
   permissions: string[];
-  sessionId: string;
+  record: User;
 }
 // GraphQL 上下文接口
 export interface AuthContext {
@@ -245,7 +246,6 @@ export class AuthMiddleware {
         role: role as 'admin' | 'member',
         permissions,
         status: user.status, // 修复: 添加缺失的 status 字段
-        sessionId: user.sessionId,
       };
     } catch (error) {
       console.error('获取用户信息失败:', error);

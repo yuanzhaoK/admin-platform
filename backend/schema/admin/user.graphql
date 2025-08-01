@@ -25,13 +25,7 @@ type User {
   role: UserRole!
   status: UserStatus!
   phone: String
-  # points: Int!
-  # growth_value: Int!
-  # level: Int!
-  # vip_status: String
-  # balance: Float!
-  # last_login: Date
-  # login_count: Int!
+  login_count: Int
   created: Date!
   updated: Date!
   collectionId: String

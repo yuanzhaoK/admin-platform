@@ -101,13 +101,13 @@ export class SessionManager {
     return SessionManager.instance;
   }
 
-  private async getSecretKey(): Promise<CryptoKey> {
+  private async getSecretKey(purpose:KeyUsage[]): Promise<CryptoKey> {
     return await crypto.subtle.importKey(
       "raw",
       new TextEncoder().encode(JWT_CONFIG.SECRET),
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["verify"]
+      purpose
     );
   }
 
@@ -182,7 +182,7 @@ export class SessionManager {
 
       // 验证JWT token
       // 使用 CryptoKey 作为 verify 的密钥参数
-      const key = await this.getSecretKey();
+      const key = await this.getSecretKey(["verify"]);
       const payload = await verify(token, key) as JWTPayload;
 
       // 验证token基本信息
@@ -408,7 +408,7 @@ export class SessionManager {
       deviceId: session.deviceInfo.deviceId,
     };
 
-    return await create({ alg: "HS256", typ: "JWT" }, payload, await this.getSecretKey());
+    return await create({ alg: "HS256", typ: "JWT" }, payload, await this.getSecretKey(["sign", "verify"]));
   }
 
   private async saveSession(session: SessionData): Promise<void> {

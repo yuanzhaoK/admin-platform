@@ -157,9 +157,13 @@ export const userResolvers = {
         });
         if (authResult.success) {
           return {
+            success: true,
             token: authResult.accessToken,
-            refreshToken: authResult.refreshToken,
-            record: authResult.user,
+            refresh_token: authResult.refreshToken,
+            user: authResult.user,
+            session_id: authResult.session?.sessionId,
+            expires_in: authResult.expiresIn,
+            token_type: 'Bearer',
           };
         } else {
           return null;
