@@ -69,6 +69,7 @@ export interface SessionData {
   expiresAt: Date;
   isActive: boolean;
   refreshToken: string;
+  pb_token?: string;
 }
 
 // JWT Payload 接口
@@ -81,12 +82,12 @@ export interface JWTPayload extends Payload {
 }
 
 // 认证结果接口
-export interface AuthResult {
+export interface AuthResult<T> {
   success: boolean;
   accessToken?: string;
   refreshToken?: string;
   expiresIn?: number;
-  user?: AuthenticatedUser;
+  user?: AuthenticatedUser<T>;
   session?: SessionData;
   error?: string;
 }
@@ -114,7 +115,7 @@ export class SessionManager {
   /**
    * 创建用户会话
    */
-  async createSession(user: AuthenticatedUser, deviceInfo: DeviceInfo): Promise<AuthResult> {
+  async createSession<T>(user: AuthenticatedUser<T>, deviceInfo: DeviceInfo): Promise<AuthResult<T>> {
     try {
       // 检查并清理过期会话
       await this.cleanupExpiredSessions(user.id);
@@ -140,6 +141,7 @@ export class SessionManager {
         expiresAt: new Date(Date.now() + SESSION_CONFIG.SESSION_TTL * 1000),
         isActive: true,
         refreshToken,
+        pb_token: user.pb_token,
       };
 
       // 生成访问token
@@ -219,7 +221,7 @@ export class SessionManager {
   /**
    * 刷新访问token
    */
-  async refreshAccessToken(refreshToken: string): Promise<AuthResult> {
+  async refreshAccessToken<T>(refreshToken: string): Promise<AuthResult<T>> {
     try {
       // 验证refresh token
       const sessionId = await this.getSessionByRefreshToken(refreshToken);
@@ -255,7 +257,7 @@ export class SessionManager {
         accessToken,
         refreshToken, // refresh token 保持不变
         expiresIn: JWT_CONFIG.ACCESS_TOKEN_TTL,
-        user,
+        user: user as AuthenticatedUser<T>,
         session,
       };
     } catch (error) {
@@ -395,7 +397,7 @@ export class SessionManager {
     return `refresh_${Date.now()}_${Math.random().toString(36).substring(2)}`;
   }
 
-  private async generateAccessToken(user: AuthenticatedUser, session: SessionData): Promise<string> {
+  private async generateAccessToken<T>(user: AuthenticatedUser<T>, session: SessionData): Promise<string> {
     const payload: JWTPayload = {
       iss: JWT_CONFIG.ISSUER,
       aud: JWT_CONFIG.AUDIENCE,
@@ -506,7 +508,7 @@ export class SessionManager {
     await redisCache.set('DEVICE_FINGERPRINT', deviceInfo.deviceId, deviceInfo, 30 * 24 * 60 * 60); // 30天
   }
 
-  private async getUserInfo(userId: string): Promise<AuthenticatedUser | null> {
+  private async getUserInfo<T>(userId: string): Promise<AuthenticatedUser<T> | null> {
     // 这里需要从PocketBase获取最新用户信息
     // 暂时返回null，实际实现时需要集成PocketBase查询
     return null;

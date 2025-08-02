@@ -1,7 +1,8 @@
 import { GraphQLError } from "https://deno.land/x/graphql_deno@v15.0.0/mod.ts";
 
 import { pocketbaseClient } from '../../config/pocketbase.ts';
-
+import { authService } from '../../services/auth-service.ts';
+import { Member } from '../../types/member/member.ts';
 // 移动端会员解析器
 export const mobileMemberResolvers = {
   Query: {
@@ -129,27 +130,44 @@ export const mobileMemberResolvers = {
   },
 
   Mutation: {
-    mobileLogin: async (_: any, { input }: { input: { identity: string; password: string } }) => {
+    mobileLogin: async (_: any, { input }: { input: { identity: string; password: string } }, context: any) => {
       try {
         console.log('🔐 Attempting login with:', input.identity);
         const pb = pocketbaseClient.getClient();
-        const authData = await pb.collection('members').authWithPassword(
-          input.identity,
-          input.password,
-        );
-        console.log('✅ Login successful:', authData.record.email);
-  
-        const user = {
-          token: pb.authStore.token,
-          record: {
-            ...authData.record,
-            avatar: pb.files.getURL(authData.record, authData.record.avatar) || '',
+
+        const authResult = await authService.login<Member>({
+          identity: input.identity,
+          password: input.password,
+          deviceInfo: {
+            deviceId: context.deviceInfo.deviceId || `web_${Date.now()}`,
+            deviceType: 'desktop',
+            ip: context.deviceInfo.ip,
+            userAgent: context.deviceInfo.userAgent,
+          },
+        }, 'member');
+        
+        const memberLevel = await pb.collection('member_levels').getOne(authResult.user?.record.level_id!);
+        if(authResult.success){
+          return {
+            success: true,
+            token: authResult.accessToken,
+            refresh_token: authResult.refreshToken,
+            permissions: authResult.user?.permissions,
+            role: authResult.user?.role,
+            status: authResult.user?.status,
+            expires_in: authResult.expiresIn,
+            token_type: 'Bearer',
+            user: authResult.user,
+          }
+        }else{
+          return {
+            success: false,
+            error: authResult.error,
           }
         }
-        return user;
       } catch (error) {
         console.error('登录失败:', error);
-        throw new Error('登录失败');
+        throw new GraphQLError('登录失败');
       }
     },
 

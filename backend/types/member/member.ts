@@ -152,32 +152,32 @@ export interface Member extends BaseEntity {
   
   // 等级和积分
   level: MemberLevel;
-  levelId: string;
+  level_id: string;
   points: number;
-  frozenPoints: number;
-  totalEarnedPoints: number;
-  totalSpentPoints: number;
+  frozen_points: number;
+  total_earned_points: number;
+  total_spent_points: number;
   balance: number;
-  frozenBalance: number;
+  frozen_balance: number;
   
   // 状态
   status: MembershipStatus;
-  isVerified: boolean;
+  is_verified: boolean;
   verification: MemberVerification;
   
   // 统计数据
   stats: MemberStats;
   
   // 时间信息
-  registerTime: string;
-  lastLoginTime?: string;
-  lastActiveTime?: string;
-  levelUpgradeTime?: string;
+  register_time: string;
+  last_login_time?: string;
+  last_active_time?: string;
+  level_upgrade_time?: string;
   
   // 第三方绑定
-  wechatOpenid?: string;
-  wechatUnionid?: string;
-  thirdPartyBindings: ThirdPartyBinding[];
+  wechat_openid?: string;
+  wechat_unionid?: string;
+  third_party_bindings: ThirdPartyBinding[];
   
   // 标签和分组
   tags: MemberTag[];
@@ -185,12 +185,12 @@ export interface Member extends BaseEntity {
   segment?: string;
   
   // 风控信息
-  riskLevel: 'low' | 'medium' | 'high';
-  trustScore: number;
-  blacklistReason?: string;
+  risk_level: 'low' | 'medium' | 'high';
+  trust_score: number;
+  blacklist_reason?: string;
   
   // 扩展字段
-  customFields?: Record<string, any>;
+  custom_fields?: Record<string, any>;
   metadata?: Record<string, any>;
 }
 

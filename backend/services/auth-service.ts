@@ -11,7 +11,7 @@ export interface LoginRequest {
 }
 
 export class AuthService {
-  async login(request: LoginRequest): Promise<AuthResult> {
+  async login<T>(request: LoginRequest, type: 'admin' | 'member'='admin'): Promise<AuthResult<T>> {
     const { identity, password, deviceInfo } = request;
     try {
       const loginCheck = await sessionManager.checkLoginAttempts(identity, deviceInfo.ip);
@@ -24,7 +24,7 @@ export class AuthService {
 
         // 记录登录尝试
         await sessionManager.recordLoginAttempt(identity, deviceInfo.ip, false);
-        const user = await this.authenticateUser(identity, password, 'admin') as unknown as AuthenticatedUser;
+        const user = await this.authenticateUser(identity, password, type) as unknown as AuthenticatedUser<T>;
         if (!user) {
           await sessionManager.recordLoginAttempt(identity, deviceInfo.ip, false);
           return {
@@ -61,7 +61,7 @@ export class AuthService {
   cleanupOldDevices(id: string) {
     console.log('清理旧的设备记录', id);
   }
-  recordLoginSuccess(user: AuthenticatedUser, enhancedDeviceInfo: DeviceInfo) {
+  recordLoginSuccess<T>(user: AuthenticatedUser<T>, enhancedDeviceInfo: DeviceInfo) {
     console.log('记录登录成功', user, enhancedDeviceInfo);
   }
   private async authenticateUser(identity: string, password: string, type: 'admin' | 'member') {
@@ -95,6 +95,9 @@ export class AuthService {
           role: 'member',
           permissions: ['*'],
           status: 'active',
+          record: memberAuth.record,
+          avatar: pb.files.getURL(memberAuth.record, memberAuth.record.avatar) || '',
+          pb_token: memberAuth.token,
         };
       }
     } catch (error) {

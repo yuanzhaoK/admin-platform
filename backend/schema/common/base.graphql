@@ -33,6 +33,7 @@ type AuthUser {
     role: String!
     status: String!
     username: String
+    avatar: String
     record: JSON!
 }
 

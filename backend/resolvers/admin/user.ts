@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { pocketbaseClient } from '../../config/pocketbase.ts';
 import { AuthContext } from '../../middleware/auth-middleware.ts';
 import { authService } from '../../services/auth-service.ts';
@@ -145,7 +146,7 @@ export const userResolvers = {
       try {
         console.log('🔐 Attempting login with:', input.identity);
 
-        const authResult = await authService.login({
+        const authResult = await authService.login<User>({
           identity: input.identity,
           password: input.password,
           deviceInfo: {
@@ -166,12 +167,12 @@ export const userResolvers = {
             token_type: 'Bearer',
           };
         } else {
-          return null;
+          throw new GraphQLError(authResult.error as string);
         }
 
       } catch (error) {
         console.error('Failed to login:', error);
-        return null;
+        throw new GraphQLError(error as string);
       }
     },
 

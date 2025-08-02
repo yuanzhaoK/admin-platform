@@ -6,17 +6,19 @@
 import { sessionManager, SessionData, JWTPayload } from './session-manager.ts';
 import { pocketbaseClient } from '../config/pocketbase.ts';
 import { User } from '../types/user.ts';
-export interface AuthenticatedUser{
+import { Member } from '../types/member/member.ts';
+export interface AuthenticatedUser<T>{
   status: string;
   id: string;
   email: string;
   role: 'admin' | 'member';
   permissions: string[];
-  record: User;
+  record: T;
+  pb_token: string;
 }
 // GraphQL 上下文接口
 export interface AuthContext {
-  user: AuthenticatedUser | null;
+  user: AuthenticatedUser<User | Member> | null;
   session: SessionData | null;
   isAuthenticated: boolean;
   permissions: string[];
@@ -81,10 +83,10 @@ export class AuthMiddleware {
       }
 
       // 配置 PocketBase 认证
-      await this.configurePocketBaseAuth(user, verification.session);
+      await this.configurePocketBaseAuth(user as AuthenticatedUser<User | Member>, verification.session);
 
       // 更新上下文
-      context.user = user;
+      context.user = user as AuthenticatedUser<User | Member>;
       context.session = verification.session;
       context.isAuthenticated = true;
       context.permissions = user.permissions;
@@ -227,13 +229,13 @@ export class AuthMiddleware {
   /**
    * 从 PocketBase 获取用户信息
    */
-  private static async getUserFromPocketBase(userId: string, role: string): Promise<AuthenticatedUser | null> {
+  private static async getUserFromPocketBase<T>(userId: string, role: string): Promise<AuthenticatedUser<T> | null> {
     try {
       await pocketbaseClient.ensureAuth();
       const pb = pocketbaseClient.getClient();
       
       const collection = role === 'admin' ? '_superusers' : 'members';
-      const user = await pb.collection(collection).getOne(userId);
+      const user = await pb.collection(collection).getOne(userId) as unknown as User;
       
       if (!user) return null;
 
@@ -245,7 +247,8 @@ export class AuthMiddleware {
         email: user.email,
         role: role as 'admin' | 'member',
         permissions,
-        status: user.status, // 修复: 添加缺失的 status 字段
+        status: user.status as string,
+        record: user as T // 修复: 添加缺失的 status 字段
       };
     } catch (error) {
       console.error('获取用户信息失败:', error);
@@ -286,7 +289,7 @@ export class AuthMiddleware {
   /**
    * 配置 PocketBase 认证
    */
-  private static async configurePocketBaseAuth(user: AuthenticatedUser, session: SessionData): Promise<void> {
+  private static async configurePocketBaseAuth(user: AuthenticatedUser<User | Member>, session: SessionData): Promise<void> {
     try {
       await pocketbaseClient.authenticateAsUser(
         {

@@ -269,7 +269,7 @@ extend type Mutation {
   """
   移动端用户登录
   """
-  mobileLogin(input: LoginInput!): MobileLoginResponse!
+  mobileLogin(input: LoginInput!): AuthResponse!
 
   # 订单操作
   appCreateOrder(input: AppCreateOrderInput!): AppOrder!
