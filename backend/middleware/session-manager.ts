@@ -90,6 +90,7 @@ export interface AuthResult<T> {
   user?: AuthenticatedUser<T>;
   session?: SessionData;
   error?: string;
+
 }
 
 export class SessionManager {
@@ -376,7 +377,7 @@ export class SessionManager {
    */
   async recordLoginAttempt(identifier: string, ip: string, success: boolean): Promise<void> {
     const key = `${identifier}:${ip}`;
-    
+    await redisCache.set('LOGIN_ATTEMPTS', key, 0, 15 * 60);
     if (success) {
       // 登录成功，清除失败记录
       await redisCache.del('LOGIN_ATTEMPTS', key);

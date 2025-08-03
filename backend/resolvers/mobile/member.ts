@@ -146,7 +146,7 @@ export const mobileMemberResolvers = {
           },
         }, 'member');
         
-        const memberLevel = await pb.collection('member_levels').getOne(authResult.user?.record.level_id!);
+        const memberLevel = await authResult.user?.impersonateClient!.collection('member_levels').getOne(authResult.user?.record.level_id!);
         if(authResult.success){
           return {
             success: true,

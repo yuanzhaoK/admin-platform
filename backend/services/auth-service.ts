@@ -69,6 +69,7 @@ export class AuthService {
     if(type === 'admin'){
     try {
       const adminAuth = await pb.collection('_superusers').authWithPassword(identity, password);
+      const impersonateClient = await pb.collection("_superusers").impersonate(adminAuth.record.id, 3600)
       if(adminAuth.record){
         return {
           id: adminAuth.record.id,
@@ -78,6 +79,7 @@ export class AuthService {
           permissions: ['*'],
           status: 'active',
           record: adminAuth.record,
+          impersonateClient
         };
       }
     } catch (error) {
@@ -87,6 +89,7 @@ export class AuthService {
   }else{
     try {
       const memberAuth = await pb.collection('members').authWithPassword(identity, password);
+      const impersonateClient = await pb.collection("members").impersonate(memberAuth.record.id, 3600)
       if(memberAuth.record){
         return {
           id: memberAuth.record.id,
@@ -98,6 +101,7 @@ export class AuthService {
           record: memberAuth.record,
           avatar: pb.files.getURL(memberAuth.record, memberAuth.record.avatar) || '',
           pb_token: memberAuth.token,
+          impersonateClient
         };
       }
     } catch (error) {

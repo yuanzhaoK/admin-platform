@@ -2,7 +2,7 @@
  * 认证中间件
  * 集成 JWT + Redis Session 管理
  */
-
+import type Client from 'pocketbase';
 import { sessionManager, SessionData, JWTPayload } from './session-manager.ts';
 import { pocketbaseClient } from '../config/pocketbase.ts';
 import { User } from '../types/user.ts';
@@ -15,6 +15,8 @@ export interface AuthenticatedUser<T>{
   permissions: string[];
   record: T;
   pb_token: string;
+  impersonateClient?: Client;
+
 }
 // GraphQL 上下文接口
 export interface AuthContext {
@@ -220,6 +222,10 @@ export class AuthMiddleware {
       ip: request.headers.get('X-Forwarded-For') || 
           request.headers.get('X-Real-IP') || 
           request.headers.get('CF-Connecting-IP') || 
+          request.headers.get('X-Forwarded-For') ||
+          request.headers.get('X-Forwarded-Host') ||
+          request.headers.get('X-Forwarded-Proto') ||
+          request.headers.get('host') ||
           'unknown',
       userAgent: request.headers.get('User-Agent') || '',
       deviceId: request.headers.get('X-Device-ID') || undefined,
@@ -247,6 +253,7 @@ export class AuthMiddleware {
         email: user.email,
         role: role as 'admin' | 'member',
         permissions,
+        pb_token: '', // 添加缺失的 pb_token 字段
         status: user.status as string,
         record: user as T // 修复: 添加缺失的 status 字段
       };
