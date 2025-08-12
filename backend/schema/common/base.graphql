@@ -27,14 +27,14 @@ enum SessionStatus {
 }
 
 type AuthUser {
-    id: ID!
-    email: String!
-    permissions: [String!]!
-    role: String!
-    status: String!
-    username: String
-    avatar: String
-    record: JSON!
+  id: ID!
+  email: String!
+  permissions: [String!]!
+  role: String!
+  status: String!
+  username: String
+  avatar: String
+  record: JSON!
 }
 
 # ===== 认证类型 =====
@@ -46,6 +46,7 @@ type AuthResponse {
   token_type: String
   user: AuthUser!
   session_id: String!
+  memberLevel: JSON
 }
 
 type RefreshTokenResponse {
@@ -179,81 +180,131 @@ input SocialLoginInput {
 
 # ===== 查询扩展 =====
 extend type Query {
-  """获取当前用户信息"""
+  """
+  获取当前用户信息
+  """
   me: User
-  
-  """获取用户会话列表"""
+
+  """
+  获取用户会话列表
+  """
   mySessions: [AuthSession!]!
-  
-  """获取密码策略"""
+
+  """
+  获取密码策略
+  """
   passwordPolicy: PasswordPolicy!
-  
-  """获取双因子认证状态"""
+
+  """
+  获取双因子认证状态
+  """
   my2FAStatus: TwoFactorAuth!
-  
-  """验证令牌有效性"""
+
+  """
+  验证令牌有效性
+  """
   verifyToken(token: String!, type: TokenType!): Boolean!
-  
-  """获取登录历史"""
+
+  """
+  获取登录历史
+  """
   myLoginHistory(limit: Int = 10): [AuthAttempt!]!
-  
-  """检查用户名/邮箱是否可用"""
+
+  """
+  检查用户名/邮箱是否可用
+  """
   checkAvailability(identity: String!, type: String!): Boolean!
 }
 
 # ===== 变更扩展 =====
 extend type Mutation {
-  """用户登录"""
+  """
+  用户登录
+  """
   login(input: LoginInput!): AuthResponse!
-  
-  """用户注册"""
+
+  """
+  用户注册
+  """
   register(input: RegisterInput!): AuthResponse!
-  
-  """用户登出"""
+
+  """
+  用户登出
+  """
   logout: Boolean!
-  
-  """登出所有设备"""
+
+  """
+  登出所有设备
+  """
   logoutAll: Boolean!
-  
-  """刷新令牌"""
+
+  """
+  刷新令牌
+  """
   refreshToken(input: RefreshTokenInput!): RefreshTokenResponse!
-  
-  """忘记密码"""
+
+  """
+  忘记密码
+  """
   forgotPassword(input: ForgotPasswordInput!): OperationResult!
-  
-  """重置密码"""
+
+  """
+  重置密码
+  """
   resetPassword(input: ResetPasswordInput!): OperationResult!
-  
-  """修改密码"""
+
+  """
+  修改密码
+  """
   changePassword(input: ChangePasswordInput!): OperationResult!
-  
-  """验证邮箱"""
+
+  """
+  验证邮箱
+  """
   verifyEmail(input: VerifyEmailInput!): OperationResult!
-  
-  """重新发送验证邮件"""
+
+  """
+  重新发送验证邮件
+  """
   resendVerificationEmail: OperationResult!
-  
-  """启用双因子认证"""
+
+  """
+  启用双因子认证
+  """
   enable2FA(input: Enable2FAInput!): TwoFactorAuth!
-  
-  """禁用双因子认证"""
+
+  """
+  禁用双因子认证
+  """
   disable2FA(password: String!): OperationResult!
-  
-  """验证双因子认证码"""
+
+  """
+  验证双因子认证码
+  """
   verify2FA(input: Verify2FAInput!): OperationResult!
-  
-  """生成新的备用码"""
+
+  """
+  生成新的备用码
+  """
   generateBackupCodes(password: String!): [String!]!
-  
-  """社交登录"""
+
+  """
+  社交登录
+  """
   socialLogin(input: SocialLoginInput!): AuthResponse!
-  
-  """撤销会话"""
+
+  """
+  撤销会话
+  """
   revokeSession(session_id: String!): OperationResult!
-  
-  """撤销令牌"""
+
+  """
+  撤销令牌
+  """
   revokeToken(token: String!): OperationResult!
-  
-  """更新设备信息"""
+
+  """
+  更新设备信息
+  """
   updateDeviceInfo(device_info: DeviceInfoInput!): OperationResult!
-} 
+}

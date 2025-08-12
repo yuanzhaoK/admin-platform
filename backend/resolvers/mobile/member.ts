@@ -158,7 +158,7 @@ export const mobileMemberResolvers = {
             expires_in: authResult.expiresIn,
             token_type: 'Bearer',
             user: authResult.user,
-            memberLevel: memberLevel,
+            memberLevel,
           }
         }else{
           return {
