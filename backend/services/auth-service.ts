@@ -1,7 +1,7 @@
 import { AuthResult, DeviceInfo, sessionManager } from '../middleware/session-manager.ts';
 import { pocketbaseClient } from '../config/pocketbase.ts';
 import { AuthenticatedUser } from '../middleware/auth-middleware.ts';
-import PocketBase from 'pocketbase';
+import { impersonateUser } from '../contexts/admin-context.ts';
 // 登录请求接口
 export interface LoginRequest {
   identity: string; // 邮箱、用户名或手机号
@@ -73,8 +73,8 @@ export class AuthService {
       
       console.log(`🔄 Admin authenticated: ${adminAuth.record.email}, attempting self-impersonation...`);
       
-      // 管理员可以直接 impersonate 自己，因为已经有超级用户权限
-      const impersonateClient = await pb.collection("_superusers").impersonate(adminAuth.record.id, 3600);
+      // 使用全局管理员上下文执行 admin impersonate 操作
+      const impersonateClient = await impersonateUser('_superusers', adminAuth.record.id, 3600);
       console.log(`✅ Admin self-impersonation successful: ${adminAuth.record.id}`);
       
       if(adminAuth.record){
@@ -104,19 +104,8 @@ export class AuthService {
       
       console.log(`🔄 Member authenticated: ${memberRecord.email}, attempting impersonation...`);
       
-      // 创建独立的管理员客户端来执行 impersonate 操作
-      // 避免与当前 member 认证状态冲突
-      const POCKETBASE_URL = Deno.env.get('POCKETBASE_URL') || 'http://47.111.142.237:8090';
-      const ADMIN_EMAIL = Deno.env.get('POCKETBASE_ADMIN_EMAIL') || 'ahukpyu@outlook.com';
-      const ADMIN_PASSWORD = Deno.env.get('POCKETBASE_ADMIN_PASSWORD') || 'kpyu1512..@';
-      
-      const adminPb = new PocketBase(POCKETBASE_URL);
-      await adminPb.collection('_superusers').authWithPassword(ADMIN_EMAIL, ADMIN_PASSWORD);
-      console.log('✅ Independent admin client authenticated for impersonation');
-      console.log('Admin user:', adminPb.authStore.model?.email);
-      
-      // 现在使用独立的管理员客户端创建 impersonate client
-      const impersonateClient = await adminPb.collection("members").impersonate(memberRecord.id, 3600);
+      // 使用全局管理员上下文执行 impersonate 操作
+      const impersonateClient = await impersonateUser('members', memberRecord.id, 3600);
       console.log(`✅ Impersonation successful for member: ${memberRecord.id}`);
       
       if(memberRecord){
